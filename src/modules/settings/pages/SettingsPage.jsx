@@ -74,6 +74,13 @@ function SettingsPage() {
 
               <ActionRow
                 icon="AP"
+                title="Tipos de Unidad"
+                description="Configura los tipos de unidad disponibles en el condominio"
+                onClick={() => navigate(`${basePath}/settings/unit-types`)}
+              />
+
+              <ActionRow
+                icon="AP"
                 title="Apartamentos"
                 description="Administra unidades y apartamentos del condominio"
                 onClick={() => navigate(`${basePath}/settings/apartments`)}
