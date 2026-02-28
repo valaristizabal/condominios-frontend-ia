@@ -1,4 +1,4 @@
-function ResidentTable({ rows, onEdit }) {
+function ResidentTable({ rows, busy, onEdit }) {
   if (!rows.length) {
     return (
       <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center">
@@ -13,8 +13,9 @@ function ResidentTable({ rows, onEdit }) {
         <thead className="bg-slate-50 text-left text-xs uppercase tracking-wider text-slate-500">
           <tr>
             <th className="px-4 py-3">Nombre</th>
+            <th className="px-4 py-3">Tipo inmueble</th>
             <th className="px-4 py-3">Apartamento</th>
-            <th className="px-4 py-3">Tipo</th>
+            <th className="px-4 py-3">Tipo residente</th>
             <th className="px-4 py-3">Estado</th>
             <th className="px-4 py-3 text-right">Acciones</th>
           </tr>
@@ -22,13 +23,22 @@ function ResidentTable({ rows, onEdit }) {
         <tbody>
           {rows.map((item) => (
             <tr key={item.id} className="border-t border-slate-100">
-              <td className="px-4 py-3 font-semibold text-slate-800">
-                {item.user?.full_name || item.full_name || "-"}
+              <td className="px-4 py-3">
+                <p className="font-semibold text-slate-800">{item.user?.full_name || item.full_name || "-"}</p>
+                <p className="text-xs text-slate-500">{item.user?.document_number || "-"}</p>
+              </td>
+              <td className="px-4 py-3">
+                <span className="rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-bold text-indigo-700">
+                  {resolveUnitTypeName(item)}
+                </span>
               </td>
               <td className="px-4 py-3 text-slate-600">
-                {item.apartment?.number || item.apartment_number || "-"}
+                <p className="font-semibold text-slate-800">{item.apartment?.number || item.apartment_number || "-"}</p>
+                <p className="text-xs text-slate-500">
+                  {"Torre: " + (item.apartment?.tower || "Sin torre") + " | Piso: " + (item.apartment?.floor ?? "-")}
+                </p>
               </td>
-              <td className="px-4 py-3 text-slate-600">{item.type || "-"}</td>
+              <td className="px-4 py-3 text-slate-600">{formatResidentType(item.type)}</td>
               <td className="px-4 py-3">
                 <span
                   className={`rounded-full px-2.5 py-1 text-xs font-bold ${
@@ -42,7 +52,8 @@ function ResidentTable({ rows, onEdit }) {
                 <button
                   type="button"
                   onClick={() => onEdit(item)}
-                  className="rounded-lg bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100"
+                  disabled={busy}
+                  className="rounded-lg bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 disabled:opacity-60"
                 >
                   Editar
                 </button>
@@ -53,6 +64,20 @@ function ResidentTable({ rows, onEdit }) {
       </table>
     </div>
   );
+}
+
+function resolveUnitTypeName(resident) {
+  return (
+    resident?.apartment?.unit_type?.name ||
+    resident?.apartment?.unitType?.name ||
+    "Sin tipo"
+  );
+}
+
+function formatResidentType(type) {
+  if (type === "propietario") return "Propietario";
+  if (type === "arrendatario") return "Arrendatario";
+  return type || "-";
 }
 
 export default ResidentTable;
