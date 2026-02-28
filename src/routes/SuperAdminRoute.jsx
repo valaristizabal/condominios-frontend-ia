@@ -1,5 +1,6 @@
 import { Navigate } from "react-router-dom";
 import { useAuthContext } from "../context/useAuthContext";
+import { isSuperUser } from "../utils/roles";
 
 function SuperAdminRoute({ children }) {
   const { user, authLoading } = useAuthContext();
@@ -16,7 +17,7 @@ function SuperAdminRoute({ children }) {
     return <Navigate to="/login" replace />;
   }
 
-  if (user?.role !== "super_admin") {
+  if (!isSuperUser(user?.role)) {
     return <Navigate to="/dashboard" replace />;
   }
 
@@ -24,4 +25,3 @@ function SuperAdminRoute({ children }) {
 }
 
 export default SuperAdminRoute;
-

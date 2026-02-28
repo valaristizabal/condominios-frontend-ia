@@ -2,6 +2,7 @@ import { NavLink, useParams } from "react-router-dom";
 import { useMemo, useState } from "react";
 import { ActiveCondominiumContext } from "../context/ActiveCondominiumContext";
 import { useAuthContext } from "../context/useAuthContext";
+import { isSuperUser } from "../utils/roles";
 
 function getSidebarSections(basePath) {
   const resolvePath = (path) => `${basePath}${path}`;
@@ -30,7 +31,7 @@ function TenantLayout({ children }) {
   const { id } = useParams();
   const { user } = useAuthContext();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const isSuperAdmin = user?.role === "super_admin";
+  const isSuperAdmin = isSuperUser(user?.role);
 
   const activeContextValue = useMemo(() => {
     if (isSuperAdmin) {

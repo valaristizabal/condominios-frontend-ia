@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthContext } from "../../../context/useAuthContext";
+import { isSuperUser } from "../../../utils/roles";
 
 function LoginForm() {
   const navigate = useNavigate();
@@ -25,7 +26,7 @@ function LoginForm() {
       }
 
       localStorage.setItem("remember_device", String(rememberDevice));
-      const targetRoute = data?.me?.role === "super_admin" ? "/condominiums" : "/dashboard";
+      const targetRoute = isSuperUser(data?.me?.role) ? "/condominiums" : "/dashboard";
       navigate(targetRoute, { replace: true });
     } catch (err) {
       const message =

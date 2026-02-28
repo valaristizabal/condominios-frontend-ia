@@ -14,6 +14,7 @@ import TenantLayout from "../layouts/TenantLayout";
 import ProtectedRoute from "./ProtectedRoute";
 import SuperAdminRoute from "./SuperAdminRoute";
 import TenantRoute from "./TenantRoute";
+import { isSuperUser } from "../utils/roles";
 
 function AppRoutes() {
   return (
@@ -93,9 +94,11 @@ function AppRoutes() {
         path="/condominio/:id/settings"
         element={
           <ProtectedRoute>
-            <TenantLayout>
-              <SettingsPage />
-            </TenantLayout>
+            <SuperAdminRoute>
+              <TenantLayout>
+                <SettingsPage />
+              </TenantLayout>
+            </SuperAdminRoute>
           </ProtectedRoute>
         }
       />
@@ -103,9 +106,11 @@ function AppRoutes() {
         path="/condominio/:id/dashboard"
         element={
           <ProtectedRoute>
-            <TenantLayout>
-              <DashboardPage />
-            </TenantLayout>
+            <SuperAdminRoute>
+              <TenantLayout>
+                <DashboardPage />
+              </TenantLayout>
+            </SuperAdminRoute>
           </ProtectedRoute>
         }
       />
@@ -113,9 +118,11 @@ function AppRoutes() {
         path="/condominio/:id/settings/operatives"
         element={
           <ProtectedRoute>
-            <TenantLayout>
-              <OperativesPage />
-            </TenantLayout>
+            <SuperAdminRoute>
+              <TenantLayout>
+                <OperativesPage />
+              </TenantLayout>
+            </SuperAdminRoute>
           </ProtectedRoute>
         }
       />
@@ -123,9 +130,11 @@ function AppRoutes() {
         path="/condominio/:id/settings/apartments"
         element={
           <ProtectedRoute>
-            <TenantLayout>
-              <ApartmentsPage />
-            </TenantLayout>
+            <SuperAdminRoute>
+              <TenantLayout>
+                <ApartmentsPage />
+              </TenantLayout>
+            </SuperAdminRoute>
           </ProtectedRoute>
         }
       />
@@ -133,9 +142,11 @@ function AppRoutes() {
         path="/condominio/:id/settings/cleaning"
         element={
           <ProtectedRoute>
-            <TenantLayout>
-              <CleaningSettingsPage />
-            </TenantLayout>
+            <SuperAdminRoute>
+              <TenantLayout>
+                <CleaningSettingsPage />
+              </TenantLayout>
+            </SuperAdminRoute>
           </ProtectedRoute>
         }
       />
@@ -143,9 +154,11 @@ function AppRoutes() {
         path="/condominio/:id/settings/unit-types"
         element={
           <ProtectedRoute>
-            <TenantLayout>
-              <UnitTypesPage />
-            </TenantLayout>
+            <SuperAdminRoute>
+              <TenantLayout>
+                <UnitTypesPage />
+              </TenantLayout>
+            </SuperAdminRoute>
           </ProtectedRoute>
         }
       />
@@ -153,9 +166,11 @@ function AppRoutes() {
         path="/condominio/:id/settings/residents"
         element={
           <ProtectedRoute>
-            <TenantLayout>
-              <ResidentsPage />
-            </TenantLayout>
+            <SuperAdminRoute>
+              <TenantLayout>
+                <ResidentsPage />
+              </TenantLayout>
+            </SuperAdminRoute>
           </ProtectedRoute>
         }
       />
@@ -191,7 +206,7 @@ function HomeRedirect() {
     return <Navigate to="/login" replace />;
   }
 
-  return <Navigate to={user.role === "super_admin" ? "/condominiums" : "/settings"} replace />;
+  return <Navigate to={isSuperUser(user?.role) ? "/condominiums" : "/settings"} replace />;
 }
 
 export default AppRoutes;
