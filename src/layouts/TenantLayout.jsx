@@ -12,7 +12,7 @@ function getSidebarSections(basePath) {
       title: "Operacion",
       items: [
         { label: "Dashboard", to: resolvePath("/dashboard"), enabled: true },
-        { label: "Visitantes", enabled: false },
+        { label: "Visitantes", to: resolvePath("/visits"), enabled: true },
         { label: "Vehiculos", enabled: false },
         { label: "Correspondencia", enabled: false },
         { label: "Emergencias", enabled: false },
