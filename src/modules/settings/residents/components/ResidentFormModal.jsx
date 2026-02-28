@@ -1,35 +1,47 @@
 import { useState } from "react";
 
 const EMPTY_FORM = {
-  user_id: "",
+  full_name: "",
+  email: "",
+  document_number: "",
+  phone: "",
+  birth_date: "",
   apartment_id: "",
   type: "propietario",
   is_active: true,
 };
 
 function ResidentFormModal({ open, initialValues, loading, onCancel, onSubmit }) {
-  const [form, setForm] = useState(() => initialValues || EMPTY_FORM);
+  const [form, setForm] = useState(() => buildInitialForm(initialValues));
   const [error, setError] = useState("");
+  const isEditing = Boolean(initialValues);
 
   if (!open) return null;
 
   const handleChange = (event) => {
     const { name, value, type, checked } = event.target;
     setForm((prev) => ({ ...prev, [name]: type === "checkbox" ? checked : value }));
+    if (error) setError("");
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError("");
     try {
-      await onSubmit({
-        ...form,
-        user_id: form.user_id ? Number(form.user_id) : null,
+      const payload = {
+        full_name: form.full_name.trim(),
+        email: form.email.trim(),
+        document_number: form.document_number.trim(),
+        phone: form.phone.trim() || null,
+        birth_date: form.birth_date || null,
         apartment_id: form.apartment_id ? Number(form.apartment_id) : null,
-      });
+        type: form.type,
+        is_active: Boolean(form.is_active),
+      };
+
+      await onSubmit(payload);
     } catch (err) {
-      const message =
-        err?.response?.data?.message || err?.message || "No fue posible guardar el residente.";
+      const message = normalizeApiError(err, "No fue posible guardar el residente.");
       setError(message);
     }
   };
@@ -38,17 +50,50 @@ function ResidentFormModal({ open, initialValues, loading, onCancel, onSubmit })
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/45 p-4 sm:items-center">
       <div className="w-full max-w-xl rounded-2xl bg-white p-5 shadow-2xl">
         <h3 className="text-lg font-extrabold text-slate-900">
-          {initialValues ? "Editar residente" : "Nuevo residente"}
+          {isEditing ? "Editar residente" : "Nuevo residente"}
         </h3>
 
         <form className="mt-4 space-y-4" onSubmit={handleSubmit}>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field
+              label="Nombre completo"
+              name="full_name"
+              value={form.full_name ?? ""}
+              onChange={handleChange}
+              required
+            />
+            <Field
+              label="Documento"
+              name="document_number"
+              value={form.document_number ?? ""}
+              onChange={handleChange}
+              required
+            />
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field
+              label="Email"
+              name="email"
+              type="email"
+              value={form.email ?? ""}
+              onChange={handleChange}
+              required
+            />
+            <Field
+              label="Telefono"
+              name="phone"
+              value={form.phone ?? ""}
+              onChange={handleChange}
+            />
+          </div>
+
           <Field
-            label="ID de usuario"
-            name="user_id"
-            type="number"
-            value={form.user_id ?? ""}
+            label="Fecha de nacimiento"
+            name="birth_date"
+            type="date"
+            value={form.birth_date ?? ""}
             onChange={handleChange}
-            required
           />
 
           <Field
@@ -122,6 +167,39 @@ function Field({ label, ...props }) {
       />
     </label>
   );
+}
+
+function buildInitialForm(initialValues) {
+  if (!initialValues) return EMPTY_FORM;
+
+  return {
+    full_name: initialValues.user?.full_name ?? "",
+    email: initialValues.user?.email ?? "",
+    document_number: initialValues.user?.document_number ?? "",
+    phone: initialValues.user?.phone ?? "",
+    birth_date: initialValues.user?.birth_date
+      ? String(initialValues.user.birth_date).slice(0, 10)
+      : "",
+    apartment_id: initialValues.apartment_id ? String(initialValues.apartment_id) : "",
+    type: initialValues.type ?? "propietario",
+    is_active: Boolean(initialValues.is_active),
+  };
+}
+
+function normalizeApiError(err, fallbackMessage) {
+  const responseData = err?.response?.data;
+  const errors = responseData?.errors;
+
+  if (errors && typeof errors === "object") {
+    const firstFieldErrors = Object.values(errors).find(
+      (fieldErrors) => Array.isArray(fieldErrors) && fieldErrors.length > 0
+    );
+    if (firstFieldErrors) {
+      return String(firstFieldErrors[0]);
+    }
+  }
+
+  return responseData?.message || err?.message || fallbackMessage;
 }
 
 export default ResidentFormModal;

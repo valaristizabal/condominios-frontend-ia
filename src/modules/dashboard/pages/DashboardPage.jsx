@@ -1,4 +1,4 @@
-import SectionTitle from "../components/SectionTitle";
+﻿import SectionTitle from "../components/SectionTitle";
 import KpiCard from "../components/KpiCard";
 import QuickActions from "../components/QuickActions";
 import RecentActivityTable from "../components/RecentActivityTable";
@@ -26,10 +26,10 @@ function DashboardPage() {
             {summary.activeCondominiumId ? `Condominio #${summary.activeCondominiumId}` : "Sin condominio"}
           </p>
         </div>
-        {summary?.source === "placeholder" ? (
+        {summary?.source !== "api" ? (
           <div className="flex flex-col items-end gap-1">
             <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-700">
-              Datos placeholder
+              Datos de respaldo
             </span>
             <span className="text-[11px] font-semibold text-slate-400">
               Fuente contexto: {summary.contextSource}
@@ -45,28 +45,25 @@ function DashboardPage() {
       ) : null}
 
       <section className="mb-8 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <SectionTitle
-          title="Gestión de personal"
-          subtitle="Registro de ingresos y salidas del equipo operativo."
-        />
+        <SectionTitle title="Gestion de personal" subtitle="Registro de ingresos y salidas del equipo operativo." />
         <QuickActions />
       </section>
 
       <section className="mb-8">
-        <SectionTitle title="Indicadores rápidos" subtitle="Métricas clave del día." />
+        <SectionTitle title="Indicadores rapidos" subtitle="Metricas clave del dia." />
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          <KpiCard label="Vehículos hoy" value={summary.kpis.vehicles_today} tone="indigo" />
+          <KpiCard label="Vehiculos hoy" value={summary.kpis.vehicles_today} tone="indigo" />
           <KpiCard label="Visitantes hoy" value={summary.kpis.visitors_today} tone="emerald" />
           <KpiCard label="Personal activo" value={summary.kpis.active_staff} tone="slate" />
-          <KpiCard label="Paquetes pendientes" value={summary.kpis.pending_packages} tone="amber" />
+          <KpiCard label="Residentes" value={summary.kpis.residents_count} tone="amber" />
           <KpiCard label="Emergencias abiertas" value={summary.kpis.emergencies_open} tone="red" />
           <KpiCard label="Novedades abiertas" value={summary.kpis.incidents_open} tone="indigo" />
         </div>
       </section>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <SectionTitle title="Actividad reciente" subtitle="Últimos eventos del sistema." />
-        <RecentActivityTable rows={summary.recentActivity} placeholder={summary.source === "placeholder"} />
+        <SectionTitle title="Actividad reciente" subtitle="Ultimos eventos del sistema." />
+        <RecentActivityTable rows={summary.recentActivity} placeholder={summary.source !== "api"} />
       </section>
     </div>
   );
