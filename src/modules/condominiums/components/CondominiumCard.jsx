@@ -1,4 +1,4 @@
-function CondominiumCard({ condominium, onEdit, onToggle }) {
+function CondominiumCard({ condominium, onEnter, onEdit, onToggle }) {
   const statusLabel = condominium?.is_active ? "Activo" : "Inactivo";
   const statusClass = condominium?.is_active
     ? "bg-emerald-100 text-emerald-700"
@@ -40,6 +40,13 @@ function CondominiumCard({ condominium, onEdit, onToggle }) {
         <div className="flex items-center gap-2">
           <button
             type="button"
+            onClick={() => onEnter(condominium)}
+            className="flex-1 rounded-xl bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+          >
+            Entrar
+          </button>
+          <button
+            type="button"
             onClick={() => onEdit(condominium)}
             className="flex-1 rounded-xl bg-indigo-50 px-3 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-100"
           >
@@ -76,4 +83,3 @@ function BuildingIcon() {
 }
 
 export default CondominiumCard;
-

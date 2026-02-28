@@ -21,11 +21,20 @@ function DashboardPage() {
         <div>
           <h1 className="text-2xl font-extrabold text-slate-900">Panel Principal</h1>
           <p className="mt-1 text-sm text-slate-500">Resumen operativo del condominio</p>
+          <p className="mt-1 text-xs font-semibold text-slate-400">
+            Contexto activo:{" "}
+            {summary.activeCondominiumId ? `Condominio #${summary.activeCondominiumId}` : "Sin condominio"}
+          </p>
         </div>
         {summary?.source === "placeholder" ? (
-          <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-700">
-            Datos placeholder
-          </span>
+          <div className="flex flex-col items-end gap-1">
+            <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-700">
+              Datos placeholder
+            </span>
+            <span className="text-[11px] font-semibold text-slate-400">
+              Fuente contexto: {summary.contextSource}
+            </span>
+          </div>
         ) : null}
       </header>
 
@@ -64,4 +73,3 @@ function DashboardPage() {
 }
 
 export default DashboardPage;
-

@@ -66,6 +66,10 @@ function CondominiumsPage() {
     }
   };
 
+  const handleEnter = (condominium) => {
+    navigate(`/condominio/${condominium.id}/dashboard`);
+  };
+
   return (
     <main className="min-h-screen bg-[#eef1f6] px-4 pb-24 pt-5 md:px-8">
       <section className="mx-auto max-w-6xl">
@@ -139,6 +143,7 @@ function CondominiumsPage() {
               <CondominiumCard
                 key={condominium.id}
                 condominium={condominium}
+                onEnter={handleEnter}
                 onEdit={openEditModal}
                 onToggle={handleToggle}
               />
