@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useActiveCondominium } from "../../../../context/useActiveCondominium";
+import apiClient from "../../../../services/apiClient";
 
 const EMPTY_FORM = {
   full_name: "",
@@ -6,35 +8,162 @@ const EMPTY_FORM = {
   document_number: "",
   phone: "",
   birth_date: "",
+  unit_type_id: "",
   apartment_id: "",
   type: "propietario",
   is_active: true,
 };
 
 function ResidentFormModal({ open, initialValues, loading, onCancel, onSubmit }) {
+  const { activeCondominiumId } = useActiveCondominium();
   const [form, setForm] = useState(() => buildInitialForm(initialValues));
+  const [unitTypes, setUnitTypes] = useState([]);
+  const [apartments, setApartments] = useState([]);
+  const [catalogLoading, setCatalogLoading] = useState(false);
   const [error, setError] = useState("");
   const isEditing = Boolean(initialValues);
+
+  const requestConfig = useMemo(
+    () =>
+      activeCondominiumId
+        ? {
+            headers: {
+              "X-Active-Condominium-Id": String(activeCondominiumId),
+            },
+          }
+        : undefined,
+    [activeCondominiumId]
+  );
+
+  useEffect(() => {
+    if (!open) return;
+    setForm(buildInitialForm(initialValues));
+    setError("");
+  }, [initialValues, open]);
+
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+
+    const loadCatalogs = async () => {
+      setCatalogLoading(true);
+      try {
+        const [unitTypesResponse, apartmentsResponse] = await Promise.all([
+          apiClient.get("/unit-types", requestConfig),
+          apiClient.get("/apartments", requestConfig),
+        ]);
+
+        if (cancelled) return;
+
+        setUnitTypes(Array.isArray(unitTypesResponse.data) ? unitTypesResponse.data : []);
+        setApartments(Array.isArray(apartmentsResponse.data) ? apartmentsResponse.data : []);
+      } catch (err) {
+        if (!cancelled) {
+          setUnitTypes([]);
+          setApartments([]);
+          setError(normalizeApiError(err, "No fue posible cargar tipos y apartamentos."));
+        }
+      } finally {
+        if (!cancelled) {
+          setCatalogLoading(false);
+        }
+      }
+    };
+
+    loadCatalogs();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open, requestConfig]);
+
+  useEffect(() => {
+    if (!open || !apartments.length) return;
+
+    if (!form.unit_type_id && form.apartment_id) {
+      const selectedApartment = apartments.find((item) => String(item.id) === String(form.apartment_id));
+      if (selectedApartment?.unit_type_id) {
+        setForm((prev) => ({
+          ...prev,
+          unit_type_id: String(selectedApartment.unit_type_id),
+        }));
+      }
+    }
+  }, [apartments, form.apartment_id, form.unit_type_id, open]);
+
+  const filteredApartments = useMemo(() => {
+    if (!form.unit_type_id) return [];
+
+    return apartments.filter((item) => String(item.unit_type_id) === String(form.unit_type_id));
+  }, [apartments, form.unit_type_id]);
 
   if (!open) return null;
 
   const handleChange = (event) => {
     const { name, value, type, checked } = event.target;
-    setForm((prev) => ({ ...prev, [name]: type === "checkbox" ? checked : value }));
+
+    setForm((prev) => {
+      if (name === "unit_type_id") {
+        return {
+          ...prev,
+          unit_type_id: value,
+          apartment_id: "",
+        };
+      }
+
+      return {
+        ...prev,
+        [name]: type === "checkbox" ? checked : value,
+      };
+    });
+
     if (error) setError("");
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError("");
+
+    const fullName = String(form.full_name || "").trim();
+    const email = String(form.email || "").trim();
+    const documentNumber = String(form.document_number || "").trim();
+    const unitTypeId = Number(form.unit_type_id);
+    const apartmentId = Number(form.apartment_id);
+
+    if (!fullName || !email || !documentNumber) {
+      setError("Nombre, email y documento son obligatorios.");
+      return;
+    }
+
+    if (!unitTypeId) {
+      setError("Debes seleccionar el tipo de inmueble.");
+      return;
+    }
+
+    if (!apartmentId) {
+      setError("Debes seleccionar el apartamento.");
+      return;
+    }
+
+    const apartmentMatchesUnitType = apartments.some(
+      (item) =>
+        Number(item.id) === apartmentId &&
+        Number(item.unit_type_id) === unitTypeId
+    );
+
+    if (!apartmentMatchesUnitType) {
+      setError("El apartamento seleccionado no corresponde al tipo de inmueble elegido.");
+      return;
+    }
+
     try {
       const payload = {
-        full_name: form.full_name.trim(),
-        email: form.email.trim(),
-        document_number: form.document_number.trim(),
-        phone: form.phone.trim() || null,
+        full_name: fullName,
+        email,
+        document_number: documentNumber,
+        phone: String(form.phone || "").trim() || null,
         birth_date: form.birth_date || null,
-        apartment_id: form.apartment_id ? Number(form.apartment_id) : null,
+        apartment_id: apartmentId,
         type: form.type,
         is_active: Boolean(form.is_active),
       };
@@ -96,17 +225,54 @@ function ResidentFormModal({ open, initialValues, loading, onCancel, onSubmit })
             onChange={handleChange}
           />
 
-          <Field
-            label="ID de apartamento"
-            name="apartment_id"
-            type="number"
-            value={form.apartment_id ?? ""}
-            onChange={handleChange}
-            required
-          />
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="block">
+              <span className="mb-1.5 block text-sm font-semibold text-slate-700">Tipo de inmueble</span>
+              <select
+                name="unit_type_id"
+                value={form.unit_type_id ?? ""}
+                onChange={handleChange}
+                className="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                required
+                disabled={catalogLoading}
+              >
+                <option value="">{catalogLoading ? "Cargando..." : "Selecciona tipo"}</option>
+                {unitTypes.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="block">
+              <span className="mb-1.5 block text-sm font-semibold text-slate-700">Apartamento</span>
+              <select
+                name="apartment_id"
+                value={form.apartment_id ?? ""}
+                onChange={handleChange}
+                className="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                required
+                disabled={catalogLoading || !form.unit_type_id}
+              >
+                <option value="">
+                  {!form.unit_type_id
+                    ? "Primero selecciona tipo"
+                    : catalogLoading
+                    ? "Cargando..."
+                    : "Selecciona apartamento"}
+                </option>
+                {filteredApartments.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {buildApartmentLabel(item)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
 
           <label className="block">
-            <span className="mb-1.5 block text-sm font-semibold text-slate-700">Tipo</span>
+            <span className="mb-1.5 block text-sm font-semibold text-slate-700">Tipo de residente</span>
             <select
               name="type"
               value={form.type ?? "propietario"}
@@ -138,7 +304,7 @@ function ResidentFormModal({ open, initialValues, loading, onCancel, onSubmit })
           <div className="flex gap-3">
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || catalogLoading}
               className="flex-1 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-indigo-700 disabled:opacity-70"
             >
               {loading ? "Guardando..." : "Guardar"}
@@ -180,10 +346,20 @@ function buildInitialForm(initialValues) {
     birth_date: initialValues.user?.birth_date
       ? String(initialValues.user.birth_date).slice(0, 10)
       : "",
+    unit_type_id: initialValues.apartment?.unit_type_id
+      ? String(initialValues.apartment.unit_type_id)
+      : "",
     apartment_id: initialValues.apartment_id ? String(initialValues.apartment_id) : "",
     type: initialValues.type ?? "propietario",
     is_active: Boolean(initialValues.is_active),
   };
+}
+
+function buildApartmentLabel(apartment) {
+  const number = apartment?.number ?? "-";
+  const tower = apartment?.tower ? `Torre: ${apartment.tower}` : "Torre: Sin torre";
+  const floor = apartment?.floor ?? "-";
+  return `${number} | ${tower} | Piso: ${floor}`;
 }
 
 function normalizeApiError(err, fallbackMessage) {

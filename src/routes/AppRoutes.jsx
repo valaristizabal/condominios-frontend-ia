@@ -1,8 +1,8 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { useAuthContext } from "../context/useAuthContext";
 import LoginPage from "../modules/auth/pages/LoginPage";
+import ApartmentsPage from "../modules/ajustes/apartments/pages/ApartmentsPage";
 import UnitTypesPage from "../modules/settings/unit-types/pages/UnitTypesPage";
-import ApartmentsSettingsPage from "../modules/settings/pages/ApartmentsSettingsPage";
 import CleaningSettingsPage from "../modules/settings/pages/CleaningSettingsPage";
 import SettingsPage from "../modules/settings/pages/SettingsPage";
 import CondominiumsPage from "../modules/condominiums/pages/CondominiumsPage";
@@ -54,7 +54,7 @@ function AppRoutes() {
         element={
           <TenantRoute>
             <TenantLayout>
-              <ApartmentsSettingsPage />
+              <ApartmentsPage />
             </TenantLayout>
           </TenantRoute>
         }
@@ -124,7 +124,7 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <TenantLayout>
-              <ApartmentsSettingsPage />
+              <ApartmentsPage />
             </TenantLayout>
           </ProtectedRoute>
         }
