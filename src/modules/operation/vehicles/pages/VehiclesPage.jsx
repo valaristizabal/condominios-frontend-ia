@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useActiveCondominium } from "../../../../context/useActiveCondominium";
 import apiClient from "../../../../services/apiClient";
 
@@ -33,6 +33,7 @@ function EmptyState({ title, subtitle }) {
 
 function VehiclesPage() {
   const navigate = useNavigate();
+  const { id } = useParams();
   const { activeCondominiumId } = useActiveCondominium();
 
   const [vehicleTypes, setVehicleTypes] = useState([]);
@@ -473,7 +474,7 @@ function VehiclesPage() {
 
               <button
                 type="button"
-                onClick={() => navigate("/vehiculos/novedad")}
+                onClick={() => navigate(id ? `/condominio/${id}/vehiculos/novedad` : "/vehiculos/novedad")}
                 className="w-full rounded-2xl border border-slate-200 bg-white py-3 text-xs font-extrabold text-slate-800 hover:bg-slate-50"
               >
                 Reportar novedad

@@ -10,6 +10,7 @@ import CondominiumsPage from "../modules/condominiums/pages/CondominiumsPage";
 import DashboardPage from "../modules/dashboard/pages/DashboardPage";
 import VisitsPage from "../modules/operation/visits/pages/VisitsPage";
 import VehiclesPage from "../modules/operation/vehicles/pages/VehiclesPage";
+import VehicleIncidentsPage from "../modules/operation/vehicle-incidents/pages/VehicleIncidentsPage";
 import OperativesPage from "../modules/settings/operatives/pages/OperativesPage";
 import ResidentsPage from "../modules/settings/residents/pages/ResidentsPage";
 import PlatformLayout from "../layouts/PlatformLayout";
@@ -69,6 +70,26 @@ function AppRoutes() {
           <TenantRoute>
             <TenantLayout>
               <VehiclesPage />
+            </TenantLayout>
+          </TenantRoute>
+        }
+      />
+      <Route
+        path="/vehiculos/novedad"
+        element={
+          <TenantRoute>
+            <TenantLayout>
+              <VehicleIncidentsPage />
+            </TenantLayout>
+          </TenantRoute>
+        }
+      />
+      <Route
+        path="/vehicle-incidents"
+        element={
+          <TenantRoute>
+            <TenantLayout>
+              <VehicleIncidentsPage />
             </TenantLayout>
           </TenantRoute>
         }
@@ -178,6 +199,30 @@ function AppRoutes() {
             <SuperAdminRoute>
               <TenantLayout>
                 <VehiclesPage />
+              </TenantLayout>
+            </SuperAdminRoute>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/condominio/:id/vehiculos/novedad"
+        element={
+          <ProtectedRoute>
+            <SuperAdminRoute>
+              <TenantLayout>
+                <VehicleIncidentsPage />
+              </TenantLayout>
+            </SuperAdminRoute>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/condominio/:id/vehicle-incidents"
+        element={
+          <ProtectedRoute>
+            <SuperAdminRoute>
+              <TenantLayout>
+                <VehicleIncidentsPage />
               </TenantLayout>
             </SuperAdminRoute>
           </ProtectedRoute>
