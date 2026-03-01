@@ -80,6 +80,13 @@ function SettingsPage() {
               />
 
               <ActionRow
+                icon="TV"
+                title="Tipos de Vehiculo"
+                description="Configura los tipos de vehiculo permitidos en el condominio"
+                onClick={() => navigate(`${basePath}/settings/vehicle-types`)}
+              />
+
+              <ActionRow
                 icon="AP"
                 title="Apartamentos"
                 description="Administra unidades y apartamentos del condominio"

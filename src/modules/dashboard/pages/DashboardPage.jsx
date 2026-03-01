@@ -53,7 +53,7 @@ function DashboardPage() {
         <SectionTitle title="Indicadores rapidos" subtitle="Metricas clave del dia." />
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
           <KpiCard label="Vehiculos hoy" value={summary.kpis.vehicles_today} tone="indigo" />
-          <KpiCard label="Visitantes hoy" value={summary.kpis.visitors_today} tone="emerald" />
+          <KpiCard label="Visitantes dentro" value={summary.kpis.visitors_inside} tone="emerald" />
           <KpiCard label="Personal activo" value={summary.kpis.active_staff} tone="slate" />
           <KpiCard label="Residentes" value={summary.kpis.residents_count} tone="amber" />
           <KpiCard label="Emergencias abiertas" value={summary.kpis.emergencies_open} tone="red" />

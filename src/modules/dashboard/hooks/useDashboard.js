@@ -34,7 +34,7 @@ export function useDashboard() {
         contextSource: source,
         kpis: {
           vehicles_today: 0,
-          visitors_today: 0,
+          visitors_inside: Number(data.visitors_inside_count ?? 0),
           active_staff: Number(data.operatives_count ?? 0),
           residents_count: Number(data.residents_count ?? 0),
           pending_packages: 0,
@@ -51,7 +51,7 @@ export function useDashboard() {
         contextSource: source,
         kpis: {
           vehicles_today: 0,
-          visitors_today: 0,
+          visitors_inside: 0,
           active_staff: 0,
           residents_count: 0,
           pending_packages: 0,
@@ -77,7 +77,7 @@ export function useDashboard() {
         contextSource: source,
         kpis: {
           vehicles_today: 0,
-          visitors_today: 0,
+          visitors_inside: 0,
           active_staff: 0,
           residents_count: 0,
           pending_packages: 0,

@@ -3,11 +3,13 @@ import { useAuthContext } from "../context/useAuthContext";
 import LoginPage from "../modules/auth/pages/LoginPage";
 import ApartmentsPage from "../modules/ajustes/apartments/pages/ApartmentsPage";
 import UnitTypesPage from "../modules/settings/unit-types/pages/UnitTypesPage";
+import VehicleTypesPage from "../modules/settings/vehicle-types/pages/VehicleTypesPage";
 import CleaningSettingsPage from "../modules/settings/pages/CleaningSettingsPage";
 import SettingsPage from "../modules/settings/pages/SettingsPage";
 import CondominiumsPage from "../modules/condominiums/pages/CondominiumsPage";
 import DashboardPage from "../modules/dashboard/pages/DashboardPage";
 import VisitsPage from "../modules/operation/visits/pages/VisitsPage";
+import VehiclesPage from "../modules/operation/vehicles/pages/VehiclesPage";
 import OperativesPage from "../modules/settings/operatives/pages/OperativesPage";
 import ResidentsPage from "../modules/settings/residents/pages/ResidentsPage";
 import PlatformLayout from "../layouts/PlatformLayout";
@@ -62,6 +64,16 @@ function AppRoutes() {
         }
       />
       <Route
+        path="/vehicles"
+        element={
+          <TenantRoute>
+            <TenantLayout>
+              <VehiclesPage />
+            </TenantLayout>
+          </TenantRoute>
+        }
+      />
+      <Route
         path="/settings/apartments"
         element={
           <TenantRoute>
@@ -87,6 +99,16 @@ function AppRoutes() {
           <TenantRoute>
             <TenantLayout>
               <UnitTypesPage />
+            </TenantLayout>
+          </TenantRoute>
+        }
+      />
+      <Route
+        path="/settings/vehicle-types"
+        element={
+          <TenantRoute>
+            <TenantLayout>
+              <VehicleTypesPage />
             </TenantLayout>
           </TenantRoute>
         }
@@ -150,6 +172,18 @@ function AppRoutes() {
         }
       />
       <Route
+        path="/condominio/:id/vehicles"
+        element={
+          <ProtectedRoute>
+            <SuperAdminRoute>
+              <TenantLayout>
+                <VehiclesPage />
+              </TenantLayout>
+            </SuperAdminRoute>
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/condominio/:id/settings/apartments"
         element={
           <ProtectedRoute>
@@ -180,6 +214,18 @@ function AppRoutes() {
             <SuperAdminRoute>
               <TenantLayout>
                 <UnitTypesPage />
+              </TenantLayout>
+            </SuperAdminRoute>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/condominio/:id/settings/vehicle-types"
+        element={
+          <ProtectedRoute>
+            <SuperAdminRoute>
+              <TenantLayout>
+                <VehicleTypesPage />
               </TenantLayout>
             </SuperAdminRoute>
           </ProtectedRoute>
