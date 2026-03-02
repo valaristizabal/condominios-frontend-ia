@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 const Card = ({ children, className = "" }) => (
   <div className={`rounded-3xl border border-slate-200 bg-white p-5 shadow-sm ${className}`}>
@@ -37,6 +37,108 @@ function ShieldCheckIcon({ className = "" }) {
   );
 }
 
+function SearchableSelect({
+  value,
+  onChange,
+  options = [],
+  placeholder = "Selecciona...",
+  searchPlaceholder = "Buscar...",
+  disabled = false,
+  hasError = false,
+}) {
+  const rootRef = useRef(null);
+  const [open, setOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const selectedOption = useMemo(
+    () => options.find((option) => String(option.value) === String(value)) || null,
+    [options, value]
+  );
+
+  const visibleOptions = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return options;
+    return options.filter((option) => String(option.label || "").toLowerCase().includes(term));
+  }, [options, searchTerm]);
+
+  useEffect(() => {
+    if (!open) return undefined;
+
+    const handleOutsideClick = (event) => {
+      if (!rootRef.current?.contains(event.target)) {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) {
+      setSearchTerm("");
+    }
+  }, [open]);
+
+  return (
+    <div ref={rootRef} className="relative">
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => !disabled && setOpen((prev) => !prev)}
+        className={[
+          "flex h-14 w-full items-center justify-between rounded-2xl border bg-white px-4 text-left text-slate-900 outline-none focus:ring-2",
+          hasError ? "border-red-400 focus:ring-red-200" : "border-slate-200 focus:ring-blue-200",
+          disabled ? "cursor-not-allowed bg-slate-100 text-slate-500" : "",
+        ].join(" ")}
+      >
+        <span className={selectedOption ? "text-slate-900" : "text-slate-500"}>
+          {selectedOption?.label || placeholder}
+        </span>
+        <span className="text-slate-400">{open ? "▲" : "▼"}</span>
+      </button>
+
+      {open ? (
+        <div className="absolute z-20 mt-2 w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg">
+          <div className="border-b border-slate-100 p-2">
+            <input
+              autoFocus
+              className="h-10 w-full rounded-xl border border-slate-200 px-3 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-200"
+              placeholder={searchPlaceholder}
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+            />
+          </div>
+          <div className="max-h-56 overflow-y-auto p-1">
+            {visibleOptions.length ? (
+              visibleOptions.map((option) => (
+                <button
+                  key={String(option.value)}
+                  type="button"
+                  onClick={() => {
+                    onChange?.(option.value);
+                    setOpen(false);
+                  }}
+                  className={[
+                    "block w-full rounded-xl px-3 py-2 text-left text-sm transition",
+                    String(option.value) === String(value)
+                      ? "bg-blue-50 font-semibold text-blue-700"
+                      : "text-slate-700 hover:bg-slate-100",
+                  ].join(" ")}
+                >
+                  {option.label}
+                </button>
+              ))
+            ) : (
+              <p className="px-3 py-2 text-sm text-slate-500">Sin resultados</p>
+            )}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export default function VisitFormModal({ apartments = [], onSubmit, loading }) {
   const fileRef = useRef(null);
 
@@ -68,6 +170,18 @@ export default function VisitFormModal({ apartments = [], onSubmit, loading }) {
     if (!unitTypeId) return [];
     return apartmentsOptions.filter((item) => String(item?.unit_type_id) === String(unitTypeId));
   }, [apartmentsOptions, unitTypeId]);
+  const unitTypeSelectOptions = useMemo(
+    () => unitTypeOptions.map((unitType) => ({ value: unitType.id, label: unitType.name })),
+    [unitTypeOptions]
+  );
+  const apartmentSelectOptions = useMemo(
+    () =>
+      filteredApartments.map((apartment) => ({
+        value: apartment.id,
+        label: apartment.name || apartment.number || `Apto ${apartment.id}`,
+      })),
+    [filteredApartments]
+  );
 
   const canSubmit =
     fullName.trim() &&
@@ -253,43 +367,31 @@ export default function VisitFormModal({ apartments = [], onSubmit, loading }) {
 
           <div>
             <Label>Tipo de unidad</Label>
-            <select
-              className={`${inputBase} ${
-                errors.unitTypeId ? "border-red-400 focus:ring-red-200" : "border-slate-200 focus:ring-blue-200"
-              }`}
+            <SearchableSelect
               value={unitTypeId}
-              onChange={(event) => {
-                setUnitTypeId(event.target.value);
+              hasError={Boolean(errors.unitTypeId)}
+              placeholder="Selecciona tipo de unidad"
+              searchPlaceholder="Buscar tipo de unidad..."
+              options={unitTypeSelectOptions}
+              onChange={(nextValue) => {
+                setUnitTypeId(String(nextValue));
                 setApartmentId("");
               }}
-            >
-              <option value="">Selecciona tipo de unidad</option>
-              {unitTypeOptions.map((unitType) => (
-                <option key={unitType.id} value={unitType.id}>
-                  {unitType.name}
-                </option>
-              ))}
-            </select>
+            />
             {errors.unitTypeId && <ErrorText>{errors.unitTypeId}</ErrorText>}
           </div>
 
           <div>
             <Label>Apartamento destino</Label>
-            <select
-              className={`${inputBase} ${
-                errors.apartmentId ? "border-red-400 focus:ring-red-200" : "border-slate-200 focus:ring-blue-200"
-              }`}
+            <SearchableSelect
               value={apartmentId}
-              onChange={(event) => setApartmentId(event.target.value)}
               disabled={!unitTypeId}
-            >
-              <option value="">{!unitTypeId ? "Primero selecciona tipo de unidad" : "Selecciona apartamento"}</option>
-              {filteredApartments.map((apartment) => (
-                <option key={apartment.id} value={apartment.id}>
-                  {apartment.name || apartment.number || `Apto ${apartment.id}`}
-                </option>
-              ))}
-            </select>
+              hasError={Boolean(errors.apartmentId)}
+              placeholder={!unitTypeId ? "Primero selecciona tipo de unidad" : "Selecciona apartamento"}
+              searchPlaceholder="Buscar apartamento..."
+              options={apartmentSelectOptions}
+              onChange={(nextValue) => setApartmentId(String(nextValue))}
+            />
             {errors.apartmentId && <ErrorText>{errors.apartmentId}</ErrorText>}
           </div>
 

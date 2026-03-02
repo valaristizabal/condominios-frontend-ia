@@ -1,32 +1,35 @@
 ﻿import { useMemo, useRef } from "react";
 
 const inputBase =
-  "w-full bg-white border border-gray-200 rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-200";
+  "w-full h-14 rounded-2xl border border-slate-200 bg-white px-4 text-slate-900 outline-none focus:ring-2 focus:ring-blue-200";
 
-const SectionTitle = ({ icon, title }) => (
-  <div className="flex items-center gap-3">
-    <div className="w-9 h-9 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-700">{icon}</div>
-    <h2 className="text-lg font-bold text-gray-900">{title}</h2>
+const SectionTitle = ({ icon, title, eyebrow }) => (
+  <div className="flex items-start gap-3">
+    <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-50 text-blue-700">{icon}</div>
+    <div>
+      {eyebrow ? <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">{eyebrow}</p> : null}
+      <h2 className="mt-0.5 text-lg font-bold text-slate-900">{title}</h2>
+    </div>
   </div>
 );
 
-const Label = ({ children }) => <label className="text-sm text-gray-700 font-medium">{children}</label>;
+const Label = ({ children }) => <label className="text-sm font-semibold text-slate-700">{children}</label>;
 
 const IncidentOption = ({ icon, label, selected, onClick }) => (
   <button
     type="button"
     onClick={onClick}
     className={`w-full border rounded-2xl px-4 py-4 flex items-center justify-between transition ${
-      selected ? "border-blue-600 bg-white shadow-sm" : "border-gray-200 bg-white hover:bg-gray-50"
+      selected ? "border-blue-600 bg-blue-50 shadow-sm" : "border-slate-200 bg-white hover:bg-slate-100"
     }`}
   >
     <div className="flex items-center gap-3">
       <div className="text-xl">{icon}</div>
-      <div className="text-base font-semibold text-gray-900">{label}</div>
+      <div className="text-base font-semibold text-slate-900">{label}</div>
     </div>
     <div
       className={`w-6 h-6 rounded-full border flex items-center justify-center ${
-        selected ? "border-blue-600" : "border-gray-300"
+        selected ? "border-blue-600" : "border-slate-300"
       }`}
     >
       {selected ? <div className="w-3 h-3 rounded-full bg-blue-600" /> : null}
@@ -82,14 +85,14 @@ function VehicleIncidentFormModal({
   };
 
   return (
-    <form onSubmit={onSubmit} className="px-4 max-w-3xl mx-auto space-y-6">
-      <div className="pt-6 space-y-4">
-        <SectionTitle icon="🚙" title="Información del Vehículo" />
+    <form onSubmit={onSubmit} className="space-y-6">
+      <div className="space-y-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <SectionTitle icon="🚙" eyebrow="Registro" title="Información del Vehículo" />
 
         <div className="space-y-2">
           <Label>Tipo de vehículo</Label>
           <select
-            className={inputBase}
+            className={inputBase + " py-3"}
             value={form.tipoVehiculo}
             onChange={(event) => {
               setField("tipoVehiculo", event.target.value);
@@ -118,11 +121,11 @@ function VehicleIncidentFormModal({
           <FieldError message={fieldErrors.plate} />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="space-y-2">
             <Label>Tipo de unidad</Label>
             <select
-              className={inputBase}
+              className={inputBase + " py-3"}
               value={form.tipoUnidad}
               onChange={(event) => {
                 setField("tipoUnidad", event.target.value);
@@ -141,7 +144,7 @@ function VehicleIncidentFormModal({
           <div className="space-y-2">
             <Label>Número</Label>
             <select
-              className={inputBase}
+              className={inputBase + " py-3"}
               value={form.numeroUnidad}
               onChange={(event) => {
                 setField("numeroUnidad", event.target.value);
@@ -162,8 +165,8 @@ function VehicleIncidentFormModal({
         </div>
       </div>
 
-      <div className="space-y-3">
-        <SectionTitle icon="⚠️" title="Tipo de Novedad" />
+      <div className="space-y-3 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <SectionTitle icon="⚠️" eyebrow="Clasificación" title="Tipo de Novedad" />
 
         <IncidentOption
           icon="🛡️"
@@ -195,11 +198,11 @@ function VehicleIncidentFormModal({
         <FieldError message={fieldErrors.incident_type} />
       </div>
 
-      <div className="space-y-3">
-        <SectionTitle icon="📝" title="Observaciones Generales" />
+      <div className="space-y-3 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <SectionTitle icon="📝" eyebrow="Detalle" title="Observaciones Generales" />
 
         <textarea
-          className={`${inputBase} min-h-[140px]`}
+          className="min-h-[140px] w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none focus:ring-2 focus:ring-blue-200"
           placeholder="Describa los detalles..."
           value={form.observaciones}
           onChange={(event) => {
@@ -210,8 +213,8 @@ function VehicleIncidentFormModal({
         <FieldError message={fieldErrors.observations} />
       </div>
 
-      <div className="space-y-3">
-        <SectionTitle icon="📷" title="Evidencia Fotográfica" />
+      <div className="space-y-3 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <SectionTitle icon="📷" eyebrow="Soporte" title="Evidencia Fotográfica" />
 
         <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onPhotoChange} />
 
@@ -219,19 +222,19 @@ function VehicleIncidentFormModal({
           <button
             type="button"
             onClick={pickPhoto}
-            className="min-w-[120px] h-[96px] border-2 border-dashed border-gray-200 rounded-2xl flex flex-col items-center justify-center bg-gray-50 hover:bg-gray-100"
+            className="flex h-[96px] min-w-[120px] flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 hover:bg-slate-100"
           >
-            <div className="text-2xl text-gray-400">📸</div>
-            <div className="text-xs font-extrabold text-gray-700">AÑADIR</div>
+            <div className="text-2xl text-slate-400">📸</div>
+            <div className="text-xs font-extrabold text-slate-700">AÑADIR</div>
           </button>
 
           {form.photoList.map((photoItem, idx) => (
-            <div key={idx} className="relative min-w-[120px] h-[96px] rounded-2xl overflow-hidden border border-gray-200">
+            <div key={idx} className="relative h-[96px] min-w-[120px] overflow-hidden rounded-2xl border border-slate-200 bg-white">
               <img src={photoItem.src} alt="" className="w-full h-full object-cover" />
               <button
                 type="button"
                 onClick={() => removePhotoAt(idx)}
-                className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/60 text-white flex items-center justify-center"
+                className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-white"
               >
                 ✕
               </button>
@@ -241,14 +244,17 @@ function VehicleIncidentFormModal({
         <FieldError message={fieldErrors.evidence} />
       </div>
 
-      <div className="fixed left-0 right-0 bottom-6 z-50 flex justify-center px-4">
+      <div>
         <button
           type="submit"
           disabled={submitting}
-          className="w-full max-w-3xl bg-blue-600 text-white rounded-2xl py-4 font-extrabold shadow-2xl hover:bg-blue-700 transition disabled:opacity-70 disabled:cursor-not-allowed"
+          className="w-full rounded-2xl bg-blue-600 py-4 text-sm font-extrabold text-white shadow-sm transition hover:bg-blue-700 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-70"
         >
           {submitting ? "Reportando..." : "Reportar Novedad"}
         </button>
+        <p className="mt-3 text-center text-xs font-semibold text-slate-500">
+          Completa los campos para registrar la novedad con evidencia.
+        </p>
       </div>
     </form>
   );

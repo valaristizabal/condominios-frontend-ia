@@ -22,6 +22,106 @@ const FieldLabel = ({ children }) => (
 const inputBase =
   "w-full h-12 rounded-2xl bg-white border border-slate-200 px-4 text-slate-900 outline-none focus:ring-2 focus:ring-blue-200";
 
+function SearchableSelect({
+  value,
+  onChange,
+  options = [],
+  placeholder = "Seleccionar...",
+  searchPlaceholder = "Buscar...",
+  disabled = false,
+  className = "",
+}) {
+  const rootRef = useRef(null);
+  const [open, setOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const selectedOption = useMemo(
+    () => options.find((option) => String(option.value) === String(value)) || null,
+    [options, value]
+  );
+
+  const visibleOptions = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return options;
+    return options.filter((option) => String(option.label || "").toLowerCase().includes(term));
+  }, [options, searchTerm]);
+
+  useEffect(() => {
+    if (!open) return undefined;
+
+    const handleOutsideClick = (event) => {
+      if (!rootRef.current?.contains(event.target)) {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) setSearchTerm("");
+  }, [open]);
+
+  return (
+    <div ref={rootRef} className={className}>
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => !disabled && setOpen((prev) => !prev)}
+        className={[
+          inputBase,
+          "flex items-center justify-between text-left",
+          disabled ? "cursor-not-allowed bg-slate-100 text-slate-500" : "",
+        ].join(" ")}
+      >
+        <span className={selectedOption ? "text-slate-900" : "text-slate-500"}>
+          {selectedOption?.label || placeholder}
+        </span>
+        <span className="text-slate-400">{open ? "▲" : "▼"}</span>
+      </button>
+
+      {open ? (
+        <div className="relative z-20 mt-2 w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg">
+          <div className="border-b border-slate-100 p-2">
+            <input
+              autoFocus
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              placeholder={searchPlaceholder}
+              className="h-10 w-full rounded-xl border border-slate-200 px-3 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-200"
+            />
+          </div>
+          <div className="max-h-56 overflow-y-auto p-1">
+            {visibleOptions.length ? (
+              visibleOptions.map((option) => (
+                <button
+                  key={String(option.value)}
+                  type="button"
+                  onClick={() => {
+                    onChange?.(option.value);
+                    setOpen(false);
+                  }}
+                  className={[
+                    "block w-full rounded-xl px-3 py-2 text-left text-sm transition",
+                    String(option.value) === String(value)
+                      ? "bg-blue-50 font-semibold text-blue-700"
+                      : "text-slate-700 hover:bg-slate-100",
+                  ].join(" ")}
+                >
+                  {option.label}
+                </button>
+              ))
+            ) : (
+              <p className="px-3 py-2 text-sm text-slate-500">Sin resultados</p>
+            )}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function EmptyState({ title, subtitle }) {
   return (
     <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center">
@@ -153,6 +253,47 @@ function VehiclesPage() {
     if (!form.unitTypeId) return [];
     return apartments.filter((apt) => String(apt?.unit_type_id || "") === String(form.unitTypeId));
   }, [apartments, form.unitTypeId]);
+  const userTypeOptions = useMemo(
+    () => [
+      { value: "Residente", label: "Residente" },
+      { value: "Visitante", label: "Visitante" },
+      { value: "Proveedor", label: "Proveedor" },
+      { value: "Mantenimiento", label: "Mantenimiento" },
+    ],
+    []
+  );
+  const vehicleTypeOptions = useMemo(
+    () =>
+      vehicleTypes.map((type) => ({
+        value: String(type.id),
+        label: type.name,
+      })),
+    [vehicleTypes]
+  );
+  const unitTypeOptions = useMemo(
+    () =>
+      unitTypes.map((unitType) => ({
+        value: String(unitType.id),
+        label: unitType.name,
+      })),
+    [unitTypes]
+  );
+  const apartmentOptions = useMemo(
+    () =>
+      filteredApartments.map((apt) => ({
+        value: String(apt.id),
+        label: buildApartmentOption(apt),
+      })),
+    [filteredApartments]
+  );
+  const securityUserOptions = useMemo(
+    () =>
+      securityUsers.map((securityUser) => ({
+        value: String(securityUser.id),
+        label: securityUser.full_name,
+      })),
+    [securityUsers]
+  );
 
   function resetForm() {
     setForm({
@@ -368,13 +509,14 @@ function VehiclesPage() {
 
               <div>
                 <FieldLabel>Tipo de usuario</FieldLabel>
-                <select name="tipoUsuario" value={form.tipoUsuario} onChange={handleChange} className={`${inputBase} mt-2`}>
-                  <option value="">Seleccionar tipo...</option>
-                  <option value="Residente">Residente</option>
-                  <option value="Visitante">Visitante</option>
-                  <option value="Proveedor">Proveedor</option>
-                  <option value="Mantenimiento">Mantenimiento</option>
-                </select>
+                <SearchableSelect
+                  className="mt-2"
+                  value={form.tipoUsuario}
+                  options={userTypeOptions}
+                  placeholder="Seleccionar tipo..."
+                  searchPlaceholder="Buscar tipo de usuario..."
+                  onChange={(value) => setForm((prev) => ({ ...prev, tipoUsuario: String(value) }))}
+                />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -385,63 +527,59 @@ function VehiclesPage() {
 
                 <div>
                   <FieldLabel>Tipo de vehiculo</FieldLabel>
-                  <select
-                    name="vehicleTypeId"
+                  <SearchableSelect
+                    className="mt-2"
                     value={form.vehicleTypeId}
-                    onChange={handleChange}
-                    className={`${inputBase} mt-2`}
-                  >
-                    <option value="">Seleccionar tipo...</option>
-                    {vehicleTypes.map((type) => (
-                      <option key={type.id} value={type.id}>
-                        {type.name}
-                      </option>
-                    ))}
-                  </select>
+                    options={vehicleTypeOptions}
+                    placeholder="Seleccionar tipo..."
+                    searchPlaceholder="Buscar tipo de vehiculo..."
+                    onChange={(value) => setForm((prev) => ({ ...prev, vehicleTypeId: String(value) }))}
+                  />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <FieldLabel>Tipo de unidad</FieldLabel>
-                  <select name="unitTypeId" value={form.unitTypeId} onChange={handleChange} className={`${inputBase} mt-2`}>
-                    <option value="">Seleccionar tipo...</option>
-                    {unitTypes.map((unitType) => (
-                      <option key={unitType.id} value={unitType.id}>
-                        {unitType.name}
-                      </option>
-                    ))}
-                  </select>
+                  <SearchableSelect
+                    className="mt-2"
+                    value={form.unitTypeId}
+                    options={unitTypeOptions}
+                    placeholder="Seleccionar tipo..."
+                    searchPlaceholder="Buscar tipo de unidad..."
+                    onChange={(value) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        unitTypeId: String(value),
+                        apartmentId: "",
+                      }))
+                    }
+                  />
                 </div>
                 <div>
                   <FieldLabel>Unidad</FieldLabel>
-                  <select
-                    name="apartmentId"
+                  <SearchableSelect
+                    className="mt-2"
                     value={form.apartmentId}
-                    onChange={handleChange}
-                    className={`${inputBase} mt-2`}
+                    options={apartmentOptions}
+                    placeholder={!form.unitTypeId ? "Primero selecciona tipo" : "Seleccionar unidad..."}
+                    searchPlaceholder="Buscar unidad..."
                     disabled={!form.unitTypeId}
-                  >
-                    <option value="">{!form.unitTypeId ? "Primero selecciona tipo" : "Seleccionar unidad..."}</option>
-                    {filteredApartments.map((apt) => (
-                      <option key={apt.id} value={apt.id}>
-                        {buildApartmentOption(apt)}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(value) => setForm((prev) => ({ ...prev, apartmentId: String(value) }))}
+                  />
                 </div>
               </div>
 
               <div>
                 <FieldLabel>Responsable de turno</FieldLabel>
-                <select name="responsable" value={form.responsable} onChange={handleChange} className={`${inputBase} mt-2`}>
-                  <option value="">Seleccionar responsable...</option>
-                  {securityUsers.map((securityUser) => (
-                    <option key={securityUser.id} value={securityUser.id}>
-                      {securityUser.full_name}
-                    </option>
-                  ))}
-                </select>
+                <SearchableSelect
+                  className="mt-2"
+                  value={form.responsable}
+                  options={securityUserOptions}
+                  placeholder="Seleccionar responsable..."
+                  searchPlaceholder="Buscar responsable..."
+                  onChange={(value) => setForm((prev) => ({ ...prev, responsable: String(value) }))}
+                />
               </div>
 
               <div>

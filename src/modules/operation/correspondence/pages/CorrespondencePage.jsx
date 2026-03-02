@@ -1,0 +1,274 @@
+import { useMemo, useRef, useState } from "react";
+import CorrespondenceFormModal from "../components/CorrespondenceFormModal";
+import CorrespondenceTable from "../components/CorrespondenceTable";
+import DeliveryModal from "../components/DeliveryModal";
+import { useCorrespondence } from "../hooks/useCorrespondence";
+
+const Kicker = ({ children }) => (
+  <p className="text-xs font-extrabold tracking-widest text-slate-400 uppercase">
+    {children}
+  </p>
+);
+
+const Title = ({ children }) => (
+  <h1 className="mt-2 text-2xl font-extrabold text-slate-900 leading-tight">
+    {children}
+  </h1>
+);
+
+const Subtitle = ({ children }) => (
+  <p className="mt-2 text-sm font-semibold text-slate-500">{children}</p>
+);
+
+export default function CorrespondencePage() {
+  const {
+    apartments,
+    correspondences,
+    loadingInitial,
+    submitting,
+    delivering,
+    error,
+    fieldErrors,
+    deliveryFieldErrors,
+    activeCondominiumId,
+    createCorrespondence,
+    deliverCorrespondence,
+    clearFieldError,
+    clearDeliveryFieldError,
+  } = useCorrespondence();
+
+  const couriers = useMemo(
+    () => ["Servientrega", "Interrapidísimo", "Coordinadora"],
+    []
+  );
+
+  const [form, setForm] = useState({
+    courier: "Servientrega",
+    unitId: "",
+    packageType: "documento",
+    receiverName: "",
+    notes: "",
+  });
+  const [photoFile, setPhotoFile] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState("");
+  const [localErrors, setLocalErrors] = useState({});
+  const [deliveryItem, setDeliveryItem] = useState(null);
+
+  const fileRef = useRef(null);
+  const signatureBoxRef = useRef(null);
+
+  const apartmentsOptions = useMemo(
+    () =>
+      apartments.map((apartment) => ({
+        id: apartment.id,
+        label: apartment.name || apartment.number || `Apto ${apartment.id}`,
+      })),
+    [apartments]
+  );
+
+  const recent = useMemo(
+    () =>
+      correspondences.map((item) => ({
+        id: item.id,
+        courier: item.courier_company,
+        unit: item?.apartment?.number ? `Apto ${item.apartment.number}` : "Unidad",
+        type: formatPackageType(item.package_type),
+        receiver: "—",
+        delivered: Boolean(item.delivered),
+        date: formatDate(item.created_at),
+        raw: item,
+      })),
+    [correspondences]
+  );
+
+  const canSubmit =
+    form.courier &&
+    form.unitId &&
+    form.packageType &&
+    form.receiverName.trim().length > 0;
+
+  const onPickPhoto = (file) => {
+    setPhotoFile(file || null);
+    clearFieldError("evidence_photo");
+
+    if (!file) {
+      setPhotoPreview((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return "";
+      });
+      return;
+    }
+
+    const url = URL.createObjectURL(file);
+    setPhotoPreview((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return url;
+    });
+  };
+
+  const clearPhoto = () => {
+    setPhotoFile(null);
+    setPhotoPreview((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return "";
+    });
+    if (fileRef.current) fileRef.current.value = "";
+  };
+
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+
+    if (name === "unitId") clearFieldError("apartment_id");
+    if (name === "receiverName") {
+      setLocalErrors((prev) => ({ ...prev, receiverName: "" }));
+    }
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+
+    if (!canSubmit || !activeCondominiumId || submitting) return;
+
+    const nextLocalErrors = {};
+    if (!form.receiverName.trim()) {
+      nextLocalErrors.receiverName = "Ingresa el nombre del destinatario.";
+    }
+
+    setLocalErrors(nextLocalErrors);
+    if (Object.keys(nextLocalErrors).length > 0) return;
+
+    try {
+      await createCorrespondence({
+        courier_company: form.courier,
+        package_type: form.packageType,
+        apartment_id: Number(form.unitId),
+        evidence_photo: photoFile,
+      });
+
+      setForm({
+        courier: "Servientrega",
+        unitId: "",
+        packageType: "documento",
+        receiverName: "",
+        notes: "",
+      });
+      setLocalErrors({});
+      clearPhoto();
+    } catch {
+      // Errors are handled by hook state.
+    }
+  };
+
+  const handleDeliver = async (digitalSignature) => {
+    if (!deliveryItem?.id || delivering) return;
+
+    try {
+      await deliverCorrespondence(deliveryItem.id, digitalSignature);
+      setDeliveryItem(null);
+    } catch {
+      // Errors are handled by hook state.
+    }
+  };
+
+  return (
+    <div className="w-full">
+      <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 py-6">
+        <div className="mb-6">
+          <Kicker>Gestión de accesos</Kicker>
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <Title>Registro de Correspondencia</Title>
+              <Subtitle>
+                Registra la entrega con evidencia, datos del destinatario y firma.
+              </Subtitle>
+            </div>
+          </div>
+        </div>
+
+        {!activeCondominiumId ? (
+          <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-700">
+            No hay condominio activo para gestionar correspondencia.
+          </div>
+        ) : null}
+
+        {error ? (
+          <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700">
+            {error}
+          </div>
+        ) : null}
+
+        {loadingInitial ? (
+          <div className="mb-6 rounded-2xl border border-slate-200 bg-white p-4 text-sm font-semibold text-slate-500">
+            Cargando datos iniciales...
+          </div>
+        ) : null}
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+          <CorrespondenceFormModal
+            apartments={apartmentsOptions}
+            couriers={couriers}
+            form={form}
+            fileRef={fileRef}
+            signatureBoxRef={signatureBoxRef}
+            photoPreview={photoPreview}
+            fieldErrors={{ ...fieldErrors, ...localErrors }}
+            canSubmit={canSubmit}
+            submitting={submitting}
+            onChange={handleChange}
+            onPickPhotoClick={() => fileRef.current?.click()}
+            onPickPhoto={onPickPhoto}
+            onClearPhoto={clearPhoto}
+            onPackageTypeChange={(packageType) => {
+              setForm((prev) => ({ ...prev, packageType }));
+              clearFieldError("package_type");
+            }}
+            onSubmit={handleSubmit}
+            onClearSignature={() => {}}
+          />
+
+          <CorrespondenceTable
+            recent={recent}
+            onRequestDeliver={(item) => {
+              if (!item?.delivered) {
+                setDeliveryItem(item.raw);
+                clearDeliveryFieldError("digital_signature");
+              }
+            }}
+          />
+        </div>
+      </div>
+
+      <DeliveryModal
+        open={Boolean(deliveryItem)}
+        item={
+          deliveryItem
+            ? {
+                courier: deliveryItem.courier_company,
+                unit: deliveryItem?.apartment?.number ? `Apto ${deliveryItem.apartment.number}` : "Unidad",
+              }
+            : null
+        }
+        loading={delivering}
+        fieldErrors={deliveryFieldErrors}
+        onClose={() => setDeliveryItem(null)}
+        onSubmit={handleDeliver}
+        clearFieldError={clearDeliveryFieldError}
+      />
+    </div>
+  );
+}
+
+function formatPackageType(value) {
+  const normalized = String(value || "").toLowerCase();
+  if (normalized === "paquete") return "Paquete";
+  if (normalized === "documento") return "Documento";
+  return value || "Documento";
+}
+
+function formatDate(value) {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+  return date.toLocaleDateString("es-CO");
+}

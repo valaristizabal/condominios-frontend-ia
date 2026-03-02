@@ -1,0 +1,180 @@
+import { useEffect, useMemo, useRef, useState } from "react";
+
+function FieldError({ message }) {
+  if (!message) return null;
+  return <p className="mt-2 text-xs font-semibold text-red-600">{message}</p>;
+}
+
+export default function DeliveryModal({
+  open = false,
+  item = null,
+  loading = false,
+  fieldErrors = {},
+  onClose,
+  onSubmit,
+  clearFieldError,
+}) {
+  const canvasRef = useRef(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [hasSignature, setHasSignature] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width;
+    canvas.height = rect.height;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    ctx.lineWidth = 2;
+    ctx.lineCap = "round";
+    ctx.strokeStyle = "#0f172a";
+  }, [open]);
+
+  const title = useMemo(
+    () => `${item?.courier || "Mensajería"} • ${item?.unit || "Unidad"}`,
+    [item]
+  );
+
+  if (!open) return null;
+
+  const getPoint = (event) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    const rect = canvas.getBoundingClientRect();
+    const touch = event.touches?.[0] || event.changedTouches?.[0];
+    const clientX = touch ? touch.clientX : event.clientX;
+    const clientY = touch ? touch.clientY : event.clientY;
+    return {
+      x: clientX - rect.left,
+      y: clientY - rect.top,
+    };
+  };
+
+  const startDrawing = (event) => {
+    event.preventDefault();
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const point = getPoint(event);
+    ctx.beginPath();
+    ctx.moveTo(point.x, point.y);
+    ctx.lineTo(point.x, point.y);
+    ctx.stroke();
+    setIsDrawing(true);
+    setHasSignature(true);
+    clearFieldError?.("digital_signature");
+  };
+
+  const draw = (event) => {
+    event.preventDefault();
+    if (!isDrawing) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    const point = getPoint(event);
+    ctx.lineTo(point.x, point.y);
+    ctx.stroke();
+  };
+
+  const endDrawing = () => {
+    if (!isDrawing) return;
+    setIsDrawing(false);
+  };
+
+  const clearSignature = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    setHasSignature(false);
+    clearFieldError?.("digital_signature");
+  };
+
+  const handleSubmit = async () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const dataUrl = hasSignature ? canvas.toDataURL("image/png") : "";
+    await onSubmit?.(dataUrl);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="w-full max-w-xl rounded-3xl border border-slate-200 bg-white p-6 shadow-xl">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-xs font-extrabold uppercase tracking-widest text-slate-400">
+              Entrega de paquete
+            </p>
+            <h3 className="mt-2 text-xl font-extrabold text-slate-900">Confirmar entrega</h3>
+            <p className="mt-2 text-sm font-semibold text-slate-500">{title}</p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50"
+          >
+            Cerrar
+          </button>
+        </div>
+
+        <div className="mt-6">
+          <p className="text-sm font-semibold text-slate-700">Firma digital</p>
+          <canvas
+            ref={canvasRef}
+            className="mt-2 h-44 w-full touch-none rounded-2xl border border-slate-200 bg-slate-50 cursor-crosshair"
+            onPointerDown={startDrawing}
+            onPointerMove={draw}
+            onPointerUp={endDrawing}
+            onPointerLeave={endDrawing}
+            onMouseDown={startDrawing}
+            onMouseMove={draw}
+            onMouseUp={endDrawing}
+            onTouchStart={startDrawing}
+            onTouchMove={draw}
+            onTouchEnd={endDrawing}
+          />
+          <FieldError message={fieldErrors.digital_signature} />
+
+          <div className="mt-2">
+            <button
+              type="button"
+              onClick={clearSignature}
+              className="text-xs font-extrabold text-rose-700 hover:text-rose-800"
+            >
+              Limpiar firma
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-6 flex items-center justify-end gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-extrabold text-slate-700 hover:bg-slate-50"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={loading}
+            className="rounded-2xl bg-blue-600 px-4 py-2 text-sm font-extrabold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            {loading ? "Entregando..." : "Registrar entrega"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
