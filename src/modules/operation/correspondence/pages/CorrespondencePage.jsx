@@ -23,6 +23,7 @@ const Subtitle = ({ children }) => (
 export default function CorrespondencePage() {
   const {
     apartments,
+    residents,
     correspondences,
     loadingInitial,
     submitting,
@@ -44,6 +45,7 @@ export default function CorrespondencePage() {
 
   const [form, setForm] = useState({
     courier: "Servientrega",
+    unitTypeId: "",
     unitId: "",
     packageType: "documento",
     receiverName: "",
@@ -51,20 +53,40 @@ export default function CorrespondencePage() {
   });
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState("");
+  const [signatureDataUrl, setSignatureDataUrl] = useState("");
   const [localErrors, setLocalErrors] = useState({});
   const [deliveryItem, setDeliveryItem] = useState(null);
 
   const fileRef = useRef(null);
-  const signatureBoxRef = useRef(null);
 
   const apartmentsOptions = useMemo(
     () =>
       apartments.map((apartment) => ({
         id: apartment.id,
         label: apartment.name || apartment.number || `Apto ${apartment.id}`,
+        unitTypeId: String(apartment?.unit_type_id || ""),
       })),
     [apartments]
   );
+
+  const unitTypeOptions = useMemo(() => {
+    const map = new Map();
+    apartments.forEach((apartment) => {
+      const id = String(apartment?.unit_type_id || "");
+      const name = apartment?.unit_type?.name || apartment?.unitType?.name || "";
+      if (id && name && !map.has(id)) {
+        map.set(id, { value: id, label: name });
+      }
+    });
+    return Array.from(map.values());
+  }, [apartments]);
+
+  const filteredApartmentOptions = useMemo(() => {
+    if (!form.unitTypeId) return [];
+    return apartmentsOptions
+      .filter((item) => String(item.unitTypeId) === String(form.unitTypeId))
+      .map((item) => ({ value: String(item.id), label: item.label }));
+  }, [apartmentsOptions, form.unitTypeId]);
 
   const recent = useMemo(
     () =>
@@ -73,16 +95,35 @@ export default function CorrespondencePage() {
         courier: item.courier_company,
         unit: item?.apartment?.number ? `Apto ${item.apartment.number}` : "Unidad",
         type: formatPackageType(item.package_type),
-        receiver: "—",
-        delivered: Boolean(item.delivered),
+        status: item.status || (item.delivered ? "DELIVERED" : "RECEIVED_BY_SECURITY"),
+        receiver:
+          item?.resident_receiver?.user?.full_name ||
+          item?.resident_receiver?.user?.name ||
+          "—",
+        delivered: (item.status || "") === "DELIVERED" || Boolean(item.delivered),
         date: formatDate(item.created_at),
+        signatureUrl: item.signature_url || null,
         raw: item,
       })),
     [correspondences]
   );
 
+  const residentOptions = useMemo(
+    () =>
+      residents.map((resident) => ({
+        id: resident.id,
+        label:
+          resident?.user?.full_name ||
+          resident?.user?.name ||
+          resident?.full_name ||
+          `Residente ${resident.id}`,
+      })),
+    [residents]
+  );
+
   const canSubmit =
     form.courier &&
+    form.unitTypeId &&
     form.unitId &&
     form.packageType &&
     form.receiverName.trim().length > 0;
@@ -144,10 +185,12 @@ export default function CorrespondencePage() {
         package_type: form.packageType,
         apartment_id: Number(form.unitId),
         evidence_photo: photoFile,
+        digital_signature: signatureDataUrl || null,
       });
 
       setForm({
         courier: "Servientrega",
+        unitTypeId: "",
         unitId: "",
         packageType: "documento",
         receiverName: "",
@@ -155,16 +198,17 @@ export default function CorrespondencePage() {
       });
       setLocalErrors({});
       clearPhoto();
+      setSignatureDataUrl("");
     } catch {
       // Errors are handled by hook state.
     }
   };
 
-  const handleDeliver = async (digitalSignature) => {
+  const handleDeliver = async (residentReceiverId, digitalSignature) => {
     if (!deliveryItem?.id || delivering) return;
 
     try {
-      await deliverCorrespondence(deliveryItem.id, digitalSignature);
+      await deliverCorrespondence(deliveryItem.id, residentReceiverId, digitalSignature);
       setDeliveryItem(null);
     } catch {
       // Errors are handled by hook state.
@@ -206,16 +250,32 @@ export default function CorrespondencePage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
           <CorrespondenceFormModal
-            apartments={apartmentsOptions}
+            unitTypes={unitTypeOptions}
             couriers={couriers}
             form={form}
             fileRef={fileRef}
-            signatureBoxRef={signatureBoxRef}
             photoPreview={photoPreview}
             fieldErrors={{ ...fieldErrors, ...localErrors }}
             canSubmit={canSubmit}
             submitting={submitting}
             onChange={handleChange}
+            onCourierChange={(value) => {
+              setForm((prev) => ({ ...prev, courier: String(value) }));
+              clearFieldError("courier_company");
+            }}
+            onUnitTypeChange={(value) => {
+              setForm((prev) => ({
+                ...prev,
+                unitTypeId: String(value),
+                unitId: "",
+              }));
+              clearFieldError("apartment_id");
+            }}
+            onUnitChange={(value) => {
+              setForm((prev) => ({ ...prev, unitId: String(value) }));
+              clearFieldError("apartment_id");
+            }}
+            apartments={filteredApartmentOptions}
             onPickPhotoClick={() => fileRef.current?.click()}
             onPickPhoto={onPickPhoto}
             onClearPhoto={clearPhoto}
@@ -224,15 +284,19 @@ export default function CorrespondencePage() {
               clearFieldError("package_type");
             }}
             onSubmit={handleSubmit}
-            onClearSignature={() => {}}
+            onSignatureChange={(nextValue) => {
+              setSignatureDataUrl(nextValue || "");
+              clearFieldError("digital_signature");
+            }}
           />
 
           <CorrespondenceTable
             recent={recent}
             onRequestDeliver={(item) => {
-              if (!item?.delivered) {
+              if ((item?.status || "RECEIVED_BY_SECURITY") === "RECEIVED_BY_SECURITY") {
                 setDeliveryItem(item.raw);
                 clearDeliveryFieldError("digital_signature");
+                clearDeliveryFieldError("resident_receiver_id");
               }
             }}
           />
@@ -251,6 +315,7 @@ export default function CorrespondencePage() {
         }
         loading={delivering}
         fieldErrors={deliveryFieldErrors}
+        residents={residentOptions}
         onClose={() => setDeliveryItem(null)}
         onSubmit={handleDeliver}
         clearFieldError={clearDeliveryFieldError}

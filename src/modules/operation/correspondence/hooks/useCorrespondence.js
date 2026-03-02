@@ -5,6 +5,7 @@ import { useActiveCondominium } from "../../../../context/useActiveCondominium";
 export function useCorrespondence() {
   const { activeCondominiumId } = useActiveCondominium();
   const [apartments, setApartments] = useState([]);
+  const [residents, setResidents] = useState([]);
   const [items, setItems] = useState([]);
   const [loadingInitial, setLoadingInitial] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -28,6 +29,7 @@ export function useCorrespondence() {
   const loadInitialData = useCallback(async () => {
     if (!activeCondominiumId) {
       setApartments([]);
+      setResidents([]);
       setItems([]);
       return;
     }
@@ -36,16 +38,19 @@ export function useCorrespondence() {
     setError("");
 
     try {
-      const [apartmentsRes, correspondencesRes] = await Promise.all([
+      const [apartmentsRes, residentsRes, correspondencesRes] = await Promise.all([
         apiClient.get("/apartments", requestConfig),
+        apiClient.get("/residents", requestConfig),
         apiClient.get("/correspondences", requestConfig),
       ]);
 
       setApartments(Array.isArray(apartmentsRes.data) ? apartmentsRes.data : []);
+      setResidents(Array.isArray(residentsRes.data) ? residentsRes.data : []);
       setItems(Array.isArray(correspondencesRes.data) ? correspondencesRes.data : []);
     } catch (err) {
       setError(normalizeApiError(err, "No fue posible cargar correspondencia."));
       setApartments([]);
+      setResidents([]);
       setItems([]);
     } finally {
       setLoadingInitial(false);
@@ -76,6 +81,9 @@ export function useCorrespondence() {
         formData.append("courier_company", String(payload.courier_company || ""));
         formData.append("package_type", String(payload.package_type || ""));
         formData.append("apartment_id", String(payload.apartment_id || ""));
+        if (payload.digital_signature) {
+          formData.append("digital_signature", String(payload.digital_signature));
+        }
 
         if (payload.evidence_photo) {
           formData.append("evidence_photo", payload.evidence_photo);
@@ -105,7 +113,7 @@ export function useCorrespondence() {
   );
 
   const deliverCorrespondence = useCallback(
-    async (id, digitalSignature) => {
+    async (id, residentReceiverId, digitalSignature) => {
       if (!activeCondominiumId || !id) return;
 
       setDelivering(true);
@@ -116,6 +124,7 @@ export function useCorrespondence() {
         await apiClient.patch(
           `/correspondences/${id}/deliver`,
           {
+            resident_receiver_id: residentReceiverId,
             digital_signature: digitalSignature || null,
           },
           requestConfig
@@ -160,6 +169,7 @@ export function useCorrespondence() {
 
   return {
     apartments,
+    residents,
     correspondences: items,
     loadingInitial,
     submitting,

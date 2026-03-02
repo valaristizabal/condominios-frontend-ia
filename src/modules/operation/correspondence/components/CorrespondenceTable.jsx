@@ -33,27 +33,15 @@ function EmptyState() {
 }
 
 function Row({ item, onRequestDeliver }) {
+  const isReceived = (item?.status || "") === "RECEIVED_BY_SECURITY";
+  const isDelivered = (item?.status || "") === "DELIVERED" || item?.delivered;
+
   return (
     <div
       className={[
         "flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-4",
-        !item?.delivered ? "cursor-pointer hover:bg-slate-50" : "",
+        isReceived ? "hover:bg-slate-50" : "",
       ].join(" ")}
-      onClick={() => {
-        if (!item?.delivered) {
-          onRequestDeliver?.(item);
-        }
-      }}
-      role={!item?.delivered ? "button" : undefined}
-      tabIndex={!item?.delivered ? 0 : undefined}
-      onKeyDown={(event) => {
-        if (!item?.delivered) {
-          if (event.key === "Enter" || event.key === " ") {
-            event.preventDefault();
-            onRequestDeliver?.(item);
-          }
-        }
-      }}
     >
       <div className="min-w-0">
         <p className="truncate text-sm font-extrabold text-slate-900">
@@ -62,10 +50,35 @@ function Row({ item, onRequestDeliver }) {
         <p className="truncate text-[11px] font-semibold text-slate-500">
           {item?.type || "Documento"} • Recibe: {item?.receiver || "—"}
         </p>
+        {isDelivered && item?.signatureUrl ? (
+          <div className="mt-2">
+            <img
+              src={item.signatureUrl}
+              alt="Firma digital"
+              className="h-10 w-28 rounded-lg border border-slate-200 bg-white object-contain"
+            />
+          </div>
+        ) : null}
       </div>
       <span className="rounded-xl bg-slate-100 px-3 py-1 text-xs font-extrabold text-slate-700">
         {item?.date || "—"}
       </span>
+
+      {isReceived ? (
+        <button
+          type="button"
+          onClick={() => onRequestDeliver?.(item)}
+          className="rounded-xl border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-extrabold text-blue-700 hover:bg-blue-100"
+        >
+          Entregar
+        </button>
+      ) : null}
+
+      {isDelivered ? (
+        <span className="rounded-xl bg-emerald-100 px-3 py-1.5 text-xs font-extrabold text-emerald-700">
+          Entregado
+        </span>
+      ) : null}
     </div>
   );
 }

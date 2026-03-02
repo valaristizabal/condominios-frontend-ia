@@ -1,3 +1,5 @@
+import { useEffect, useRef, useState } from "react";
+
 const Card = ({ children, className = "" }) => (
   <div
     className={[
@@ -65,24 +67,248 @@ function FieldError({ message }) {
   return <p className="mt-2 text-xs font-semibold text-red-600">{message}</p>;
 }
 
+function SearchableSelect({
+  value,
+  onChange,
+  options = [],
+  placeholder = "Seleccionar...",
+  searchPlaceholder = "Buscar...",
+  disabled = false,
+}) {
+  const rootRef = useRef(null);
+  const [open, setOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const selectedOption =
+    options.find((option) => String(option.value) === String(value)) || null;
+
+  const visibleOptions = options.filter((option) =>
+    String(option.label || "")
+      .toLowerCase()
+      .includes(searchTerm.trim().toLowerCase())
+  );
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const onOutsideClick = (event) => {
+      if (!rootRef.current?.contains(event.target)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onOutsideClick);
+    return () => document.removeEventListener("mousedown", onOutsideClick);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) setSearchTerm("");
+  }, [open]);
+
+  return (
+    <div ref={rootRef} className="relative mt-2">
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => !disabled && setOpen((prev) => !prev)}
+        className={[
+          "flex h-12 w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 text-left text-slate-900 outline-none focus:ring-2 focus:ring-blue-200",
+          disabled ? "cursor-not-allowed bg-slate-100 text-slate-500" : "",
+        ].join(" ")}
+      >
+        <span className={selectedOption ? "text-slate-900" : "text-slate-500"}>
+          {selectedOption?.label || placeholder}
+        </span>
+        <span className="text-slate-400">{open ? "▲" : "▼"}</span>
+      </button>
+
+      {open ? (
+        <div className="absolute z-30 mt-2 w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg">
+          <div className="border-b border-slate-100 p-2">
+            <input
+              autoFocus
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              placeholder={searchPlaceholder}
+              className="h-10 w-full rounded-xl border border-slate-200 px-3 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-200"
+            />
+          </div>
+          <div className="max-h-56 overflow-y-auto p-1">
+            {visibleOptions.length ? (
+              visibleOptions.map((option) => (
+                <button
+                  key={String(option.value)}
+                  type="button"
+                  onClick={() => {
+                    onChange?.(option.value);
+                    setOpen(false);
+                  }}
+                  className={[
+                    "block w-full rounded-xl px-3 py-2 text-left text-sm transition",
+                    String(option.value) === String(value)
+                      ? "bg-blue-50 font-semibold text-blue-700"
+                      : "text-slate-700 hover:bg-slate-100",
+                  ].join(" ")}
+                >
+                  {option.label}
+                </button>
+              ))
+            ) : (
+              <p className="px-3 py-2 text-sm text-slate-500">Sin resultados</p>
+            )}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export default function CorrespondenceFormModal({
   apartments = [],
+  unitTypes = [],
   couriers = [],
   form,
   fileRef,
-  signatureBoxRef,
   photoPreview,
   fieldErrors = {},
   canSubmit,
   submitting = false,
   onChange,
+  onCourierChange,
+  onUnitTypeChange,
+  onUnitChange,
   onPickPhotoClick,
   onPickPhoto,
   onClearPhoto,
   onPackageTypeChange,
   onSubmit,
-  onClearSignature,
+  onSignatureChange,
 }) {
+  const signatureCanvasRef = useRef(null);
+  const isDrawingRef = useRef(false);
+  const drawModeRef = useRef(null);
+  const [hasSignature, setHasSignature] = useState(false);
+
+  useEffect(() => {
+    const canvas = signatureCanvasRef.current;
+    if (!canvas) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const ratio = Math.max(window.devicePixelRatio || 1, 1);
+    canvas.width = Math.max(Math.floor(rect.width * ratio), 1);
+    canvas.height = Math.max(Math.floor(rect.height * ratio), 1);
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+    ctx.lineWidth = 2;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.strokeStyle = "#0f172a";
+  }, []);
+
+  const getPoint = (event) => {
+    const canvas = signatureCanvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: event.clientX - rect.left,
+      y: event.clientY - rect.top,
+    };
+  };
+
+  const startDrawing = (event) => {
+    event.preventDefault();
+    drawModeRef.current = "pointer";
+    const canvas = signatureCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    if (typeof canvas.setPointerCapture === "function") {
+      canvas.setPointerCapture(event.pointerId);
+    }
+
+    const point = getPoint(event);
+    ctx.beginPath();
+    ctx.moveTo(point.x, point.y);
+    ctx.lineTo(point.x, point.y);
+    ctx.stroke();
+    isDrawingRef.current = true;
+    setHasSignature(true);
+  };
+
+  const draw = (event) => {
+    event.preventDefault();
+    if (!isDrawingRef.current || drawModeRef.current !== "pointer") return;
+    const canvas = signatureCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const point = getPoint(event);
+    ctx.lineTo(point.x, point.y);
+    ctx.stroke();
+  };
+
+  const endDrawing = () => {
+    if (!isDrawingRef.current || drawModeRef.current !== "pointer") return;
+    isDrawingRef.current = false;
+    drawModeRef.current = null;
+    const canvas = signatureCanvasRef.current;
+    if (!canvas) return;
+    onSignatureChange?.(canvas.toDataURL("image/png"));
+  };
+
+  const startDrawingMouse = (event) => {
+    event.preventDefault();
+    if (drawModeRef.current && drawModeRef.current !== "mouse") return;
+    drawModeRef.current = "mouse";
+    const canvas = signatureCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const point = getPoint(event);
+    ctx.beginPath();
+    ctx.moveTo(point.x, point.y);
+    ctx.lineTo(point.x, point.y);
+    ctx.stroke();
+    isDrawingRef.current = true;
+    setHasSignature(true);
+  };
+
+  const drawMouse = (event) => {
+    event.preventDefault();
+    if (!isDrawingRef.current || drawModeRef.current !== "mouse") return;
+    const canvas = signatureCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const point = getPoint(event);
+    ctx.lineTo(point.x, point.y);
+    ctx.stroke();
+  };
+
+  const endDrawingMouse = () => {
+    if (!isDrawingRef.current || drawModeRef.current !== "mouse") return;
+    isDrawingRef.current = false;
+    drawModeRef.current = null;
+    const canvas = signatureCanvasRef.current;
+    if (!canvas) return;
+    onSignatureChange?.(canvas.toDataURL("image/png"));
+  };
+
+  const clearSignature = () => {
+    const canvas = signatureCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    isDrawingRef.current = false;
+    drawModeRef.current = null;
+    setHasSignature(false);
+    onSignatureChange?.("");
+  };
+
   return (
     <Card>
       <SectionTitle
@@ -92,39 +318,41 @@ export default function CorrespondenceFormModal({
       />
 
       <form onSubmit={onSubmit} className="mt-6 space-y-6">
+        <div>
+          <Label>Empresa de mensajería</Label>
+          <SearchableSelect
+            value={form.courier}
+            options={couriers.map((c) => ({ value: c, label: c }))}
+            placeholder="Seleccione empresa"
+            searchPlaceholder="Buscar empresa..."
+            onChange={onCourierChange}
+          />
+          <FieldError message={fieldErrors.courier_company} />
+        </div>
+
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <Label>Empresa de mensajería</Label>
-            <select
-              name="courier"
-              value={form.courier}
-              onChange={onChange}
-              className={inputBase}
-            >
-              {couriers.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-            <FieldError message={fieldErrors.courier_company} />
+            <Label>Tipo de unidad</Label>
+            <SearchableSelect
+              value={form.unitTypeId}
+              options={unitTypes}
+              placeholder="Seleccione tipo"
+              searchPlaceholder="Buscar tipo de unidad..."
+              onChange={onUnitTypeChange}
+            />
+            <FieldError message={fieldErrors.unit_type_id} />
           </div>
 
           <div>
             <Label>Unidad destino</Label>
-            <select
-              name="unitId"
+            <SearchableSelect
               value={form.unitId}
-              onChange={onChange}
-              className={inputBase}
-            >
-              <option value="">Seleccione unidad</option>
-              {apartments.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.label}
-                </option>
-              ))}
-            </select>
+              options={apartments}
+              placeholder={!form.unitTypeId ? "Primero selecciona tipo" : "Seleccione unidad"}
+              searchPlaceholder="Buscar unidad..."
+              disabled={!form.unitTypeId}
+              onChange={onUnitChange}
+            />
             <FieldError message={fieldErrors.apartment_id} />
           </div>
         </div>
@@ -230,16 +458,32 @@ export default function CorrespondenceFormModal({
 
           <div className="mt-4">
             <Label>Firma de quien recibe</Label>
-            <div
-              ref={signatureBoxRef}
-              className="mt-2 h-40 rounded-2xl border border-slate-200 bg-slate-50"
+            <canvas
+              ref={signatureCanvasRef}
+              className="mt-2 h-40 w-full touch-none rounded-2xl border border-slate-200 bg-slate-50 cursor-crosshair"
+              style={{ touchAction: "none" }}
+              onPointerDown={startDrawing}
+              onPointerMove={draw}
+              onPointerUp={endDrawing}
+              onPointerCancel={endDrawing}
+              onPointerLeave={endDrawing}
+              onMouseDown={startDrawingMouse}
+              onMouseMove={drawMouse}
+              onMouseUp={endDrawingMouse}
+              onMouseLeave={endDrawingMouse}
             />
+            <FieldError message={fieldErrors.digital_signature} />
 
             <div className="mt-2 flex justify-start">
-              <GhostButton onClick={onClearSignature}>
+              <GhostButton onClick={clearSignature}>
                 Limpiar firma
               </GhostButton>
             </div>
+            {!hasSignature ? (
+              <p className="mt-2 text-xs font-semibold text-slate-400">
+                Firma opcional en este registro.
+              </p>
+            ) : null}
           </div>
 
           <div className="mt-4">
