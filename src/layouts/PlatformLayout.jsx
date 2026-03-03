@@ -7,32 +7,47 @@ const platformModules = [
 
 function PlatformLayout({ children }) {
   return (
-    <div className="min-h-screen bg-slate-50 lg:grid lg:grid-cols-[280px_1fr]">
+    <div className="min-h-screen bg-white lg:grid lg:grid-cols-[320px_1fr]">
       <aside className="border-r border-slate-200 bg-white">
-        <div className="border-b border-slate-200 px-6 py-6">
-          <h2 className="text-lg font-extrabold text-slate-900">CondoManager</h2>
-          <p className="mt-1 text-xs font-semibold uppercase tracking-widest text-slate-400">
-            Platform Console
-          </p>
+        <div className="px-7 pb-5 pt-8">
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-white">
+              <img src="/image/isotipo1.png" alt="GenAccess" className="h-8 w-auto object-contain" />
+            </div>
+            <div className="leading-tight">
+              <h2 className="text-lg font-extrabold text-slate-900">GenAccess</h2>
+              <p className="text-xs font-bold tracking-widest text-slate-400">PLATFORM CONSOLE</p>
+            </div>
+          </div>
         </div>
 
-        <nav className="space-y-1 px-4 py-5">
-          <p className="px-2 text-[11px] font-extrabold uppercase tracking-widest text-slate-400">
+        <nav className="space-y-1 px-5 py-2">
+          <p className="mb-2 px-2 text-[11px] font-extrabold uppercase tracking-widest text-slate-400">
             Plataforma
           </p>
 
-          <div className="mt-2 space-y-1">
+          <div className="space-y-1">
             {platformModules.map((item) =>
               item.to ? (
                 <NavLink key={item.label} to={item.to} className="block">
                   {({ isActive }) => (
                     <div
-                      className={`rounded-xl px-3 py-2.5 text-sm font-semibold transition ${
+                      className={`group relative flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition ${
                         isActive
-                          ? "bg-indigo-50 text-indigo-700"
-                          : "text-slate-600 hover:bg-slate-100 hover:text-slate-800"
+                          ? "bg-blue-50 text-blue-700 shadow-sm"
+                          : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                       }`}
                     >
+                      <span
+                        className={`absolute bottom-2 left-0 top-2 w-1 rounded-full transition ${
+                          isActive ? "bg-blue-600" : "bg-transparent"
+                        }`}
+                      />
+                      <span
+                        className={`h-2.5 w-2.5 rounded-full transition ${
+                          isActive ? "bg-blue-600" : "bg-slate-300 group-hover:bg-slate-500"
+                        }`}
+                      />
                       {item.label}
                     </div>
                   )}
@@ -53,10 +68,9 @@ function PlatformLayout({ children }) {
         </nav>
       </aside>
 
-      <main className="p-4 lg:p-8">{children}</main>
+      <main className="bg-slate-50 p-4 lg:p-6">{children}</main>
     </div>
   );
 }
 
 export default PlatformLayout;
-

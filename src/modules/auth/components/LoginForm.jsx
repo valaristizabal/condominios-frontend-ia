@@ -41,7 +41,7 @@ function LoginForm() {
     <form className="space-y-7" onSubmit={handleSubmit}>
       <label className="block">
         <span className="mb-2.5 block text-[1.25rem] font-bold text-slate-700">
-          Email Address
+          Correo
         </span>
         <div className="relative">
           <span className="pointer-events-none absolute inset-y-0 left-4 flex items-center text-slate-400">
@@ -50,7 +50,7 @@ function LoginForm() {
           <input
             type="email"
             autoComplete="email"
-            placeholder="manager@example.com"
+            placeholder="admin@genaccess.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="h-14 w-full rounded-xl border border-slate-300 bg-slate-100 pl-12 pr-4 text-[1.2rem] text-slate-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
@@ -62,13 +62,13 @@ function LoginForm() {
       <div>
         <div className="mb-2.5 flex items-center justify-between">
           <label htmlFor="password" className="block text-[1.25rem] font-bold text-slate-700">
-            Password
+            Contrasena
           </label>
           <button
             type="button"
             className="text-[1.05rem] font-semibold text-blue-700 hover:text-blue-800"
           >
-            Forgot password?
+            Olvide mi contrasena
           </button>
         </div>
         <div className="relative">
@@ -103,7 +103,7 @@ function LoginForm() {
           onChange={(e) => setRememberDevice(e.target.checked)}
           className="h-4 w-4 rounded border-slate-300 text-blue-700 focus:ring-blue-200"
         />
-        <span className="text-[1.1rem] font-medium text-slate-600">Remember this device</span>
+        <span className="text-[1.1rem] font-medium text-slate-600">Recordar este dispositivo</span>
       </label>
 
       {error ? (
@@ -117,7 +117,7 @@ function LoginForm() {
         disabled={loading}
         className="mt-1 flex h-14 w-full items-center justify-center gap-2 rounded-xl bg-[#174abf] text-[1.35rem] font-bold text-white shadow-[0_10px_18px_rgba(23,74,191,0.35)] transition hover:bg-[#123ea3] disabled:cursor-not-allowed disabled:opacity-70"
       >
-        <span>{loading ? "Signing In..." : "Sign In"}</span>
+        <span>{loading ? "Ingresando..." : "Ingresar"}</span>
         <ArrowRightIcon />
       </button>
     </form>
