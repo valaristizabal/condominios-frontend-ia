@@ -89,7 +89,7 @@ export function useCorrespondence() {
           formData.append("evidence_photo", payload.evidence_photo);
         }
 
-        await apiClient.post("/correspondences", formData, {
+        const response = await apiClient.post("/correspondences", formData, {
           ...requestConfig,
           headers: {
             ...(requestConfig?.headers || {}),
@@ -98,6 +98,7 @@ export function useCorrespondence() {
         });
 
         await loadCorrespondences();
+        return response.data;
       } catch (err) {
         const nextErrors = extractFieldErrors(err);
         if (Object.keys(nextErrors).length) {

@@ -48,6 +48,7 @@ export default function CorrespondencePage() {
     unitTypeId: "",
     unitId: "",
     packageType: "documento",
+    receiverType: "seguridad",
     receiverName: "",
     notes: "",
   });
@@ -125,8 +126,7 @@ export default function CorrespondencePage() {
     form.courier &&
     form.unitTypeId &&
     form.unitId &&
-    form.packageType &&
-    form.receiverName.trim().length > 0;
+    form.packageType;
 
   const onPickPhoto = (file) => {
     setPhotoFile(file || null);
@@ -161,8 +161,8 @@ export default function CorrespondencePage() {
     setForm((prev) => ({ ...prev, [name]: value }));
 
     if (name === "unitId") clearFieldError("apartment_id");
-    if (name === "receiverName") {
-      setLocalErrors((prev) => ({ ...prev, receiverName: "" }));
+    if (name === "receiverType") {
+      setLocalErrors((prev) => ({ ...prev, receiverType: "", signature: "" }));
     }
   };
 
@@ -172,33 +172,54 @@ export default function CorrespondencePage() {
     if (!canSubmit || !activeCondominiumId || submitting) return;
 
     const nextLocalErrors = {};
-    if (!form.receiverName.trim()) {
-      nextLocalErrors.receiverName = "Ingresa el nombre del destinatario.";
+    if (!form.receiverType) {
+      nextLocalErrors.receiverType = "Selecciona quién recibe.";
+    }
+    if (form.receiverType === "dueno" && !signatureDataUrl) {
+      nextLocalErrors.signature = "La firma es obligatoria cuando recibe el dueño.";
     }
 
     setLocalErrors(nextLocalErrors);
     if (Object.keys(nextLocalErrors).length > 0) return;
 
     try {
-      await createCorrespondence({
+      const created = await createCorrespondence({
         courier_company: form.courier,
         package_type: form.packageType,
         apartment_id: Number(form.unitId),
         evidence_photo: photoFile,
-        digital_signature: signatureDataUrl || null,
+        digital_signature: form.receiverType === "dueno" ? signatureDataUrl || null : null,
       });
+
+      if (form.receiverType === "dueno" && created?.id) {
+        const ownerResident = residents.find(
+          (resident) =>
+            String(resident?.apartment_id || "") === String(form.unitId) &&
+            String(resident?.type || "").toLowerCase() === "propietario"
+        );
+
+        if (ownerResident?.id) {
+          await deliverCorrespondence(created.id, ownerResident.id, signatureDataUrl);
+        } else {
+          setLocalErrors({
+            receiverType: "No se encontró un residente propietario para esta unidad.",
+          });
+          return;
+        }
+      }
 
       setForm({
         courier: "Servientrega",
         unitTypeId: "",
         unitId: "",
         packageType: "documento",
+        receiverType: "seguridad",
         receiverName: "",
         notes: "",
       });
-      setLocalErrors({});
       clearPhoto();
       setSignatureDataUrl("");
+      setLocalErrors({});
     } catch {
       // Errors are handled by hook state.
     }
@@ -282,6 +303,13 @@ export default function CorrespondencePage() {
             onPackageTypeChange={(packageType) => {
               setForm((prev) => ({ ...prev, packageType }));
               clearFieldError("package_type");
+            }}
+            onReceiverTypeChange={(receiverType) => {
+              setForm((prev) => ({ ...prev, receiverType }));
+              setLocalErrors((prev) => ({ ...prev, receiverType: "", signature: "" }));
+              if (receiverType === "seguridad") {
+                setSignatureDataUrl("");
+              }
             }}
             onSubmit={handleSubmit}
             onSignatureChange={(nextValue) => {

@@ -177,6 +177,7 @@ export default function CorrespondenceFormModal({
   onPickPhoto,
   onClearPhoto,
   onPackageTypeChange,
+  onReceiverTypeChange,
   onSubmit,
   onSignatureChange,
 }) {
@@ -319,6 +320,59 @@ export default function CorrespondenceFormModal({
 
       <form onSubmit={onSubmit} className="mt-6 space-y-6">
         <div>
+          <Label>Evidencia fotográfica</Label>
+          <Hint>Para la demo puedes cargar una imagen desde tu computador.</Hint>
+
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(event) => onPickPhoto(event.target.files?.[0])}
+          />
+
+          <button
+            type="button"
+            onClick={onPickPhotoClick}
+            className="mt-3 w-full rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center hover:bg-slate-100 transition"
+          >
+            {photoPreview ? (
+              <div className="space-y-3">
+                <div className="mx-auto w-full max-w-[420px] overflow-hidden rounded-2xl border border-slate-200 bg-white">
+                  <img
+                    src={photoPreview}
+                    alt="Evidencia"
+                    className="h-48 w-full object-cover"
+                  />
+                </div>
+                <p className="text-xs font-extrabold text-slate-700">
+                  Cambiar fotografía
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-sm">
+                  📷
+                </div>
+                <p className="text-sm font-extrabold text-slate-900">
+                  Tomar / Cargar fotografía
+                </p>
+                <p className="text-xs font-semibold text-slate-500">
+                  Toque aquí para activar cámara o cargar imagen
+                </p>
+              </div>
+            )}
+          </button>
+
+          {photoPreview && (
+            <div className="mt-2 flex justify-end">
+              <GhostButton onClick={onClearPhoto}>Quitar foto</GhostButton>
+            </div>
+          )}
+          <FieldError message={fieldErrors.evidence_photo} />
+        </div>
+
+        <div>
           <Label>Empresa de mensajería</Label>
           <SearchableSelect
             value={form.courier}
@@ -390,56 +444,35 @@ export default function CorrespondenceFormModal({
         </div>
 
         <div>
-          <Label>Evidencia fotográfica</Label>
-          <Hint>Para la demo puedes cargar una imagen desde tu computador.</Hint>
+          <Label>¿Quién recibe?</Label>
+          <div className="mt-2 grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => onReceiverTypeChange?.("seguridad")}
+              className={[
+                "rounded-2xl border px-4 py-4 text-sm font-extrabold transition",
+                form.receiverType === "seguridad"
+                  ? "border-blue-200 bg-blue-50 text-blue-700"
+                  : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50",
+              ].join(" ")}
+            >
+              Seguridad
+            </button>
 
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={(event) => onPickPhoto(event.target.files?.[0])}
-          />
-
-          <button
-            type="button"
-            onClick={onPickPhotoClick}
-            className="mt-3 w-full rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center hover:bg-slate-100 transition"
-          >
-            {photoPreview ? (
-              <div className="space-y-3">
-                <div className="mx-auto w-full max-w-[420px] overflow-hidden rounded-2xl border border-slate-200 bg-white">
-                  <img
-                    src={photoPreview}
-                    alt="Evidencia"
-                    className="h-48 w-full object-cover"
-                  />
-                </div>
-                <p className="text-xs font-extrabold text-slate-700">
-                  Cambiar fotografía
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-sm">
-                  📷
-                </div>
-                <p className="text-sm font-extrabold text-slate-900">
-                  Tomar / Cargar fotografía
-                </p>
-                <p className="text-xs font-semibold text-slate-500">
-                  Toque aquí para activar cámara o cargar imagen
-                </p>
-              </div>
-            )}
-          </button>
-
-          {photoPreview && (
-            <div className="mt-2 flex justify-end">
-              <GhostButton onClick={onClearPhoto}>Quitar foto</GhostButton>
-            </div>
-          )}
-          <FieldError message={fieldErrors.evidence_photo} />
+            <button
+              type="button"
+              onClick={() => onReceiverTypeChange?.("dueno")}
+              className={[
+                "rounded-2xl border px-4 py-4 text-sm font-extrabold transition",
+                form.receiverType === "dueno"
+                  ? "border-blue-200 bg-blue-50 text-blue-700"
+                  : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50",
+              ].join(" ")}
+            >
+              Dueño
+            </button>
+          </div>
+          <FieldError message={fieldErrors.receiverType} />
         </div>
 
         <div>
@@ -456,35 +489,41 @@ export default function CorrespondenceFormModal({
             <FieldError message={fieldErrors.receiverName} />
           </div>
 
-          <div className="mt-4">
-            <Label>Firma de quien recibe</Label>
-            <canvas
-              ref={signatureCanvasRef}
-              className="mt-2 h-40 w-full touch-none rounded-2xl border border-slate-200 bg-slate-50 cursor-crosshair"
-              style={{ touchAction: "none" }}
-              onPointerDown={startDrawing}
-              onPointerMove={draw}
-              onPointerUp={endDrawing}
-              onPointerCancel={endDrawing}
-              onPointerLeave={endDrawing}
-              onMouseDown={startDrawingMouse}
-              onMouseMove={drawMouse}
-              onMouseUp={endDrawingMouse}
-              onMouseLeave={endDrawingMouse}
-            />
-            <FieldError message={fieldErrors.digital_signature} />
+          {form.receiverType === "dueno" ? (
+            <div className="mt-4">
+              <Label>Firma de quien recibe</Label>
+              <canvas
+                ref={signatureCanvasRef}
+                className="mt-2 h-40 w-full touch-none rounded-2xl border border-slate-200 bg-slate-50 cursor-crosshair"
+                style={{ touchAction: "none" }}
+                onPointerDown={startDrawing}
+                onPointerMove={draw}
+                onPointerUp={endDrawing}
+                onPointerCancel={endDrawing}
+                onPointerLeave={endDrawing}
+                onMouseDown={startDrawingMouse}
+                onMouseMove={drawMouse}
+                onMouseUp={endDrawingMouse}
+                onMouseLeave={endDrawingMouse}
+              />
+              <FieldError message={fieldErrors.digital_signature || fieldErrors.signature} />
 
-            <div className="mt-2 flex justify-start">
-              <GhostButton onClick={clearSignature}>
-                Limpiar firma
-              </GhostButton>
+              <div className="mt-2 flex justify-start">
+                <GhostButton onClick={clearSignature}>
+                  Limpiar firma
+                </GhostButton>
+              </div>
+              {!hasSignature ? (
+                <p className="mt-2 text-xs font-semibold text-slate-400">
+                  Firma obligatoria cuando recibe el dueño.
+                </p>
+              ) : null}
             </div>
-            {!hasSignature ? (
-              <p className="mt-2 text-xs font-semibold text-slate-400">
-                Firma opcional en este registro.
-              </p>
-            ) : null}
-          </div>
+          ) : (
+            <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs font-semibold text-slate-500">
+              Si recibe seguridad, la firma no es obligatoria en este paso.
+            </div>
+          )}
 
           <div className="mt-4">
             <Label>Observaciones</Label>
