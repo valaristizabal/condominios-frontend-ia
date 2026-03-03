@@ -87,6 +87,13 @@ function SettingsPage() {
               />
 
               <ActionRow
+                icon="EM"
+                title="Tipos de Emergencia"
+                description="Configura los tipos de emergencia y su nivel de criticidad"
+                onClick={() => navigate(`${basePath}/settings/emergency-types`)}
+              />
+
+              <ActionRow
                 icon="AP"
                 title="Apartamentos"
                 description="Administra unidades y apartamentos del condominio"

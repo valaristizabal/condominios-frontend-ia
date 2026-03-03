@@ -4,10 +4,12 @@ import LoginPage from "../modules/auth/pages/LoginPage";
 import ApartmentsPage from "../modules/ajustes/apartments/pages/ApartmentsPage";
 import UnitTypesPage from "../modules/settings/unit-types/pages/UnitTypesPage";
 import VehicleTypesPage from "../modules/settings/vehicle-types/pages/VehicleTypesPage";
+import EmergencyTypesPage from "../modules/settings/emergency-types/pages/EmergencyTypesPage";
 import CleaningSettingsPage from "../modules/settings/pages/CleaningSettingsPage";
 import SettingsPage from "../modules/settings/pages/SettingsPage";
 import CondominiumsPage from "../modules/condominiums/pages/CondominiumsPage";
 import DashboardPage from "../modules/dashboard/pages/DashboardPage";
+import EmergenciesPage from "../modules/emergencies/pages/EmergenciesPage";
 import VisitsPage from "../modules/operation/visits/pages/VisitsPage";
 import VehiclesPage from "../modules/operation/vehicles/pages/VehiclesPage";
 import VehicleIncidentsPage from "../modules/operation/vehicle-incidents/pages/VehicleIncidentsPage";
@@ -61,6 +63,16 @@ function AppRoutes() {
           <TenantRoute>
             <TenantLayout>
               <VisitsPage />
+            </TenantLayout>
+          </TenantRoute>
+        }
+      />
+      <Route
+        path="/emergencies"
+        element={
+          <TenantRoute>
+            <TenantLayout>
+              <EmergenciesPage />
             </TenantLayout>
           </TenantRoute>
         }
@@ -136,6 +148,16 @@ function AppRoutes() {
         }
       />
       <Route
+        path="/settings/emergency-types"
+        element={
+          <TenantRoute>
+            <TenantLayout>
+              <EmergencyTypesPage />
+            </TenantLayout>
+          </TenantRoute>
+        }
+      />
+      <Route
         path="/settings/vehicle-types"
         element={
           <TenantRoute>
@@ -198,6 +220,18 @@ function AppRoutes() {
             <SuperAdminRoute>
               <TenantLayout>
                 <VisitsPage />
+              </TenantLayout>
+            </SuperAdminRoute>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/condominio/:id/emergencies"
+        element={
+          <ProtectedRoute>
+            <SuperAdminRoute>
+              <TenantLayout>
+                <EmergenciesPage />
               </TenantLayout>
             </SuperAdminRoute>
           </ProtectedRoute>
@@ -282,6 +316,18 @@ function AppRoutes() {
             <SuperAdminRoute>
               <TenantLayout>
                 <UnitTypesPage />
+              </TenantLayout>
+            </SuperAdminRoute>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/condominio/:id/settings/emergency-types"
+        element={
+          <ProtectedRoute>
+            <SuperAdminRoute>
+              <TenantLayout>
+                <EmergencyTypesPage />
               </TenantLayout>
             </SuperAdminRoute>
           </ProtectedRoute>
