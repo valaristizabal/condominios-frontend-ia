@@ -6,6 +6,7 @@ import UnitTypesPage from "../modules/settings/unit-types/pages/UnitTypesPage";
 import VehicleTypesPage from "../modules/settings/vehicle-types/pages/VehicleTypesPage";
 import EmergencyTypesPage from "../modules/settings/emergency-types/pages/EmergencyTypesPage";
 import CleaningSettingsPage from "../modules/settings/pages/CleaningSettingsPage";
+import InventorySettingsPage from "../modules/settings/pages/InventorySettingsPage";
 import SettingsPage from "../modules/settings/pages/SettingsPage";
 import CondominiumsPage from "../modules/condominiums/pages/CondominiumsPage";
 import DashboardPage from "../modules/dashboard/pages/DashboardPage";
@@ -15,11 +16,16 @@ import VehiclesPage from "../modules/operation/vehicles/pages/VehiclesPage";
 import VehicleIncidentsPage from "../modules/operation/vehicle-incidents/pages/VehicleIncidentsPage";
 import CorrespondencePage from "../modules/operation/correspondence/pages/CorrespondencePage";
 import CleaningRecordsPage from "../modules/cleaning/CleaningRecordsPage";
+import InventoryPage from "../modules/inventory/pages/InventoryPage";
+import InventoryCategoriesPage from "../modules/settings/inventory-categories/pages/InventoryCategoriesPage";
+import InventoriesPage from "../modules/settings/inventories/pages/InventoriesPage";
 import OperativesPage from "../modules/settings/operatives/pages/OperativesPage";
 import ResidentsPage from "../modules/settings/residents/pages/ResidentsPage";
 import PlatformLayout from "../layouts/PlatformLayout";
 import TenantLayout from "../layouts/TenantLayout";
 import ProtectedRoute from "./ProtectedRoute";
+import InventoryOperationRoute from "./InventoryOperationRoute";
+import InventorySettingsRoute from "./InventorySettingsRoute";
 import SuperAdminRoute from "./SuperAdminRoute";
 import TenantRoute from "./TenantRoute";
 import { isSuperUser } from "../utils/roles";
@@ -109,6 +115,18 @@ function AppRoutes() {
         }
       />
       <Route
+        path="/inventory"
+        element={
+          <TenantRoute>
+            <InventoryOperationRoute>
+              <TenantLayout>
+                <InventoryPage />
+              </TenantLayout>
+            </InventoryOperationRoute>
+          </TenantRoute>
+        }
+      />
+      <Route
         path="/vehiculos/novedad"
         element={
           <TenantRoute>
@@ -185,6 +203,42 @@ function AppRoutes() {
             <TenantLayout>
               <ResidentsPage />
             </TenantLayout>
+          </TenantRoute>
+        }
+      />
+      <Route
+        path="/settings/inventories"
+        element={
+          <TenantRoute>
+            <InventorySettingsRoute>
+              <TenantLayout>
+                <InventoriesPage />
+              </TenantLayout>
+            </InventorySettingsRoute>
+          </TenantRoute>
+        }
+      />
+      <Route
+        path="/settings/inventory"
+        element={
+          <TenantRoute>
+            <InventorySettingsRoute>
+              <TenantLayout>
+                <InventorySettingsPage />
+              </TenantLayout>
+            </InventorySettingsRoute>
+          </TenantRoute>
+        }
+      />
+      <Route
+        path="/settings/inventory-categories"
+        element={
+          <TenantRoute>
+            <InventorySettingsRoute>
+              <TenantLayout>
+                <InventoryCategoriesPage />
+              </TenantLayout>
+            </InventorySettingsRoute>
           </TenantRoute>
         }
       />
@@ -285,6 +339,18 @@ function AppRoutes() {
         }
       />
       <Route
+        path="/condominio/:id/inventory"
+        element={
+          <ProtectedRoute>
+            <SuperAdminRoute>
+              <TenantLayout>
+                <InventoryPage />
+              </TenantLayout>
+            </SuperAdminRoute>
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/condominio/:id/vehiculos/novedad"
         element={
           <ProtectedRoute>
@@ -375,6 +441,42 @@ function AppRoutes() {
             <SuperAdminRoute>
               <TenantLayout>
                 <ResidentsPage />
+              </TenantLayout>
+            </SuperAdminRoute>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/condominio/:id/settings/inventories"
+        element={
+          <ProtectedRoute>
+            <SuperAdminRoute>
+              <TenantLayout>
+                <InventoriesPage />
+              </TenantLayout>
+            </SuperAdminRoute>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/condominio/:id/settings/inventory"
+        element={
+          <ProtectedRoute>
+            <SuperAdminRoute>
+              <TenantLayout>
+                <InventorySettingsPage />
+              </TenantLayout>
+            </SuperAdminRoute>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/condominio/:id/settings/inventory-categories"
+        element={
+          <ProtectedRoute>
+            <SuperAdminRoute>
+              <TenantLayout>
+                <InventoryCategoriesPage />
               </TenantLayout>
             </SuperAdminRoute>
           </ProtectedRoute>

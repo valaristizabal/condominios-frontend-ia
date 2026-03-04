@@ -13,9 +13,9 @@ import {
 } from "lucide-react";
 import { ActiveCondominiumContext } from "../context/ActiveCondominiumContext";
 import { useAuthContext } from "../context/useAuthContext";
-import { isSuperUser } from "../utils/roles";
+import { canAccessInventoryOperation, isSuperUser } from "../utils/roles";
 
-function getSidebarSections(basePath) {
+function getSidebarSections(basePath, canInventoryOperate) {
   const resolvePath = (path) => `${basePath}${path}`;
 
   return [
@@ -28,7 +28,7 @@ function getSidebarSections(basePath) {
         { label: "Correspondencia", to: resolvePath("/correspondence"), enabled: true },
         { label: "Emergencias", to: resolvePath("/emergencies"), enabled: true },
         { label: "Aseo", to: resolvePath("/cleaning"), enabled: true },
-        { label: "Inventario", enabled: false },
+        { label: "Inventario", to: resolvePath("/inventory"), enabled: canInventoryOperate },
       ],
     },
     {
@@ -60,7 +60,11 @@ function TenantLayout({ children }) {
   }, [id, isSuperAdmin, user?.condominium_id]);
 
   const basePath = isSuperAdmin && id ? `/condominio/${id}` : "";
-  const sidebarSections = useMemo(() => getSidebarSections(basePath), [basePath]);
+  const canInventoryOperate = canAccessInventoryOperation(user);
+  const sidebarSections = useMemo(
+    () => getSidebarSections(basePath, canInventoryOperate),
+    [basePath, canInventoryOperate]
+  );
 
   return (
     <ActiveCondominiumContext.Provider value={activeContextValue}>

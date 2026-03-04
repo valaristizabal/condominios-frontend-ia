@@ -1,4 +1,6 @@
 import { useNavigate, useParams } from "react-router-dom";
+import { useAuthContext } from "../../../context/useAuthContext";
+import { canAccessInventorySettings } from "../../../utils/roles";
 
 function Card({ children, className = "" }) {
   return (
@@ -49,7 +51,9 @@ function ItemRow({ title, description, onClick }) {
 export default function SettingsPage() {
   const navigate = useNavigate();
   const { id } = useParams();
+  const { user } = useAuthContext();
   const basePath = id ? `/condominio/${id}` : "";
+  const canSeeInventorySettings = canAccessInventorySettings(user);
 
   return (
     <div className="w-full">
@@ -101,6 +105,13 @@ export default function SettingsPage() {
                   description="Configura zonas de aseo, checklists y seguimiento"
                   onClick={() => navigate(`${basePath}/settings/cleaning`)}
                 />
+                {canSeeInventorySettings ? (
+                  <ItemRow
+                    title="Inventario"
+                    description="Gestiona inventarios y categorías de productos"
+                    onClick={() => navigate(`${basePath}/settings/inventory`)}
+                  />
+                ) : null}
               </div>
             </Card>
           </div>
