@@ -14,6 +14,7 @@ import VisitsPage from "../modules/operation/visits/pages/VisitsPage";
 import VehiclesPage from "../modules/operation/vehicles/pages/VehiclesPage";
 import VehicleIncidentsPage from "../modules/operation/vehicle-incidents/pages/VehicleIncidentsPage";
 import CorrespondencePage from "../modules/operation/correspondence/pages/CorrespondencePage";
+import CleaningRecordsPage from "../modules/cleaning/CleaningRecordsPage";
 import OperativesPage from "../modules/settings/operatives/pages/OperativesPage";
 import ResidentsPage from "../modules/settings/residents/pages/ResidentsPage";
 import PlatformLayout from "../layouts/PlatformLayout";
@@ -93,6 +94,16 @@ function AppRoutes() {
           <TenantRoute>
             <TenantLayout>
               <CorrespondencePage />
+            </TenantLayout>
+          </TenantRoute>
+        }
+      />
+      <Route
+        path="/cleaning"
+        element={
+          <TenantRoute>
+            <TenantLayout>
+              <CleaningRecordsPage />
             </TenantLayout>
           </TenantRoute>
         }
@@ -256,6 +267,18 @@ function AppRoutes() {
             <SuperAdminRoute>
               <TenantLayout>
                 <CorrespondencePage />
+              </TenantLayout>
+            </SuperAdminRoute>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/condominio/:id/cleaning"
+        element={
+          <ProtectedRoute>
+            <SuperAdminRoute>
+              <TenantLayout>
+                <CleaningRecordsPage />
               </TenantLayout>
             </SuperAdminRoute>
           </ProtectedRoute>
