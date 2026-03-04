@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCleaningRecords } from "./useCleaningRecords";
 
 const inputBase =
@@ -7,6 +8,7 @@ const inputBase =
 function CleaningRecordsPage() {
   const {
     hasTenantContext,
+    tenantCacheKey,
     getInitialData,
     getChecklistItems,
     createCleaningRecord,
@@ -14,126 +16,142 @@ function CleaningRecordsPage() {
     completeCleaningRecord,
   } = useCleaningRecords();
 
-  const [records, setRecords] = useState([]);
-  const [selectedRecord, setSelectedRecord] = useState(null);
-  const [items, setItems] = useState([]);
-  const [areas, setAreas] = useState([]);
-  const [operatives, setOperatives] = useState([]);
+  const queryClient = useQueryClient();
+
+  const [selectedRecordId, setSelectedRecordId] = useState(null);
   const [selectedAreaId, setSelectedAreaId] = useState("");
   const [selectedOperativeId, setSelectedOperativeId] = useState("");
   const [observationText, setObservationText] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    loadInitialData();
-  }, [hasTenantContext]);
+  const initialDataQuery = useQuery({
+    queryKey: ["cleaning", "initial", tenantCacheKey],
+    enabled: hasTenantContext,
+    queryFn: getInitialData,
+  });
 
-  const loadInitialData = async () => {
-    if (!hasTenantContext) {
-      setAreas([]);
-      setOperatives([]);
-      setRecords([]);
-      setLoading(false);
+  const areas = initialDataQuery.data?.areas || [];
+  const operatives = initialDataQuery.data?.operatives || [];
+  const records = initialDataQuery.data?.records || [];
+
+  useEffect(() => {
+    if (!records.length) {
+      setSelectedRecordId(null);
       return;
     }
 
-    setLoading(true);
-    setError("");
-    try {
-      const initialData = await getInitialData();
-      setAreas(initialData.areas);
-      setOperatives(initialData.operatives);
-      setRecords(initialData.records);
-    } catch (err) {
-      setError(normalizeApiError(err, "No fue posible cargar el modulo de aseo."));
-    } finally {
-      setLoading(false);
+    if (selectedRecordId && records.some((record) => record.id === selectedRecordId)) {
+      return;
     }
-  };
 
-  const selectRecord = async (record) => {
-    setSelectedRecord(record);
-    setObservationText(record?.observations || "");
-    setError("");
+    setSelectedRecordId(records[0].id);
+  }, [records, selectedRecordId]);
 
-    try {
-      const checklist = await getChecklistItems(record.id);
-      setItems(checklist);
-    } catch (err) {
-      setItems([]);
-      setError(normalizeApiError(err, "No fue posible cargar checklist del registro."));
+  const selectedRecord = useMemo(
+    () => records.find((record) => record.id === selectedRecordId) || null,
+    [records, selectedRecordId]
+  );
+
+  useEffect(() => {
+    if (!selectedRecord) {
+      setObservationText("");
+      return;
     }
-  };
+
+    setObservationText(selectedRecord?.observations || "");
+  }, [selectedRecordId]);
+
+  const checklistQuery = useQuery({
+    queryKey: ["cleaning", "checklist", tenantCacheKey, selectedRecordId],
+    enabled: hasTenantContext && Boolean(selectedRecordId),
+    queryFn: () => getChecklistItems(selectedRecordId),
+  });
+
+  const items = checklistQuery.data || [];
+
+  const createRecordMutation = useMutation({
+    mutationFn: createCleaningRecord,
+    onSuccess: async (newRecord) => {
+      await queryClient.invalidateQueries({ queryKey: ["cleaning", "initial", tenantCacheKey] });
+      setSelectedRecordId(newRecord?.id || null);
+      setSelectedAreaId("");
+      setSelectedOperativeId("");
+      setObservationText("");
+      setError("");
+    },
+    onError: (err) => {
+      setError(normalizeApiError(err, "No fue posible crear la limpieza."));
+    },
+  });
+
+  const toggleTaskMutation = useMutation({
+    mutationFn: ({ recordId, itemId, currentCompleted }) =>
+      toggleChecklistItem(recordId, itemId, currentCompleted),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["cleaning", "checklist", tenantCacheKey, selectedRecordId] });
+      setError("");
+    },
+    onError: (err) => {
+      setError(normalizeApiError(err, "No fue posible actualizar la tarea."));
+    },
+  });
+
+  const completeRecordMutation = useMutation({
+    mutationFn: ({ recordId, observations }) => completeCleaningRecord(recordId, { observations }),
+    onSuccess: async (updated) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["cleaning", "initial", tenantCacheKey] }),
+        queryClient.invalidateQueries({ queryKey: ["cleaning", "checklist", tenantCacheKey, selectedRecordId] }),
+      ]);
+      if (updated?.id) setSelectedRecordId(updated.id);
+      setError("");
+    },
+    onError: (err) => {
+      setError(normalizeApiError(err, "No fue posible finalizar la limpieza."));
+    },
+  });
+
+  useEffect(() => {
+    const queryError = initialDataQuery.error || checklistQuery.error;
+    if (!queryError) return;
+    setError(normalizeApiError(queryError, "No fue posible cargar el modulo de aseo."));
+  }, [initialDataQuery.error, checklistQuery.error]);
 
   const createRecord = async () => {
     if (!selectedAreaId || !selectedOperativeId) return;
 
-    setSaving(true);
-    setError("");
-
-    try {
-      const newRecord = await createCleaningRecord({
-        cleaning_area_id: Number(selectedAreaId),
-        operative_id: Number(selectedOperativeId),
-        cleaning_date: new Date().toISOString().slice(0, 10),
-      });
-
-      const checklist = await getChecklistItems(newRecord.id);
-
-      setRecords((prev) => [newRecord, ...prev]);
-      setSelectedRecord(newRecord);
-      setItems(checklist);
-      setSelectedAreaId("");
-      setSelectedOperativeId("");
-      setObservationText("");
-    } catch (err) {
-      setError(normalizeApiError(err, "No fue posible crear la limpieza."));
-    } finally {
-      setSaving(false);
-    }
+    await createRecordMutation.mutateAsync({
+      cleaning_area_id: Number(selectedAreaId),
+      operative_id: Number(selectedOperativeId),
+      cleaning_date: new Date().toISOString().slice(0, 10),
+    });
   };
 
   const toggleTask = async (item) => {
-    if (!selectedRecord) return;
-    setSaving(true);
-    setError("");
-
-    try {
-      await toggleChecklistItem(selectedRecord.id, item.id, item.completed);
-      const updatedItems = await getChecklistItems(selectedRecord.id);
-      setItems(updatedItems);
-    } catch (err) {
-      setError(normalizeApiError(err, "No fue posible actualizar la tarea."));
-    } finally {
-      setSaving(false);
-    }
+    if (!selectedRecordId) return;
+    await toggleTaskMutation.mutateAsync({
+      recordId: selectedRecordId,
+      itemId: item.id,
+      currentCompleted: item.completed,
+    });
   };
 
   const handleFinish = async () => {
-    if (!selectedRecord) return;
+    if (!selectedRecordId) return;
 
-    setSaving(true);
-    setError("");
-
-    try {
-      const updated = await completeCleaningRecord(selectedRecord.id, {
-        observations: String(observationText || "").trim(),
-      });
-
-      setSelectedRecord(updated);
-      setRecords((prev) => prev.map((record) => (record.id === updated.id ? updated : record)));
-    } catch (err) {
-      setError(normalizeApiError(err, "No fue posible finalizar la limpieza."));
-    } finally {
-      setSaving(false);
-    }
+    await completeRecordMutation.mutateAsync({
+      recordId: selectedRecordId,
+      observations: String(observationText || "").trim(),
+    });
   };
 
   const completed = items.filter((item) => item.completed).length;
   const total = items.length;
   const percent = total ? Math.round((completed / total) * 100) : 0;
+
+  const loading = initialDataQuery.isLoading;
+  const checklistLoading = checklistQuery.isLoading;
+  const saving = createRecordMutation.isPending || toggleTaskMutation.isPending || completeRecordMutation.isPending;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#F8FAFC] to-[#EEF2F7] p-8 max-w-6xl mx-auto space-y-12">
@@ -208,7 +226,7 @@ function CleaningRecordsPage() {
             {records.map((record) => (
               <div
                 key={record.id}
-                onClick={() => selectRecord(record)}
+                onClick={() => setSelectedRecordId(record.id)}
                 className={`cursor-pointer p-6 rounded-3xl border transition shadow-sm ${
                   selectedRecord?.id === record.id
                     ? "border-blue-500 bg-blue-50"
@@ -274,20 +292,26 @@ function CleaningRecordsPage() {
           </div>
 
           <div className="space-y-4">
-            {items.map((item) => (
-              <div key={item.id} className="flex justify-between items-center bg-gray-50 p-4 rounded-2xl">
-                <span className={item.completed ? "line-through text-gray-400" : "text-gray-800"}>
-                  {item.item_name}
-                </span>
-                <input
-                  type="checkbox"
-                  checked={Boolean(item.completed)}
-                  disabled={selectedRecord.status === "completed" || saving}
-                  onChange={() => toggleTask(item)}
-                  className="w-5 h-5 accent-blue-600"
-                />
+            {checklistLoading ? (
+              <div className="rounded-2xl border border-dashed border-gray-300 bg-gray-50 p-4 text-sm text-gray-500">
+                Cargando checklist...
               </div>
-            ))}
+            ) : (
+              items.map((item) => (
+                <div key={item.id} className="flex justify-between items-center bg-gray-50 p-4 rounded-2xl">
+                  <span className={item.completed ? "line-through text-gray-400" : "text-gray-800"}>
+                    {item.item_name}
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={Boolean(item.completed)}
+                    disabled={selectedRecord.status === "completed" || saving}
+                    onChange={() => toggleTask(item)}
+                    className="w-5 h-5 accent-blue-600"
+                  />
+                </div>
+              ))
+            )}
           </div>
 
           {selectedRecord.status === "completed" ? (

@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+﻿import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useActiveCondominium } from "../../../../context/useActiveCondominium";
 import apiClient from "../../../../services/apiClient";
 
@@ -48,7 +49,6 @@ function SearchableSelect({
 
   useEffect(() => {
     if (!open) return undefined;
-
     const handleOutsideClick = (event) => {
       if (!rootRef.current?.contains(event.target)) {
         setOpen(false);
@@ -135,17 +135,9 @@ function VehiclesPage() {
   const navigate = useNavigate();
   const { id } = useParams();
   const { activeCondominiumId } = useActiveCondominium();
+  const queryClient = useQueryClient();
 
-  const [vehicleTypes, setVehicleTypes] = useState([]);
-  const [unitTypes, setUnitTypes] = useState([]);
-  const [apartments, setApartments] = useState([]);
-  const [securityUsers, setSecurityUsers] = useState([]);
-
-  const [loadingInit, setLoadingInit] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-
-  const [activeEntries, setActiveEntries] = useState([]);
-  const [loadingActive, setLoadingActive] = useState(false);
 
   const [form, setForm] = useState({
     tipoUsuario: "",
@@ -184,60 +176,58 @@ function VehiclesPage() {
     []
   );
 
-  useEffect(() => {
-    if (!activeCondominiumId) return;
-    loadInitialData();
-    loadActiveEntries();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeCondominiumId]);
+  const canQuery = Boolean(activeCondominiumId);
 
-  async function loadInitialData() {
-    setLoadingInit(true);
-    setGlobalError("");
-    try {
-      const [typesRes, unitTypesRes, apartmentsRes, operativesRes] = await Promise.all([
-        apiClient.get("/vehicle-types?active=1", requestConfig),
-        apiClient.get("/unit-types", requestConfig),
-        apiClient.get("/apartments", requestConfig),
-        apiClient.get("/operatives", requestConfig),
-      ]);
+  const initialQuery = useQuery({
+    queryKey: ["vehicles", "catalogs", activeCondominiumId],
+    enabled: canQuery,
+    queryFn: async () => {
+      const bootstrapRes = await apiClient.get("/vehicles/bootstrap-data", requestConfig);
+      const bootstrap = bootstrapRes?.data || {};
 
-      setVehicleTypes(Array.isArray(typesRes.data) ? typesRes.data : []);
-      const fetchedUnitTypes = Array.isArray(unitTypesRes.data) ? unitTypesRes.data : [];
-      setUnitTypes(fetchedUnitTypes.filter((item) => item?.is_active !== false));
-      setApartments(Array.isArray(apartmentsRes.data) ? apartmentsRes.data : []);
-      const operatives = Array.isArray(operativesRes.data) ? operativesRes.data : [];
-      const filteredSecurityUsers = operatives
-        .filter((operative) => String(operative?.role?.name || "").toLowerCase().includes("seguridad"))
-        .map((operative) => operative?.user)
-        .filter((securityUser) => securityUser?.id)
-        .map((securityUser) => ({ id: securityUser.id, full_name: securityUser.full_name || "Sin nombre" }));
-      setSecurityUsers(filteredSecurityUsers);
-    } catch (err) {
-      setGlobalError(normalizeApiError(err, "Error cargando datos iniciales."));
-      setVehicleTypes([]);
-      setUnitTypes([]);
-      setApartments([]);
-      setSecurityUsers([]);
-    } finally {
-      setLoadingInit(false);
-    }
-  }
+      return {
+        vehicleTypes: Array.isArray(bootstrap.vehicle_types) ? bootstrap.vehicle_types : [],
+        unitTypes: Array.isArray(bootstrap.units) ? bootstrap.units : [],
+        apartments: Array.isArray(bootstrap.apartments) ? bootstrap.apartments : [],
+        operatives: Array.isArray(bootstrap.operatives) ? bootstrap.operatives : [],
+      };
+    },
+  });
 
-  async function loadActiveEntries() {
-    setLoadingActive(true);
-    setGlobalError("");
-    try {
+  const vehicleTypes = initialQuery.data?.vehicleTypes || [];
+  const unitTypes = initialQuery.data?.unitTypes || [];
+  const apartments = initialQuery.data?.apartments || [];
+  const securityUsers = useMemo(() => {
+    const operatives = initialQuery.data?.operatives || [];
+
+    return operatives
+      .filter((operative) => String(operative?.role?.name || "").toLowerCase().includes("seguridad"))
+      .map((operative) => operative?.user)
+      .filter((securityUser) => securityUser?.id)
+      .map((securityUser) => ({ id: securityUser.id, full_name: securityUser.full_name || "Sin nombre" }));
+  }, [initialQuery.data?.operatives]);
+
+  const activeEntriesQuery = useQuery({
+    queryKey: ["vehicles", "active-entries", activeCondominiumId],
+    enabled: canQuery,
+    queryFn: async () => {
       const entriesRes = await apiClient.get("/vehicle-entries?only_active=1&status=INSIDE", requestConfig);
-      const list = Array.isArray(entriesRes.data) ? entriesRes.data : [];
-      setActiveEntries(list.filter((entry) => entry?.status === "INSIDE"));
-    } catch (err) {
-      setGlobalError(normalizeApiError(err, "Error cargando vehiculos activos."));
-      setActiveEntries([]);
-    } finally {
-      setLoadingActive(false);
-    }
-  }
+      const list = Array.isArray(entriesRes.data)
+        ? entriesRes.data
+        : Array.isArray(entriesRes.data?.data)
+          ? entriesRes.data.data
+          : [];
+      return list.filter((entry) => entry?.status === "INSIDE");
+    },
+  });
+
+  const activeEntries = activeEntriesQuery.data || [];
+  const queryError = initialQuery.error || activeEntriesQuery.error;
+
+  useEffect(() => {
+    if (!queryError) return;
+    setGlobalError(normalizeApiError(queryError, "Error cargando datos del modulo."));
+  }, [queryError]);
 
   function handleChange(event) {
     const { name, value } = event.target;
@@ -253,6 +243,7 @@ function VehiclesPage() {
     if (!form.unitTypeId) return [];
     return apartments.filter((apt) => String(apt?.unit_type_id || "") === String(form.unitTypeId));
   }, [apartments, form.unitTypeId]);
+
   const userTypeOptions = useMemo(
     () => [
       { value: "Residente", label: "Residente" },
@@ -262,6 +253,7 @@ function VehiclesPage() {
     ],
     []
   );
+
   const vehicleTypeOptions = useMemo(
     () =>
       vehicleTypes.map((type) => ({
@@ -270,6 +262,7 @@ function VehiclesPage() {
       })),
     [vehicleTypes]
   );
+
   const unitTypeOptions = useMemo(
     () =>
       unitTypes.map((unitType) => ({
@@ -278,6 +271,7 @@ function VehiclesPage() {
       })),
     [unitTypes]
   );
+
   const apartmentOptions = useMemo(
     () =>
       filteredApartments.map((apt) => ({
@@ -286,6 +280,7 @@ function VehiclesPage() {
       })),
     [filteredApartments]
   );
+
   const securityUserOptions = useMemo(
     () =>
       securityUsers.map((securityUser) => ({
@@ -318,6 +313,49 @@ function VehiclesPage() {
       .slice(0, 20);
   }
 
+  const registerEntryMutation = useMutation({
+    mutationFn: async (payload) => {
+      const plate = normalizePlate(payload.placa);
+      const vehiclesRes = await apiClient.get(`/vehicles?plate=${encodeURIComponent(plate)}`, requestConfig);
+      const vehicles = Array.isArray(vehiclesRes.data) ? vehiclesRes.data : [];
+      let vehicle = vehicles.find((row) => String(row?.plate || "").toUpperCase() === plate);
+
+      if (!vehicle) {
+        const newVehicleRes = await apiClient.post(
+          "/vehicles",
+          {
+            vehicle_type_id: Number(payload.vehicleTypeId),
+            apartment_id: payload.apartmentId ? Number(payload.apartmentId) : null,
+            plate,
+            owner_type: ownerTypeMap[payload.tipoUsuario],
+            is_active: true,
+          },
+          requestConfig
+        );
+        vehicle = newVehicleRes.data;
+      }
+
+      await apiClient.post(
+        "/vehicle-entries",
+        {
+          vehicle_id: vehicle.id,
+          observations: payload.observaciones || "",
+        },
+        requestConfig
+      );
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["vehicles", "active-entries", activeCondominiumId] });
+    },
+  });
+
+  const checkoutMutation = useMutation({
+    mutationFn: (entryId) => apiClient.patch(`/vehicle-entries/${entryId}/checkout`, {}, requestConfig),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["vehicles", "active-entries", activeCondominiumId] });
+    },
+  });
+
   const onRegisterIngreso = async (event) => {
     event.preventDefault();
     if (submitting || !activeCondominiumId) return;
@@ -332,36 +370,8 @@ function VehiclesPage() {
     setGlobalError("");
 
     try {
-      const vehiclesRes = await apiClient.get(`/vehicles?plate=${encodeURIComponent(plate)}`, requestConfig);
-      const vehicles = Array.isArray(vehiclesRes.data) ? vehiclesRes.data : [];
-      let vehicle = vehicles.find((v) => String(v?.plate || "").toUpperCase() === plate);
-
-      if (!vehicle) {
-        const newVehicleRes = await apiClient.post(
-          "/vehicles",
-          {
-            vehicle_type_id: Number(form.vehicleTypeId),
-            apartment_id: form.apartmentId ? Number(form.apartmentId) : null,
-            plate,
-            owner_type: ownerTypeMap[form.tipoUsuario],
-            is_active: true,
-          },
-          requestConfig
-        );
-        vehicle = newVehicleRes.data;
-      }
-
-      await apiClient.post(
-        "/vehicle-entries",
-        {
-          vehicle_id: vehicle.id,
-          observations: form.observaciones || "",
-        },
-        requestConfig
-      );
-
+      await registerEntryMutation.mutateAsync({ ...form, placa: plate });
       resetForm();
-      await loadActiveEntries();
       alert("Ingreso registrado correctamente");
     } catch (err) {
       const message = normalizeApiError(err, "Error registrando ingreso.");
@@ -375,12 +385,11 @@ function VehiclesPage() {
   async function onCheckoutEntry(entry) {
     if (!entry?.id || !activeCondominiumId) return;
 
-    const ok = confirm("¿Registrar salida de este vehiculo?");
+    const ok = confirm("Registrar salida de este vehiculo?");
     if (!ok) return;
 
     try {
-      await apiClient.patch(`/vehicle-entries/${entry.id}/checkout`, {}, requestConfig);
-      await loadActiveEntries();
+      await checkoutMutation.mutateAsync(entry.id);
     } catch (err) {
       const message = normalizeApiError(err, "Error registrando salida.");
       setGlobalError(message);
@@ -406,6 +415,9 @@ function VehiclesPage() {
     setEvidencePreview("");
     if (fileRef.current) fileRef.current.value = "";
   }
+
+  const loadingInit = initialQuery.isLoading;
+  const loadingActive = activeEntriesQuery.isLoading;
 
   return (
     <div className="w-full">
@@ -630,7 +642,7 @@ function VehiclesPage() {
 
               <button
                 type="button"
-                onClick={loadActiveEntries}
+                onClick={() => activeEntriesQuery.refetch()}
                 className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-xs font-extrabold text-slate-800 hover:bg-slate-50"
               >
                 Actualizar
@@ -667,7 +679,7 @@ function VehiclesPage() {
 
                         <div className="min-w-0">
                           <p className="truncate text-sm font-extrabold text-slate-900">{plate}</p>
-                          <p className="truncate text-[11px] font-semibold text-slate-500">{`Tipo: ${ownerType} • Unidad: ${unit}`}</p>
+                          <p className="truncate text-[11px] font-semibold text-slate-500">{`Tipo: ${ownerType} - Unidad: ${unit}`}</p>
                           {createdAt ? (
                             <p className="truncate text-[11px] font-semibold text-slate-400">
                               {String(createdAt).slice(0, 19).replace("T", " ")}
@@ -719,3 +731,4 @@ function normalizeApiError(err, fallbackMessage) {
 }
 
 export default VehiclesPage;
+

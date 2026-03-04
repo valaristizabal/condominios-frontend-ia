@@ -67,10 +67,10 @@ function EmergencyTypeTable({ rows, busy, onEdit, onToggle }) {
 function levelBadgeClass(level = "") {
   const normalizedLevel = String(level).toUpperCase();
 
-  if (normalizedLevel === "LOW") return "bg-emerald-100 text-emerald-700";
-  if (normalizedLevel === "MEDIUM") return "bg-amber-100 text-amber-700";
-  if (normalizedLevel === "HIGH") return "bg-orange-100 text-orange-700";
-  if (normalizedLevel === "CRITICAL") return "bg-red-100 text-red-700";
+  if (normalizedLevel === "BAJO") return "bg-emerald-100 text-emerald-700";
+  if (normalizedLevel === "MEDIO") return "bg-amber-100 text-amber-700";
+  if (normalizedLevel === "ALTO") return "bg-orange-100 text-orange-700";
+  if (normalizedLevel === "CRITICO") return "bg-red-100 text-red-700";
 
   return "bg-slate-100 text-slate-700";
 }

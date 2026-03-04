@@ -1,6 +1,7 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import { PlusCircle } from "lucide-react";
 import { useParams } from "react-router-dom";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useActiveCondominium } from "../../../context/useActiveCondominium";
 import InventoryStats from "../components/InventoryStats";
 import ProductTable from "../components/ProductTable";
@@ -12,8 +13,7 @@ import {
   getInventories,
   getInventoryCategories,
   getLowStockProducts,
-  getProductMovements,
-  getProducts,
+  getProductsWithMovements,
   registerEntry,
   registerExit,
 } from "../services/inventory.service";
@@ -21,16 +21,9 @@ import {
 function InventoryPage() {
   const { activeCondominiumId } = useActiveCondominium();
   const { id: routeCondominiumId } = useParams();
+  const queryClient = useQueryClient();
 
-  const [inventories, setInventories] = useState([]);
-  const [categories, setCategories] = useState([]);
   const [selectedInventoryId, setSelectedInventoryId] = useState("");
-  const [products, setProducts] = useState([]);
-  const [lowStockProducts, setLowStockProducts] = useState([]);
-  const [movements, setMovements] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [savingMovement, setSavingMovement] = useState(false);
-  const [savingProduct, setSavingProduct] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [showAddProduct, setShowAddProduct] = useState(false);
@@ -70,102 +63,111 @@ function InventoryPage() {
     [resolvedCondominiumId]
   );
 
-  useEffect(() => {
-    loadInventoriesAndCategories();
-  }, [resolvedCondominiumId]);
+  const canQuery = Boolean(resolvedCondominiumId);
 
-  useEffect(() => {
-    loadInventoryData();
-  }, [resolvedCondominiumId, selectedInventoryId]);
-
-  const loadInventoriesAndCategories = async () => {
-    if (!resolvedCondominiumId) {
-      setInventories([]);
-      setCategories([]);
-      setSelectedInventoryId("");
-      setProducts([]);
-      setLowStockProducts([]);
-      setMovements([]);
-      setLoading(false);
-      return;
-    }
-
-    setLoading(true);
-    setError("");
-    try {
+  const inventoriesAndCategoriesQuery = useQuery({
+    queryKey: ["inventory", "catalogs", resolvedCondominiumId],
+    enabled: canQuery,
+    queryFn: async () => {
       const [inventoriesResponse, categoriesResponse] = await Promise.all([
         getInventories(requestConfig),
         getInventoryCategories(requestConfig),
       ]);
 
-      setInventories(inventoriesResponse);
-      setCategories(categoriesResponse);
+      return {
+        inventories: inventoriesResponse,
+        categories: categoriesResponse,
+      };
+    },
+  });
 
-      if (inventoriesResponse.length === 0) {
-        setSelectedInventoryId("");
-        setProducts([]);
-        setLowStockProducts([]);
-        setMovements([]);
-      } else {
-        setSelectedInventoryId((prev) => {
-          const exists = inventoriesResponse.some((item) => String(item.id) === String(prev));
-          if (exists && prev) return prev;
-          return String(inventoriesResponse[0].id);
-        });
-      }
+  const inventories = inventoriesAndCategoriesQuery.data?.inventories || [];
+  const categories = inventoriesAndCategoriesQuery.data?.categories || [];
 
-    } catch (err) {
-      setError(normalizeApiError(err, "No fue posible cargar inventarios."));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadInventoryData = async () => {
-    if (!resolvedCondominiumId || !selectedInventoryId) {
-      setProducts([]);
-      setLowStockProducts([]);
-      setMovements([]);
+  useEffect(() => {
+    if (!inventories.length) {
+      setSelectedInventoryId("");
       return;
     }
 
-    setLoading(true);
-    setError("");
-    try {
-      const productsResponse = await getProducts(requestConfig, Number(selectedInventoryId));
-      setProducts(productsResponse);
+    setSelectedInventoryId((prev) => {
+      const exists = inventories.some((item) => String(item.id) === String(prev));
+      if (exists && prev) return prev;
+      return String(inventories[0].id);
+    });
+  }, [inventories]);
 
-      const lowStockResponse = await getLowStockProducts(requestConfig);
-      setLowStockProducts(
-        lowStockResponse.filter((product) => String(product.inventory_id) === String(selectedInventoryId))
-      );
+  const productsWithMovementsQuery = useQuery({
+    queryKey: ["inventory", "products-with-movements", resolvedCondominiumId, selectedInventoryId],
+    enabled: canQuery && Boolean(selectedInventoryId),
+    queryFn: () => getProductsWithMovements(requestConfig, Number(selectedInventoryId), 20),
+  });
 
-      const movementResults = await Promise.all(
-        productsResponse.slice(0, 20).map(async (product) => {
-          const rows = await getProductMovements(product.id, requestConfig);
-          return rows.map((movement) => ({
-            ...movement,
-            product_name: product.name,
-          }));
-        })
-      );
+  const products = productsWithMovementsQuery.data?.products || [];
 
-      const merged = movementResults.flat().sort((a, b) => {
-        const aDate = new Date(a.movement_date || a.created_at || 0).getTime();
-        const bDate = new Date(b.movement_date || b.created_at || 0).getTime();
-        return bDate - aDate;
-      });
-      setMovements(merged.slice(0, 30));
+  useEffect(() => {
+    if (products.length > 0) return;
+    setMovementForm((prev) => ({ ...prev, product_id: "" }));
+  }, [products]);
 
-      if (productsResponse.length === 0) {
-        setMovementForm((prev) => ({ ...prev, product_id: "" }));
+  const lowStockQuery = useQuery({
+    queryKey: ["inventory", "low-stock", resolvedCondominiumId, selectedInventoryId],
+    enabled: canQuery && Boolean(selectedInventoryId),
+    queryFn: async () => {
+      const response = await getLowStockProducts(requestConfig);
+      return response.filter((product) => String(product.inventory_id) === String(selectedInventoryId));
+    },
+  });
+
+  const lowStockProducts = lowStockQuery.data || [];
+
+  const movements = productsWithMovementsQuery.data?.movements || [];
+
+  const loading =
+    inventoriesAndCategoriesQuery.isLoading ||
+    productsWithMovementsQuery.isLoading ||
+    lowStockQuery.isLoading;
+
+  useEffect(() => {
+    const queryError =
+      inventoriesAndCategoriesQuery.error || productsWithMovementsQuery.error || lowStockQuery.error;
+
+    if (!queryError) return;
+
+    setError(normalizeApiError(queryError, "No fue posible cargar inventario."));
+  }, [
+    inventoriesAndCategoriesQuery.error,
+    productsWithMovementsQuery.error,
+    lowStockQuery.error,
+  ]);
+
+  const createProductMutation = useMutation({
+    mutationFn: (payload) => createProduct(payload, requestConfig),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["inventory", "products-with-movements", resolvedCondominiumId, selectedInventoryId] }),
+        queryClient.invalidateQueries({ queryKey: ["inventory", "low-stock", resolvedCondominiumId, selectedInventoryId] }),
+      ]);
+    },
+  });
+
+  const registerMovementMutation = useMutation({
+    mutationFn: async ({ type, payload }) => {
+      if (type === "entry") {
+        return registerEntry(payload, requestConfig);
       }
-    } catch (err) {
-      setError(normalizeApiError(err, "No fue posible cargar inventario."));
-    } finally {
-      setLoading(false);
-    }
-  };
+      return registerExit(payload, requestConfig);
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["inventory", "products-with-movements", resolvedCondominiumId, selectedInventoryId] }),
+        queryClient.invalidateQueries({ queryKey: ["inventory", "low-stock", resolvedCondominiumId, selectedInventoryId] }),
+      ]);
+    },
+  });
+
+  const savingMovement = registerMovementMutation.isPending;
+  const savingProduct = createProductMutation.isPending;
 
   const stats = useMemo(() => {
     const consumables = products.filter((p) => p.type !== "asset").length;
@@ -190,20 +192,22 @@ function InventoryPage() {
 
   const handleRegisterMovement = async () => {
     if (!movementForm.product_id || !movementForm.type || Number(movementForm.quantity) <= 0) return;
-    setSavingMovement(true);
+
     setError("");
     setSuccess("");
+
     try {
       const payload = {
         product_id: Number(movementForm.product_id),
         quantity: Number(movementForm.quantity),
         observations: String(movementForm.observations || "").trim() || null,
       };
-      if (movementForm.type === "entry") {
-        await registerEntry(payload, requestConfig);
-      } else {
-        await registerExit(payload, requestConfig);
-      }
+
+      await registerMovementMutation.mutateAsync({
+        type: movementForm.type,
+        payload,
+      });
+
       setSuccess("Movimiento registrado correctamente.");
       setMovementForm({
         product_id: "",
@@ -211,39 +215,35 @@ function InventoryPage() {
         quantity: "",
         observations: "",
       });
-      await loadInventoryData();
     } catch (err) {
       setError(normalizeApiError(err, "No fue posible registrar el movimiento."));
-    } finally {
-      setSavingMovement(false);
     }
   };
 
   const handleCreateProduct = async () => {
     if (!productForm.name.trim()) return;
+
     const inventoryId = Number(selectedInventoryId);
     if (!inventoryId) {
       setError("Selecciona un inventario activo para crear el producto.");
       return;
     }
 
-    setSavingProduct(true);
     setError("");
     setSuccess("");
+
     try {
-      await createProduct(
-        {
-          inventory_id: inventoryId,
-          name: productForm.name.trim(),
-          category_id: productForm.category_id ? Number(productForm.category_id) : null,
-          type: productForm.type,
-          minimum_stock: Number(productForm.minimum_stock || 0),
-          stock: Number(productForm.stock || 0),
-          asset_code: productForm.type === "asset" ? productForm.asset_code || null : null,
-          location: productForm.location || null,
-        },
-        requestConfig
-      );
+      await createProductMutation.mutateAsync({
+        inventory_id: inventoryId,
+        name: productForm.name.trim(),
+        category_id: productForm.category_id ? Number(productForm.category_id) : null,
+        type: productForm.type,
+        minimum_stock: Number(productForm.minimum_stock || 0),
+        stock: Number(productForm.stock || 0),
+        asset_code: productForm.type === "asset" ? productForm.asset_code || null : null,
+        location: productForm.location || null,
+      });
+
       setShowAddProduct(false);
       setProductForm({
         name: "",
@@ -255,11 +255,8 @@ function InventoryPage() {
         location: "",
       });
       setSuccess("Producto creado correctamente.");
-      await loadInventoryData();
     } catch (err) {
       setError(normalizeApiError(err, "No fue posible crear el producto."));
-    } finally {
-      setSavingProduct(false);
     }
   };
 
@@ -300,7 +297,7 @@ function InventoryPage() {
 
       {!resolvedCondominiumId ? (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700">
-          No hay condominio activo para operar este módulo.
+          No hay condominio activo para operar este modulo.
         </div>
       ) : null}
 
@@ -336,14 +333,14 @@ function InventoryPage() {
             </div>
 
             <div>
-              <label className="mb-1.5 block text-sm font-semibold text-gray-700">Categoría</label>
+              <label className="mb-1.5 block text-sm font-semibold text-gray-700">Categoria</label>
               <select
                 name="category_id"
                 value={productForm.category_id}
                 onChange={handleProductChange}
                 className="w-full rounded-2xl border border-gray-200 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-300"
               >
-                <option value="">Seleccione categoría</option>
+                <option value="">Seleccione categoria</option>
                 {categories.map((category) => (
                   <option key={category.id} value={category.id}>
                     {category.name}
@@ -381,7 +378,7 @@ function InventoryPage() {
             </div>
 
             <div>
-              <label className="mb-1.5 block text-sm font-semibold text-gray-700">Stock mínimo de alerta</label>
+              <label className="mb-1.5 block text-sm font-semibold text-gray-700">Stock minimo de alerta</label>
               <input
                 name="minimum_stock"
                 type="number"
@@ -389,33 +386,33 @@ function InventoryPage() {
                 value={productForm.minimum_stock}
                 onChange={handleProductChange}
                 className="w-full rounded-2xl border border-gray-200 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-300"
-                placeholder="Stock mínimo de alerta"
+                placeholder="Stock minimo de alerta"
               />
               <p className="mt-1 text-xs font-semibold text-gray-500">
-                Cuando el stock sea menor a este valor se generará alerta de reposición.
+                Cuando el stock sea menor a este valor se generara alerta de reposicion.
               </p>
             </div>
 
             <div>
-              <label className="mb-1.5 block text-sm font-semibold text-gray-700">Ubicación</label>
+              <label className="mb-1.5 block text-sm font-semibold text-gray-700">Ubicacion</label>
               <input
                 name="location"
                 value={productForm.location}
                 onChange={handleProductChange}
                 className="w-full rounded-2xl border border-gray-200 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-300"
-                placeholder="Ubicación"
+                placeholder="Ubicacion"
               />
             </div>
 
             {productForm.type === "asset" ? (
               <div className="md:col-span-2">
-                <label className="mb-1.5 block text-sm font-semibold text-gray-700">Código de activo</label>
+                <label className="mb-1.5 block text-sm font-semibold text-gray-700">Codigo de activo</label>
                 <input
                   name="asset_code"
                   value={productForm.asset_code}
                   onChange={handleProductChange}
                   className="w-full rounded-2xl border border-gray-200 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-300"
-                  placeholder="Código de activo"
+                  placeholder="Codigo de activo"
                 />
               </div>
             ) : null}

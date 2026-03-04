@@ -8,6 +8,7 @@ import {
   Package,
   Settings,
   Sparkles,
+  UserCheck,
   Users,
   Car,
 } from "lucide-react";
@@ -25,6 +26,7 @@ function getSidebarSections(basePath, canInventoryOperate) {
         { label: "Dashboard", to: resolvePath("/dashboard"), enabled: true },
         { label: "Visitantes", to: resolvePath("/visits"), enabled: true },
         { label: "Vehiculos", to: resolvePath("/vehicles"), enabled: true },
+        { label: "Ingreso de personal", to: resolvePath("/employee-entries"), enabled: true },
         { label: "Correspondencia", to: resolvePath("/correspondence"), enabled: true },
         { label: "Emergencias", to: resolvePath("/emergencies"), enabled: true },
         { label: "Aseo", to: resolvePath("/cleaning"), enabled: true },
@@ -198,6 +200,7 @@ function iconByLabel(label) {
     Dashboard: <LayoutDashboard className={className} />,
     Visitantes: <Users className={className} />,
     Vehiculos: <Car className={className} />,
+    "Ingreso de personal": <UserCheck className={className} />,
     Correspondencia: <ClipboardList className={className} />,
     Emergencias: <Bell className={className} />,
     Aseo: <Sparkles className={className} />,

@@ -1,15 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 
 const LEVEL_OPTIONS = [
-  { value: "LOW", label: "LOW" },
-  { value: "MEDIUM", label: "MEDIUM" },
-  { value: "HIGH", label: "HIGH" },
-  { value: "CRITICAL", label: "CRITICAL" },
+  { value: "BAJO", label: "BAJO" },
+  { value: "MEDIO", label: "MEDIO" },
+  { value: "ALTO", label: "ALTO" },
+  { value: "CRITICO", label: "CRITICO" },
 ];
 
 function EmergencyTypeFormModal({ open, initialValues, loading, onCancel, onSubmit }) {
   const [name, setName] = useState("");
-  const [level, setLevel] = useState("LOW");
+  const [level, setLevel] = useState("BAJO");
   const [isActive, setIsActive] = useState(true);
   const [error, setError] = useState("");
 
@@ -18,7 +18,7 @@ function EmergencyTypeFormModal({ open, initialValues, loading, onCancel, onSubm
   useEffect(() => {
     if (!open) return;
     setName(initialValues?.name ?? "");
-    setLevel(initialValues?.level ?? "LOW");
+    setLevel(initialValues?.level ?? "BAJO");
     setIsActive(
       typeof initialValues?.is_active === "boolean" ? Boolean(initialValues.is_active) : true
     );

@@ -50,14 +50,18 @@ export function useCleaningRecords() {
 
     const areas = Array.isArray(areasResponse.data) ? areasResponse.data.filter((a) => a?.is_active !== false) : [];
     const operatives = Array.isArray(operativesResponse.data) ? operativesResponse.data : [];
-    const records = Array.isArray(recordsResponse.data) ? recordsResponse.data : [];
+    const records = Array.isArray(recordsResponse.data)
+      ? recordsResponse.data
+      : Array.isArray(recordsResponse.data?.data)
+        ? recordsResponse.data.data
+        : [];
 
     return { areas, operatives, records };
   }, [resolvedCondominiumId, requestConfig]);
 
   const getChecklistItems = useCallback(
     async (recordId) => {
-      const response = await apiClient.get(`/checklists/${recordId}/items`, requestConfig);
+      const response = await apiClient.get(`/cleaning-records/${recordId}/checklist`, requestConfig);
       return Array.isArray(response.data) ? response.data : [];
     },
     [requestConfig]
@@ -93,6 +97,7 @@ export function useCleaningRecords() {
 
   return {
     hasTenantContext: Boolean(resolvedCondominiumId),
+    tenantCacheKey: resolvedCondominiumId,
     getInitialData,
     getChecklistItems,
     createCleaningRecord,

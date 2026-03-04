@@ -6,6 +6,7 @@ export function useEmergencies() {
   const { activeCondominiumId } = useActiveCondominium();
   const [emergencies, setEmergencies] = useState([]);
   const [emergencyTypes, setEmergencyTypes] = useState([]);
+  const [emergencyContacts, setEmergencyContacts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [actingIds, setActingIds] = useState({});
@@ -37,6 +38,22 @@ export function useEmergencies() {
     } catch (err) {
       setError(normalizeApiError(err, "No fue posible cargar tipos de emergencia."));
       setEmergencyTypes([]);
+    }
+  }, [activeCondominiumId, requestConfig]);
+
+  const fetchEmergencyContacts = useCallback(async () => {
+    if (!activeCondominiumId) {
+      setEmergencyContacts([]);
+      return;
+    }
+
+    try {
+      const response = await apiClient.get("/emergency-contacts?active=1", requestConfig);
+      const rows = Array.isArray(response.data) ? response.data : [];
+      setEmergencyContacts(rows.filter((item) => item?.is_active));
+    } catch (err) {
+      setError(normalizeApiError(err, "No fue posible cargar contactos de emergencia."));
+      setEmergencyContacts([]);
     }
   }, [activeCondominiumId, requestConfig]);
 
@@ -131,12 +148,14 @@ export function useEmergencies() {
 
   useEffect(() => {
     fetchEmergencyTypes();
+    fetchEmergencyContacts();
     fetchEmergencies();
-  }, [fetchEmergencyTypes, fetchEmergencies]);
+  }, [fetchEmergencyTypes, fetchEmergencyContacts, fetchEmergencies]);
 
   return {
     emergencies,
     emergencyTypes,
+    emergencyContacts,
     loading,
     saving,
     actingIds,

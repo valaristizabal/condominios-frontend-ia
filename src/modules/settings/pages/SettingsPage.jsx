@@ -1,6 +1,14 @@
+import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuthContext } from "../../../context/useAuthContext";
+import { useActiveCondominium } from "../../../context/useActiveCondominium";
+import apiClient from "../../../services/apiClient";
 import { canAccessInventorySettings } from "../../../utils/roles";
+import {
+  exportDailyMinutaWorkbook,
+  exportMonthlyMinutaWorkbook,
+  monthDates,
+} from "./minutaExcel";
 
 function Card({ children, className = "" }) {
   return (
@@ -51,9 +59,87 @@ function ItemRow({ title, description, onClick }) {
 export default function SettingsPage() {
   const navigate = useNavigate();
   const { id } = useParams();
+  const { activeCondominiumId } = useActiveCondominium();
   const { user } = useAuthContext();
   const basePath = id ? `/condominio/${id}` : "";
   const canSeeInventorySettings = canAccessInventorySettings(user);
+  const [downloading, setDownloading] = useState("");
+  const [downloadError, setDownloadError] = useState("");
+
+  const resolvedCondominiumId = useMemo(() => {
+    const contextId = Number(activeCondominiumId);
+    if (Number.isFinite(contextId) && contextId > 0) return contextId;
+
+    const routeId = Number(id);
+    if (Number.isFinite(routeId) && routeId > 0) return routeId;
+
+    return null;
+  }, [activeCondominiumId, id]);
+
+  const requestConfig = useMemo(
+    () =>
+      resolvedCondominiumId
+        ? {
+            headers: {
+              "X-Active-Condominium-Id": String(resolvedCondominiumId),
+            },
+          }
+        : undefined,
+    [resolvedCondominiumId]
+  );
+
+  const downloadDailyLog = async () => {
+    if (!resolvedCondominiumId) return;
+
+    setDownloadError("");
+    setDownloading("daily");
+
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      const response = await apiClient.get(`/reports/daily-log?date=${today}`, requestConfig);
+      await exportDailyMinutaWorkbook({
+        payload: response.data,
+        fileName: `minuta-diaria-${today}.xlsx`,
+        condominiumLabel: `Condominio #${resolvedCondominiumId}`,
+      });
+    } catch (err) {
+      setDownloadError(normalizeApiError(err, "No fue posible descargar la minuta diaria."));
+    } finally {
+      setDownloading("");
+    }
+  };
+
+  const downloadMonthlySummary = async () => {
+    if (!resolvedCondominiumId) return;
+
+    setDownloadError("");
+    setDownloading("monthly");
+
+    try {
+      const month = new Date().toISOString().slice(0, 7);
+      const summaryResponse = await apiClient.get(`/reports/monthly-summary?month=${month}`, requestConfig);
+
+      const dates = monthDates(month);
+      const dailyLogs = await Promise.all(
+        dates.map(async (date) => {
+          const dailyResponse = await apiClient.get(`/reports/daily-log?date=${date}`, requestConfig);
+          return dailyResponse.data;
+        })
+      );
+
+      await exportMonthlyMinutaWorkbook({
+        month,
+        monthlySummary: summaryResponse.data,
+        dailyLogs,
+        fileName: `minuta-mensual-${month}.xlsx`,
+        condominiumLabel: `Condominio #${resolvedCondominiumId}`,
+      });
+    } catch (err) {
+      setDownloadError(normalizeApiError(err, "No fue posible descargar la minuta mensual."));
+    } finally {
+      setDownloading("");
+    }
+  };
 
   return (
     <div className="w-full">
@@ -101,6 +187,11 @@ export default function SettingsPage() {
                   onClick={() => navigate(`${basePath}/settings/emergency-types`)}
                 />
                 <ItemRow
+                  title="Emergencias"
+                  description="Configura contactos y numeros de emergencia por condominio"
+                  onClick={() => navigate(`${basePath}/settings/emergency-contacts`)}
+                />
+                <ItemRow
                   title="Aseo"
                   description="Configura zonas de aseo, checklists y seguimiento"
                   onClick={() => navigate(`${basePath}/settings/cleaning`)}
@@ -131,6 +222,41 @@ export default function SettingsPage() {
                 </p>
               </div>
             </Card>
+
+            <Card>
+              <p className="text-xs font-extrabold uppercase tracking-widest text-slate-400">Descargas</p>
+              <p className="mt-1 text-xs font-semibold text-slate-500">
+                Genera minutas automaticas del condominio activo.
+              </p>
+
+              <div className="mt-4 space-y-2">
+                <button
+                  type="button"
+                  onClick={downloadDailyLog}
+                  disabled={!resolvedCondominiumId || downloading === "daily"}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 py-3 text-sm font-extrabold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  <DownloadIcon />
+                  {downloading === "daily" ? "Descargando..." : "Descargar minuta diaria"}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={downloadMonthlySummary}
+                  disabled={!resolvedCondominiumId || downloading === "monthly"}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-extrabold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  <DownloadIcon />
+                  {downloading === "monthly" ? "Descargando..." : "Descargar minuta mensual"}
+                </button>
+              </div>
+
+              {downloadError ? (
+                <p className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700">
+                  {downloadError}
+                </p>
+              ) : null}
+            </Card>
           </div>
         </div>
       </div>
@@ -152,5 +278,29 @@ function GearIcon() {
       <path d="M10.2 2h3.6l.5 2.24a8 8 0 0 1 1.66.96l2.08-.85 1.8 3.12-1.58 1.55c.12.39.2.79.25 1.2l2.14.79v3.6l-2.14.79a7.4 7.4 0 0 1-.25 1.2l1.58 1.55-1.8 3.12-2.08-.85a8 8 0 0 1-1.66.96L13.8 22h-3.6l-.5-2.24a8 8 0 0 1-1.66-.96l-2.08.85-1.8-3.12 1.58-1.55a7.4 7.4 0 0 1-.25-1.2L3.35 13v-3.6l2.14-.79c.05-.41.13-.81.25-1.2L4.16 5.86l1.8-3.12 2.08.85a8 8 0 0 1 1.66-.96L10.2 2Zm1.8 6a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z" />
     </svg>
   );
+}
+
+function DownloadIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current" aria-hidden="true">
+      <path d="M12 3a1 1 0 0 1 1 1v8.59l2.3-2.3 1.4 1.42-4.7 4.7-4.7-4.7 1.4-1.42 2.3 2.3V4a1 1 0 0 1 1-1Zm-7 14h14v2H5v-2Z" />
+    </svg>
+  );
+}
+
+function normalizeApiError(err, fallbackMessage) {
+  const responseData = err?.response?.data;
+  const errors = responseData?.errors;
+
+  if (errors && typeof errors === "object") {
+    const firstFieldErrors = Object.values(errors).find(
+      (fieldErrors) => Array.isArray(fieldErrors) && fieldErrors.length > 0
+    );
+    if (firstFieldErrors) {
+      return String(firstFieldErrors[0]);
+    }
+  }
+
+  return responseData?.message || err?.message || fallbackMessage;
 }
 

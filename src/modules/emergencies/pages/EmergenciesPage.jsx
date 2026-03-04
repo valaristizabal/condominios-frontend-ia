@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Ambulance, Droplets, Flame, Shield, Siren, Zap } from "lucide-react";
+import { Ambulance, Building2, Flame, Phone, Shield, Siren } from "lucide-react";
 import { useEmergencies } from "../hooks/useEmergencies";
 
 const inputBase =
@@ -14,16 +14,23 @@ function SectionTitle({ icon, title }) {
   );
 }
 
-function EmergencyContactCard({ icon, bgColor, iconColor, title, subtitle }) {
+function EmergencyContactCard({ icon, title, phoneNumber }) {
   return (
-    <div className="flex items-start gap-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md">
-      <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${bgColor}`}>
-        <div className={iconColor}>{icon}</div>
+    <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md">
+      <div className="flex items-start gap-4">
+        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">{icon}</div>
+        <div className="flex-1">
+          <div className="text-xs font-bold uppercase tracking-widest text-slate-500">{title}</div>
+          <div className="text-base font-extrabold text-slate-900">{phoneNumber}</div>
+        </div>
       </div>
-      <div>
-        <div className="text-xs font-bold uppercase tracking-widest text-slate-500">{title}</div>
-        <div className="text-base font-extrabold text-slate-900">{subtitle}</div>
-      </div>
+
+      <a
+        href={`tel:${phoneNumber}`}
+        className="mt-4 inline-flex rounded-2xl border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-extrabold text-blue-700 transition hover:bg-blue-100"
+      >
+        Llamar
+      </a>
     </div>
   );
 }
@@ -48,7 +55,16 @@ function localDatetimeNow() {
 }
 
 export default function EmergenciesPage() {
-  const { emergencyTypes, saving, error, fieldErrors, activeCondominiumId, createEmergency, clearFieldError } =
+  const {
+    emergencyTypes,
+    emergencyContacts,
+    saving,
+    error,
+    fieldErrors,
+    activeCondominiumId,
+    createEmergency,
+    clearFieldError,
+  } =
     useEmergencies();
 
   const [form, setForm] = useState({
@@ -217,30 +233,20 @@ export default function EmergenciesPage() {
           <div className="text-sm font-extrabold uppercase tracking-widest text-slate-600">Contactos de Emergencia</div>
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <EmergencyContactCard
-              icon={<Shield className="h-5 w-5" />}
-              bgColor="bg-blue-50"
-              iconColor="text-blue-600"
-              title="Policia"
-              subtitle="Cuadrante Zona"
-            />
-            <EmergencyContactCard
-              icon={<Flame className="h-5 w-5" />}
-              bgColor="bg-orange-50"
-              iconColor="text-orange-600"
-              title="Bomberos"
-              subtitle="Linea Directa"
-            />
-            <EmergencyContactCard
-              icon={<Ambulance className="h-5 w-5" />}
-              bgColor="bg-red-50"
-              iconColor="text-red-600"
-              title="Ambulancia"
-              subtitle="Urgencias"
-            />
-            <EmergencyContactCard icon={<Flame className="h-5 w-5" />} bgColor="bg-amber-50" iconColor="text-amber-600" title="Gas" subtitle="Emergencias Gas" />
-            <EmergencyContactCard icon={<Zap className="h-5 w-5" />} bgColor="bg-yellow-50" iconColor="text-yellow-700" title="Energia" subtitle="Fallas Electricas" />
-            <EmergencyContactCard icon={<Droplets className="h-5 w-5" />} bgColor="bg-cyan-50" iconColor="text-cyan-600" title="Acueducto" subtitle="Danos de Agua" />
+            {emergencyContacts.length ? (
+              emergencyContacts.map((contact) => (
+                <EmergencyContactCard
+                  key={contact.id}
+                  icon={resolveEmergencyIcon(contact.icon)}
+                  title={contact.name || "Servicio"}
+                  phoneNumber={contact.phone_number || "-"}
+                />
+              ))
+            ) : (
+              <div className="col-span-full rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm font-semibold text-slate-600">
+                No hay contactos de emergencia configurados para este condominio.
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -297,4 +303,17 @@ function formatDateLabel(datetimeValue) {
     minute: "2-digit",
   });
   return `${datePart}, ${timePart} (Automatico)`;
+}
+
+function resolveEmergencyIcon(iconName) {
+  const iconClass = "h-5 w-5";
+  const normalized = String(iconName || "").toLowerCase();
+
+  if (normalized === "flame") return <Flame className={iconClass} />;
+  if (normalized === "ambulance") return <Ambulance className={iconClass} />;
+  if (normalized === "siren") return <Siren className={iconClass} />;
+  if (normalized === "building2") return <Building2 className={iconClass} />;
+  if (normalized === "phone") return <Phone className={iconClass} />;
+
+  return <Shield className={iconClass} />;
 }
