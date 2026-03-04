@@ -5,9 +5,12 @@ import apiClient from "../../../services/apiClient";
 export function useCleaningAreas() {
   const { activeCondominiumId } = useActiveCondominium();
   const [areas, setAreas] = useState([]);
+  const [schedules, setSchedules] = useState([]);
   const [checklistsByArea, setChecklistsByArea] = useState({});
   const [loading, setLoading] = useState(true);
+  const [schedulesLoading, setSchedulesLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [scheduleSaving, setScheduleSaving] = useState(false);
   const [checklistLoading, setChecklistLoading] = useState(false);
   const [checklistSaving, setChecklistSaving] = useState(false);
   const [error, setError] = useState("");
@@ -25,6 +28,12 @@ export function useCleaningAreas() {
   );
 
   const fetchCleaningAreas = useCallback(async () => {
+    if (!activeCondominiumId) {
+      setAreas([]);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError("");
 
@@ -36,7 +45,27 @@ export function useCleaningAreas() {
     } finally {
       setLoading(false);
     }
-  }, [requestConfig]);
+  }, [activeCondominiumId, requestConfig]);
+
+  const fetchCleaningSchedules = useCallback(async () => {
+    if (!activeCondominiumId) {
+      setSchedules([]);
+      setSchedulesLoading(false);
+      return;
+    }
+
+    setSchedulesLoading(true);
+    setError("");
+
+    try {
+      const response = await apiClient.get("/cleaning-schedules", requestConfig);
+      setSchedules(Array.isArray(response.data) ? response.data : []);
+    } catch (err) {
+      setError(normalizeApiError(err, "No fue posible cargar programaciones de aseo."));
+    } finally {
+      setSchedulesLoading(false);
+    }
+  }, [activeCondominiumId, requestConfig]);
 
   const createCleaningArea = useCallback(
     async (payload) => {
@@ -163,17 +192,81 @@ export function useCleaningAreas() {
     [fetchChecklistByArea, requestConfig]
   );
 
+  const createCleaningSchedule = useCallback(
+    async (payload) => {
+      setScheduleSaving(true);
+      setError("");
+
+      try {
+        const response = await apiClient.post("/cleaning-schedules", payload, requestConfig);
+        await fetchCleaningSchedules();
+        return response.data;
+      } catch (err) {
+        setError(normalizeApiError(err, "No fue posible crear la programacion de aseo."));
+        throw err;
+      } finally {
+        setScheduleSaving(false);
+      }
+    },
+    [fetchCleaningSchedules, requestConfig]
+  );
+
+  const updateCleaningSchedule = useCallback(
+    async (id, payload) => {
+      setScheduleSaving(true);
+      setError("");
+
+      try {
+        const response = await apiClient.put(`/cleaning-schedules/${id}`, payload, requestConfig);
+        await fetchCleaningSchedules();
+        return response.data;
+      } catch (err) {
+        setError(normalizeApiError(err, "No fue posible actualizar la programacion de aseo."));
+        throw err;
+      } finally {
+        setScheduleSaving(false);
+      }
+    },
+    [fetchCleaningSchedules, requestConfig]
+  );
+
+  const removeCleaningSchedule = useCallback(
+    async (id) => {
+      setScheduleSaving(true);
+      setError("");
+
+      try {
+        const response = await apiClient.delete(`/cleaning-schedules/${id}`, requestConfig);
+        await fetchCleaningSchedules();
+        return response.data;
+      } catch (err) {
+        setError(normalizeApiError(err, "No fue posible eliminar la programacion de aseo."));
+        throw err;
+      } finally {
+        setScheduleSaving(false);
+      }
+    },
+    [fetchCleaningSchedules, requestConfig]
+  );
+
   useEffect(() => {
     fetchCleaningAreas();
   }, [fetchCleaningAreas]);
+
+  useEffect(() => {
+    fetchCleaningSchedules();
+  }, [fetchCleaningSchedules]);
 
   const hasTenantContext = useMemo(() => Boolean(activeCondominiumId), [activeCondominiumId]);
 
   return {
     cleaningAreas: areas,
+    cleaningSchedules: schedules,
     checklistsByArea,
     loading,
+    schedulesLoading,
     saving,
+    scheduleSaving,
     checklistLoading,
     checklistSaving,
     error,
@@ -186,6 +279,10 @@ export function useCleaningAreas() {
     fetchChecklistByArea,
     addChecklistItem,
     removeChecklistItem,
+    fetchCleaningSchedules,
+    createCleaningSchedule,
+    updateCleaningSchedule,
+    removeCleaningSchedule,
   };
 }
 
