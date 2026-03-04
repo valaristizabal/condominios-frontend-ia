@@ -1,3 +1,5 @@
+import { Clock } from "lucide-react";
+
 const Card = ({ children, className = "" }) => (
   <div
     className={[
@@ -87,7 +89,7 @@ export default function CorrespondenceTable({ recent = [], onRequestDeliver }) {
   return (
     <Card>
       <SectionTitle
-        icon="🕘"
+        icon={<Clock className="h-5 w-5" />}
         title="Últimos registros"
         desc="Consulta rápida de correspondencias registradas recientemente."
       />

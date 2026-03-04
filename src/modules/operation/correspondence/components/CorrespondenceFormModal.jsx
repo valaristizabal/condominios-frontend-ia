@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Camera, CheckCircle, FileText, Inbox, Package, Pencil } from "lucide-react";
 
 const Card = ({ children, className = "" }) => (
   <div
@@ -313,7 +314,7 @@ export default function CorrespondenceFormModal({
   return (
     <Card>
       <SectionTitle
-        icon="📮"
+        icon={<Inbox className="h-5 w-5" />}
         title="Nueva correspondencia"
         desc="Captura evidencia, selecciona destino y registra la entrega."
       />
@@ -352,7 +353,7 @@ export default function CorrespondenceFormModal({
             ) : (
               <div className="space-y-2">
                 <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-sm">
-                  📷
+                  <Camera className="h-5 w-5" />
                 </div>
                 <p className="text-sm font-extrabold text-slate-900">
                   Tomar / Cargar fotografía
@@ -424,7 +425,8 @@ export default function CorrespondenceFormModal({
                   : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50",
               ].join(" ")}
             >
-              📄 Documento
+              <FileText className="mr-2 inline h-4 w-4" />
+              Documento
             </button>
 
             <button
@@ -437,7 +439,8 @@ export default function CorrespondenceFormModal({
                   : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50",
               ].join(" ")}
             >
-              📦 Paquete
+              <Package className="mr-2 inline h-4 w-4" />
+              Paquete
             </button>
           </div>
           <FieldError message={fieldErrors.package_type} />
@@ -476,7 +479,7 @@ export default function CorrespondenceFormModal({
         </div>
 
         <div>
-          <SectionTitle icon="✍️" title="Datos de entrega" />
+          <SectionTitle icon={<Pencil className="h-5 w-5" />} title="Datos de entrega" />
           <div className="mt-4">
             <Label>Nombre del destinatario</Label>
             <input
@@ -538,7 +541,7 @@ export default function CorrespondenceFormModal({
         </div>
 
         <PrimaryButton type="submit" disabled={!canSubmit || submitting}>
-          {submitting ? "Registrando..." : "🧾 Registrar Entrega"}
+          {submitting ? "Registrando..." : <><CheckCircle className="mr-2 inline h-4 w-4" />Registrar Entrega</>}
         </PrimaryButton>
 
         {!canSubmit && (

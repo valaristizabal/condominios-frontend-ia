@@ -1,3 +1,5 @@
+import { Building, Building2, House, Landmark, Store } from "lucide-react";
+
 function UnitTypeTable({ rows, busy, onEdit, onToggle }) {
   if (!rows.length) {
     return (
@@ -72,13 +74,13 @@ function UnitTypeTable({ rows, busy, onEdit, onToggle }) {
 function iconByType(name = "") {
   const normalizedName = String(name).toLowerCase();
 
-  if (normalizedName.includes("apart")) return "🏢";
-  if (normalizedName.includes("cas")) return "🏠";
-  if (normalizedName.includes("pen")) return "🏙️";
-  if (normalizedName.includes("oficina")) return "🏬";
-  if (normalizedName.includes("local")) return "🏪";
+  if (normalizedName.includes("apart")) return <Building2 className="h-5 w-5" />;
+  if (normalizedName.includes("cas")) return <House className="h-5 w-5" />;
+  if (normalizedName.includes("pen")) return <Building className="h-5 w-5" />;
+  if (normalizedName.includes("oficina")) return <Landmark className="h-5 w-5" />;
+  if (normalizedName.includes("local")) return <Store className="h-5 w-5" />;
 
-  return "🏘️";
+  return <Building2 className="h-5 w-5" />;
 }
 
 export default UnitTypeTable;

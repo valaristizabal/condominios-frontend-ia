@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Ambulance, Droplets, Flame, Shield, Siren, Zap } from "lucide-react";
 import { useEmergencies } from "../hooks/useEmergencies";
 
 const inputBase =
@@ -146,7 +147,7 @@ export default function EmergenciesPage() {
           onSubmit={handleSubmit}
           className="space-y-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"
         >
-          <SectionTitle icon={<span className="text-base">🚨</span>} title="Reportar Incidente" />
+          <SectionTitle icon={<Siren className="h-5 w-5" />} title="Reportar Incidente" />
 
           <div className="space-y-2">
             <label className="text-sm font-semibold text-slate-700">Tipo de Emergencia</label>
@@ -217,29 +218,29 @@ export default function EmergenciesPage() {
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <EmergencyContactCard
-              icon="🛡️"
+              icon={<Shield className="h-5 w-5" />}
               bgColor="bg-blue-50"
               iconColor="text-blue-600"
               title="Policia"
               subtitle="Cuadrante Zona"
             />
             <EmergencyContactCard
-              icon="🔥"
+              icon={<Flame className="h-5 w-5" />}
               bgColor="bg-orange-50"
               iconColor="text-orange-600"
               title="Bomberos"
               subtitle="Linea Directa"
             />
             <EmergencyContactCard
-              icon="🚑"
+              icon={<Ambulance className="h-5 w-5" />}
               bgColor="bg-red-50"
               iconColor="text-red-600"
               title="Ambulancia"
               subtitle="Urgencias"
             />
-            <EmergencyContactCard icon="🧯" bgColor="bg-amber-50" iconColor="text-amber-600" title="Gas" subtitle="Emergencias Gas" />
-            <EmergencyContactCard icon="⚡" bgColor="bg-yellow-50" iconColor="text-yellow-700" title="Energia" subtitle="Fallas Electricas" />
-            <EmergencyContactCard icon="💧" bgColor="bg-cyan-50" iconColor="text-cyan-600" title="Acueducto" subtitle="Danos de Agua" />
+            <EmergencyContactCard icon={<Flame className="h-5 w-5" />} bgColor="bg-amber-50" iconColor="text-amber-600" title="Gas" subtitle="Emergencias Gas" />
+            <EmergencyContactCard icon={<Zap className="h-5 w-5" />} bgColor="bg-yellow-50" iconColor="text-yellow-700" title="Energia" subtitle="Fallas Electricas" />
+            <EmergencyContactCard icon={<Droplets className="h-5 w-5" />} bgColor="bg-cyan-50" iconColor="text-cyan-600" title="Acueducto" subtitle="Danos de Agua" />
           </div>
         </div>
       </div>

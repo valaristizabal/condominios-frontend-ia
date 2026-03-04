@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { ArrowLeft, Pencil, PlusCircle } from "lucide-react";
 import { useCleaningAreas } from "./useCleaningAreas";
 
 const inputBase =
@@ -281,7 +282,7 @@ function CleaningAreasPage() {
             className="w-10 h-10 rounded-full hover:bg-gray-100 flex items-center justify-center mt-0.5"
             onClick={() => window.history.back()}
           >
-            {"\u2190"}
+            <ArrowLeft className="h-5 w-5" />
           </button>
 
           <div>
@@ -320,7 +321,7 @@ function CleaningAreasPage() {
         <div className="mt-6 bg-white rounded-3xl shadow-sm border border-gray-100 p-5">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-700 font-black">
-              +
+              <PlusCircle className="h-5 w-5" />
             </div>
             <div className="text-lg font-extrabold text-gray-900">Nueva Area</div>
           </div>
@@ -415,7 +416,7 @@ function CleaningAreasPage() {
                         disabled={saving}
                         className="w-10 h-10 rounded-2xl hover:bg-gray-100 flex items-center justify-center disabled:opacity-70"
                       >
-                        {"\u270e"}
+                        <Pencil className="h-4 w-4" />
                       </button>
                     ) : null}
                   </div>
@@ -585,7 +586,8 @@ function CleaningAreasPage() {
                               disabled={checklistSaving || scheduleSaving}
                               className="w-full bg-blue-600 text-white px-4 py-3 rounded-2xl font-bold disabled:opacity-70"
                             >
-                              + Crear tarea
+                              <PlusCircle className="mr-2 inline h-5 w-5" />
+                              Crear tarea
                             </button>
                           </div>
                         </div>

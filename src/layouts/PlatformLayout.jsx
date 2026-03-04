@@ -1,4 +1,5 @@
 import { NavLink } from "react-router-dom";
+import { Building2, Users } from "lucide-react";
 
 const platformModules = [
   { to: "/condominiums", label: "Condominios" },
@@ -44,10 +45,12 @@ function PlatformLayout({ children }) {
                         }`}
                       />
                       <span
-                        className={`h-2.5 w-2.5 rounded-full transition ${
-                          isActive ? "bg-blue-600" : "bg-slate-300 group-hover:bg-slate-500"
+                        className={`transition ${
+                          isActive ? "text-blue-600" : "text-slate-400 group-hover:text-slate-600"
                         }`}
-                      />
+                      >
+                        {iconByLabel(item.label)}
+                      </span>
                       {item.label}
                     </div>
                   )}
@@ -57,9 +60,12 @@ function PlatformLayout({ children }) {
                   key={item.label}
                   className="flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-400"
                 >
-                  <span>{item.label}</span>
+                  <span className="flex items-center gap-3">
+                    {iconByLabel(item.label)}
+                    <span>{item.label}</span>
+                  </span>
                   <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold uppercase">
-                    Próx.
+                    Prox.
                   </span>
                 </div>
               )
@@ -71,6 +77,16 @@ function PlatformLayout({ children }) {
       <main className="bg-slate-50 p-4 lg:p-6">{children}</main>
     </div>
   );
+}
+
+function iconByLabel(label) {
+  const className = "h-4 w-4";
+  const map = {
+    Condominios: <Building2 className={className} />,
+    "Usuarios globales": <Users className={className} />,
+  };
+
+  return map[label] ?? <Building2 className={className} />;
 }
 
 export default PlatformLayout;

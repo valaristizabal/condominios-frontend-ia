@@ -1,5 +1,16 @@
 import { NavLink, useParams } from "react-router-dom";
 import { useMemo, useState } from "react";
+import {
+  Bell,
+  ClipboardList,
+  LayoutDashboard,
+  Menu,
+  Package,
+  Settings,
+  Sparkles,
+  Users,
+  Car,
+} from "lucide-react";
 import { ActiveCondominiumContext } from "../context/ActiveCondominiumContext";
 import { useAuthContext } from "../context/useAuthContext";
 import { isSuperUser } from "../utils/roles";
@@ -126,7 +137,10 @@ function SidebarContent({ sections = [], onNavigate }) {
                       key={`${section.title}-${item.label}`}
                       className="flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-400"
                     >
-                      <span>{item.label}</span>
+                      <span className="flex items-center gap-3">
+                        {iconByLabel(item.label)}
+                        <span>{item.label}</span>
+                      </span>
                       <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold uppercase">
                         Prox.
                       </span>
@@ -160,12 +174,9 @@ function SidebarLink({ to, label, onClick }) {
               isActive ? "bg-blue-600" : "bg-transparent",
             ].join(" ")}
           />
-          <span
-            className={[
-              "h-2.5 w-2.5 rounded-full transition",
-              isActive ? "bg-blue-600" : "bg-slate-300 group-hover:bg-slate-500",
-            ].join(" ")}
-          />
+          <span className={isActive ? "text-blue-600" : "text-slate-400 group-hover:text-slate-600"}>
+            {iconByLabel(label)}
+          </span>
           <span className="truncate">{label}</span>
         </div>
       )}
@@ -174,11 +185,23 @@ function SidebarLink({ to, label, onClick }) {
 }
 
 function MenuIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current" aria-hidden="true">
-      <path d="M4 6h16v2H4V6Zm0 5h16v2H4v-2Zm0 5h16v2H4v-2Z" />
-    </svg>
-  );
+  return <Menu className="h-5 w-5" aria-hidden="true" />;
+}
+
+function iconByLabel(label) {
+  const className = "h-4 w-4";
+  const map = {
+    Dashboard: <LayoutDashboard className={className} />,
+    Visitantes: <Users className={className} />,
+    Vehiculos: <Car className={className} />,
+    Correspondencia: <ClipboardList className={className} />,
+    Emergencias: <Bell className={className} />,
+    Aseo: <Sparkles className={className} />,
+    Inventario: <Package className={className} />,
+    Ajustes: <Settings className={className} />,
+  };
+
+  return map[label] ?? <LayoutDashboard className={className} />;
 }
 
 export default TenantLayout;
