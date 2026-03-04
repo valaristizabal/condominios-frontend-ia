@@ -16,7 +16,7 @@ function getSidebarSections(basePath) {
         { label: "Vehiculos", to: resolvePath("/vehicles"), enabled: true },
         { label: "Correspondencia", to: resolvePath("/correspondence"), enabled: true },
         { label: "Emergencias", to: resolvePath("/emergencies"), enabled: true },
-        { label: "Aseo", enabled: false },
+        { label: "Aseo", to: resolvePath("/cleaning"), enabled: true },
         { label: "Inventario", enabled: false },
       ],
     },
