@@ -15,6 +15,7 @@ import {
 import { ActiveCondominiumContext } from "../context/ActiveCondominiumContext";
 import { useAuthContext } from "../context/useAuthContext";
 import apiClient from "../services/apiClient";
+import { resolveCondominiumLogo } from "../utils/condominiumBrand";
 import { canAccessInventoryOperation, isSuperUser } from "../utils/roles";
 
 function getSidebarSections(basePath, canInventoryOperate) {
@@ -81,12 +82,14 @@ function TenantLayout({ children }) {
 
     const loadCondominiumInfo = async () => {
       try {
-        const response = await apiClient.get("/condominiums");
+        const response = await apiClient.get("/condominiums/active", {
+          headers: {
+            "X-Active-Condominium-Id": String(condominiumId),
+          },
+        });
         if (cancelled) return;
 
-        const items = Array.isArray(response.data) ? response.data : [];
-        const current = items.find((item) => Number(item?.id) === Number(condominiumId)) || null;
-        setActiveCondominiumInfo(current);
+        setActiveCondominiumInfo(response.data || null);
       } catch {
         if (!cancelled) {
           setActiveCondominiumInfo(null);
@@ -110,7 +113,7 @@ function TenantLayout({ children }) {
             condominiumName={
               activeCondominiumInfo?.name || `Condominio #${activeContextValue.activeCondominiumId || ""}`
             }
-            condominiumLogo={activeCondominiumInfo?.logo_url || activeCondominiumInfo?.logo_path || null}
+            condominiumLogo={resolveCondominiumLogo(activeCondominiumInfo)}
           />
         </aside>
 
@@ -130,7 +133,7 @@ function TenantLayout({ children }) {
                   activeCondominiumInfo?.name ||
                   `Condominio #${activeContextValue.activeCondominiumId || ""}`
                 }
-                condominiumLogo={activeCondominiumInfo?.logo_url || activeCondominiumInfo?.logo_path || null}
+                condominiumLogo={resolveCondominiumLogo(activeCondominiumInfo)}
               />
             </div>
           </div>

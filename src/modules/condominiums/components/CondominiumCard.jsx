@@ -1,9 +1,11 @@
+import { resolveCondominiumLogo } from "../../../utils/condominiumBrand";
+
 function CondominiumCard({ condominium, onEnter, onEdit, onToggle }) {
   const statusLabel = condominium?.is_active ? "Activo" : "Inactivo";
   const statusClass = condominium?.is_active
     ? "bg-emerald-100 text-emerald-700"
     : "bg-slate-200 text-slate-600";
-  const logoSrc = condominium?.logo_url || condominium?.logo_path || condominium?.image_url || null;
+  const logoSrc = resolveCondominiumLogo(condominium);
 
   return (
     <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -12,7 +14,7 @@ function CondominiumCard({ condominium, onEnter, onEdit, onToggle }) {
           <img
             src={logoSrc}
             alt={condominium.name}
-            className="h-full w-full object-cover"
+            className="h-full w-full object-contain p-2"
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-200 to-slate-100">

@@ -24,6 +24,11 @@ function toMultipartFormData(payload, includeMethodOverride = false) {
       return;
     }
 
+    if (typeof value === "boolean") {
+      formData.append(key, value ? "1" : "0");
+      return;
+    }
+
     formData.append(key, String(value));
   });
 
