@@ -1,4 +1,4 @@
-import { NavLink, useNavigate, useParams } from "react-router-dom";
+import { NavLink, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -46,16 +46,20 @@ function getSidebarSections(basePath, canInventoryOperate) {
 
 function TenantLayout({ children }) {
   const { id } = useParams();
+  const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuthContext();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const isSuperAdmin = isSuperUser(user?.role);
+  const isPlatformAdmin = isPlatformAdminUser(user);
   const parsedCondominiumId = Number(id);
-  const hasRouteCondominiumContext = Number.isFinite(parsedCondominiumId) && parsedCondominiumId > 0;
-  const showBackToCondominiums = isSuperAdmin && hasRouteCondominiumContext;
+  const hasRouteCondominiumContext =
+    Number.isFinite(parsedCondominiumId) &&
+    parsedCondominiumId > 0 &&
+    location.pathname.startsWith("/condominio/");
+  const showBackToCondominiums = isPlatformAdmin && hasRouteCondominiumContext;
 
   const activeContextValue = useMemo(() => {
-    if (isSuperAdmin) {
+    if (isPlatformAdmin) {
       const parsed = Number(id);
       return {
         activeCondominiumId: Number.isFinite(parsed) && parsed > 0 ? parsed : null,
@@ -67,9 +71,9 @@ function TenantLayout({ children }) {
       activeCondominiumId: user?.condominium_id ?? null,
       source: "backend-me",
     };
-  }, [id, isSuperAdmin, user?.condominium_id]);
+  }, [id, isPlatformAdmin, user?.condominium_id]);
 
-  const basePath = isSuperAdmin && id ? `/condominio/${id}` : "";
+  const basePath = isPlatformAdmin && id ? `/condominio/${id}` : "";
   const canInventoryOperate = canAccessInventoryOperation(user);
   const sidebarSections = useMemo(
     () => getSidebarSections(basePath, canInventoryOperate),
@@ -294,6 +298,35 @@ function iconByLabel(label) {
   };
 
   return map[label] ?? <LayoutDashboard className={className} />;
+}
+
+function isPlatformAdminUser(user) {
+  if (!user) return false;
+
+  if (user?.is_platform_admin === true || user?.isPlatformAdmin === true) {
+    return true;
+  }
+
+  const roleCandidates = [];
+
+  if (typeof user?.role === "string" && user.role.trim()) {
+    roleCandidates.push(user.role);
+  }
+
+  if (Array.isArray(user?.roles)) {
+    user.roles.forEach((roleItem) => {
+      if (typeof roleItem === "string" && roleItem.trim()) {
+        roleCandidates.push(roleItem);
+        return;
+      }
+
+      if (typeof roleItem?.name === "string" && roleItem.name.trim()) {
+        roleCandidates.push(roleItem.name);
+      }
+    });
+  }
+
+  return roleCandidates.some((roleName) => isSuperUser(roleName));
 }
 
 export default TenantLayout;
