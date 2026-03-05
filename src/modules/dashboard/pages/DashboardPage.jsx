@@ -52,6 +52,11 @@ function DashboardPage() {
       <section className="mb-8">
         <SectionTitle title="Indicadores rapidos" subtitle="Metricas clave del dia." />
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <KpiCard
+            label="Valor total inventario"
+            value={formatCurrency(summary.kpis.inventory_total_value)}
+            tone="emerald"
+          />
           <KpiCard label="Vehiculos hoy" value={summary.kpis.vehicles_today} tone="indigo" />
           <KpiCard label="Visitantes dentro" value={summary.kpis.visitors_inside} tone="emerald" />
           <KpiCard label="Personal activo" value={summary.kpis.active_staff} tone="slate" />
@@ -67,6 +72,16 @@ function DashboardPage() {
       </section>
     </div>
   );
+}
+
+function formatCurrency(value) {
+  const amount = Number(value || 0);
+  return new Intl.NumberFormat("es-CO", {
+    style: "currency",
+    currency: "COP",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount);
 }
 
 export default DashboardPage;

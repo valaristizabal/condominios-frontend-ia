@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useActiveCondominium } from "../../../../context/useActiveCondominium";
 import apiClient from "../../../../services/apiClient";
 
-export function useInventories() {
+export function useSuppliers() {
   const { activeCondominiumId } = useActiveCondominium();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -21,88 +21,86 @@ export function useInventories() {
     [activeCondominiumId]
   );
 
-  const fetchInventories = useCallback(async () => {
+  const fetchSuppliers = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
-      const response = await apiClient.get("/inventories", requestConfig);
+      const response = await apiClient.get("/suppliers", requestConfig);
       setItems(Array.isArray(response.data) ? response.data : []);
     } catch (err) {
-      setError(normalizeApiError(err, "No fue posible cargar ubicaciones de inventario."));
+      setError(normalizeApiError(err, "No fue posible cargar proveedores."));
     } finally {
       setLoading(false);
     }
   }, [requestConfig]);
 
-  const createInventory = useCallback(
+  const createSupplier = useCallback(
     async (payload) => {
       setSaving(true);
       setError("");
       try {
-        const response = await apiClient.post("/inventories", payload, requestConfig);
-        await fetchInventories();
+        const response = await apiClient.post("/suppliers", payload, requestConfig);
+        await fetchSuppliers();
         return response.data;
       } catch (err) {
-        setError(normalizeApiError(err, "No fue posible crear la ubicacion de inventario."));
+        setError(normalizeApiError(err, "No fue posible crear el proveedor."));
         throw err;
       } finally {
         setSaving(false);
       }
     },
-    [fetchInventories, requestConfig]
+    [fetchSuppliers, requestConfig]
   );
 
-  const updateInventory = useCallback(
+  const updateSupplier = useCallback(
     async (id, payload) => {
       setSaving(true);
       setError("");
       try {
-        const response = await apiClient.put(`/inventories/${id}`, payload, requestConfig);
-        await fetchInventories();
+        const response = await apiClient.put(`/suppliers/${id}`, payload, requestConfig);
+        await fetchSuppliers();
         return response.data;
       } catch (err) {
-        setError(normalizeApiError(err, "No fue posible actualizar la ubicacion de inventario."));
+        setError(normalizeApiError(err, "No fue posible actualizar el proveedor."));
         throw err;
       } finally {
         setSaving(false);
       }
     },
-    [fetchInventories, requestConfig]
+    [fetchSuppliers, requestConfig]
   );
 
-  const toggleInventory = useCallback(
+  const deactivateSupplier = useCallback(
     async (id) => {
       setSaving(true);
       setError("");
       try {
-        const response = await apiClient.patch(`/inventories/${id}/toggle`, {}, requestConfig);
-        await fetchInventories();
+        const response = await apiClient.delete(`/suppliers/${id}`, requestConfig);
+        await fetchSuppliers();
         return response.data;
       } catch (err) {
-        setError(normalizeApiError(err, "No fue posible cambiar estado de la ubicacion de inventario."));
+        setError(normalizeApiError(err, "No fue posible desactivar el proveedor."));
         throw err;
       } finally {
         setSaving(false);
       }
     },
-    [fetchInventories, requestConfig]
+    [fetchSuppliers, requestConfig]
   );
 
   useEffect(() => {
-    fetchInventories();
-  }, [fetchInventories]);
+    fetchSuppliers();
+  }, [fetchSuppliers]);
 
   return {
-    inventories: items,
+    suppliers: items,
     loading,
     saving,
     error,
     hasTenantContext: Boolean(activeCondominiumId),
-    activeCondominiumId,
-    fetchInventories,
-    createInventory,
-    updateInventory,
-    toggleInventory,
+    createSupplier,
+    updateSupplier,
+    deactivateSupplier,
   };
 }
 

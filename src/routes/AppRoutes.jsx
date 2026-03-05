@@ -23,6 +23,7 @@ import InventoryCategoriesPage from "../modules/settings/inventory-categories/pa
 import InventoriesPage from "../modules/settings/inventories/pages/InventoriesPage";
 import OperativesPage from "../modules/settings/operatives/pages/OperativesPage";
 import ResidentsPage from "../modules/settings/residents/pages/ResidentsPage";
+import SuppliersPage from "../modules/settings/suppliers/pages/SuppliersPage";
 import PlatformLayout from "../layouts/PlatformLayout";
 import TenantLayout from "../layouts/TenantLayout";
 import ProtectedRoute from "./ProtectedRoute";
@@ -259,6 +260,18 @@ function AppRoutes() {
             <InventorySettingsRoute>
               <TenantLayout>
                 <InventoryCategoriesPage />
+              </TenantLayout>
+            </InventorySettingsRoute>
+          </TenantRoute>
+        }
+      />
+      <Route
+        path="/settings/suppliers"
+        element={
+          <TenantRoute>
+            <InventorySettingsRoute>
+              <TenantLayout>
+                <SuppliersPage />
               </TenantLayout>
             </InventorySettingsRoute>
           </TenantRoute>
@@ -523,6 +536,18 @@ function AppRoutes() {
             <SuperAdminRoute>
               <TenantLayout>
                 <InventoryCategoriesPage />
+              </TenantLayout>
+            </SuperAdminRoute>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/condominio/:id/settings/suppliers"
+        element={
+          <ProtectedRoute>
+            <SuperAdminRoute>
+              <TenantLayout>
+                <SuppliersPage />
               </TenantLayout>
             </SuperAdminRoute>
           </ProtectedRoute>

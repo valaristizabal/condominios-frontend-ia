@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { PlusCircle } from "lucide-react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useActiveCondominium } from "../../../context/useActiveCondominium";
 import InventoryStats from "../components/InventoryStats";
@@ -14,30 +14,41 @@ import {
   getInventoryCategories,
   getLowStockProducts,
   getProductsWithMovements,
+  getSuppliers,
   registerEntry,
   registerExit,
+  updateProduct,
 } from "../services/inventory.service";
 
 const EMPTY_LIST = [];
 
+function buildEmptyProductForm(inventoryId = "") {
+  return {
+    inventory_id: inventoryId ? String(inventoryId) : "",
+    name: "",
+    type: "consumable",
+    category_id: "",
+    supplier_id: "",
+    stock: "",
+    minimum_stock: "",
+    unit_cost: "",
+    asset_code: "",
+    location: "",
+  };
+}
+
 function InventoryPage() {
   const { activeCondominiumId } = useActiveCondominium();
   const { id: routeCondominiumId } = useParams();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
 
   const [selectedInventoryId, setSelectedInventoryId] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [showAddProduct, setShowAddProduct] = useState(false);
-  const [productForm, setProductForm] = useState({
-    name: "",
-    category_id: "",
-    type: "",
-    minimum_stock: "",
-    stock: "",
-    asset_code: "",
-    location: "",
-  });
+  const [editingProductId, setEditingProductId] = useState(null);
+  const [productForm, setProductForm] = useState(buildEmptyProductForm());
   const [movementForm, setMovementForm] = useState({
     product_id: "",
     type: "",
@@ -75,10 +86,17 @@ function InventoryPage() {
         getInventories(requestConfig),
         getInventoryCategories(requestConfig),
       ]);
+      let suppliersResponse = [];
+      try {
+        suppliersResponse = await getSuppliers(requestConfig);
+      } catch {
+        suppliersResponse = [];
+      }
 
       return {
         inventories: inventoriesResponse,
         categories: categoriesResponse,
+        suppliers: suppliersResponse,
       };
     },
   });
@@ -90,6 +108,10 @@ function InventoryPage() {
   const categories = useMemo(
     () => inventoriesAndCategoriesQuery.data?.categories ?? EMPTY_LIST,
     [inventoriesAndCategoriesQuery.data?.categories]
+  );
+  const suppliers = useMemo(
+    () => inventoriesAndCategoriesQuery.data?.suppliers ?? EMPTY_LIST,
+    [inventoriesAndCategoriesQuery.data?.suppliers]
   );
 
   useEffect(() => {
@@ -105,6 +127,14 @@ function InventoryPage() {
     });
   }, [inventories]);
 
+  useEffect(() => {
+    if (!showAddProduct || editingProductId) return;
+    setProductForm((prev) => ({
+      ...prev,
+      inventory_id: selectedInventoryId ? String(selectedInventoryId) : "",
+    }));
+  }, [editingProductId, selectedInventoryId, showAddProduct]);
+
   const productsWithMovementsQuery = useQuery({
     queryKey: ["inventory", "products-with-movements", resolvedCondominiumId, selectedInventoryId],
     enabled: canQuery && Boolean(selectedInventoryId),
@@ -116,18 +146,23 @@ function InventoryPage() {
     [productsWithMovementsQuery.data?.products]
   );
 
+  const consumableProducts = useMemo(
+    () => products.filter((product) => product?.type !== "asset"),
+    [products]
+  );
+
   useEffect(() => {
     setMovementForm((prev) => {
-      if (!products.length) {
+      if (!consumableProducts.length) {
         return prev.product_id ? { ...prev, product_id: "" } : prev;
       }
 
       if (!prev.product_id) return prev;
 
-      const exists = products.some((product) => String(product.id) === String(prev.product_id));
+      const exists = consumableProducts.some((product) => String(product.id) === String(prev.product_id));
       return exists ? prev : { ...prev, product_id: "" };
     });
-  }, [products]);
+  }, [consumableProducts]);
 
   const lowStockQuery = useQuery({
     queryKey: ["inventory", "low-stock", resolvedCondominiumId, selectedInventoryId],
@@ -156,18 +191,32 @@ function InventoryPage() {
     if (!queryError) return;
 
     setError(normalizeApiError(queryError, "No fue posible cargar inventario."));
-  }, [
-    inventoriesAndCategoriesQuery.error,
-    productsWithMovementsQuery.error,
-    lowStockQuery.error,
-  ]);
+  }, [inventoriesAndCategoriesQuery.error, lowStockQuery.error, productsWithMovementsQuery.error]);
 
   const createProductMutation = useMutation({
     mutationFn: (payload) => createProduct(payload, requestConfig),
     onSuccess: async () => {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["inventory", "products-with-movements", resolvedCondominiumId, selectedInventoryId] }),
-        queryClient.invalidateQueries({ queryKey: ["inventory", "low-stock", resolvedCondominiumId, selectedInventoryId] }),
+        queryClient.invalidateQueries({
+          queryKey: ["inventory", "products-with-movements", resolvedCondominiumId, selectedInventoryId],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["inventory", "low-stock", resolvedCondominiumId, selectedInventoryId],
+        }),
+      ]);
+    },
+  });
+
+  const updateProductMutation = useMutation({
+    mutationFn: ({ id, payload }) => updateProduct(id, payload, requestConfig),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: ["inventory", "products-with-movements", resolvedCondominiumId, selectedInventoryId],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["inventory", "low-stock", resolvedCondominiumId, selectedInventoryId],
+        }),
       ]);
     },
   });
@@ -181,14 +230,19 @@ function InventoryPage() {
     },
     onSuccess: async () => {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["inventory", "products-with-movements", resolvedCondominiumId, selectedInventoryId] }),
-        queryClient.invalidateQueries({ queryKey: ["inventory", "low-stock", resolvedCondominiumId, selectedInventoryId] }),
+        queryClient.invalidateQueries({
+          queryKey: ["inventory", "products-with-movements", resolvedCondominiumId, selectedInventoryId],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["inventory", "low-stock", resolvedCondominiumId, selectedInventoryId],
+        }),
       ]);
     },
   });
 
   const savingMovement = registerMovementMutation.isPending;
-  const savingProduct = createProductMutation.isPending;
+  const savingProduct = createProductMutation.isPending || updateProductMutation.isPending;
+  const isEditing = Boolean(editingProductId);
 
   const stats = useMemo(() => {
     const consumables = products.filter((p) => p.type !== "asset").length;
@@ -200,6 +254,47 @@ function InventoryPage() {
       lowStock: lowStockProducts.length,
     };
   }, [products, lowStockProducts]);
+
+  const calculatedTotalValue = useMemo(() => {
+    const stock = Number(productForm.stock || 0);
+    const unitCost = Number(productForm.unit_cost);
+    if (!Number.isFinite(unitCost) || unitCost < 0) return null;
+    return stock * unitCost;
+  }, [productForm.stock, productForm.unit_cost]);
+
+  const openCreateProduct = () => {
+    setError("");
+    setSuccess("");
+    setEditingProductId(null);
+    setProductForm(buildEmptyProductForm(selectedInventoryId));
+    setShowAddProduct(true);
+  };
+
+  const openEditProduct = (product) => {
+    setError("");
+    setSuccess("");
+    setEditingProductId(product.id);
+    setProductForm({
+      inventory_id: String(product.inventory_id ?? selectedInventoryId ?? ""),
+      name: String(product.name || ""),
+      type: String(product.type || "consumable"),
+      category_id: product.category_id ? String(product.category_id) : "",
+      supplier_id: product.supplier_id ? String(product.supplier_id) : "",
+      stock: String(product.stock_actual ?? product.stock ?? 0),
+      minimum_stock: String(product.minimum_stock ?? 0),
+      unit_cost: product.unit_cost !== null && product.unit_cost !== undefined ? String(product.unit_cost) : "",
+      asset_code: String(product.asset_code || ""),
+      location: String(product.location || ""),
+    });
+    setShowAddProduct(true);
+  };
+
+  const closeProductForm = () => {
+    if (savingProduct) return;
+    setShowAddProduct(false);
+    setEditingProductId(null);
+    setProductForm(buildEmptyProductForm(selectedInventoryId));
+  };
 
   const handleMovementChange = (event) => {
     const { name, value } = event.target;
@@ -241,43 +336,55 @@ function InventoryPage() {
     }
   };
 
-  const handleCreateProduct = async () => {
+  const handleSaveProduct = async () => {
     if (!productForm.name.trim()) return;
 
-    const inventoryId = Number(selectedInventoryId);
+    const inventoryId = Number(productForm.inventory_id || selectedInventoryId);
     if (!inventoryId) {
-      setError("Selecciona un inventario activo para crear el producto.");
+      setError("Selecciona una ubicacion de inventario para guardar el producto.");
       return;
     }
+
+    const type = productForm.type === "asset" ? "asset" : "consumable";
+    const parsedUnitCost = Number(productForm.unit_cost);
 
     setError("");
     setSuccess("");
 
     try {
-      await createProductMutation.mutateAsync({
+      const payload = {
         inventory_id: inventoryId,
         name: productForm.name.trim(),
+        type,
         category_id: productForm.category_id ? Number(productForm.category_id) : null,
-        type: productForm.type,
-        minimum_stock: Number(productForm.minimum_stock || 0),
-        stock: Number(productForm.stock || 0),
-        asset_code: productForm.type === "asset" ? productForm.asset_code || null : null,
-        location: productForm.location || null,
-      });
+        supplier_id: productForm.supplier_id ? Number(productForm.supplier_id) : null,
+        stock: Math.max(0, Number(productForm.stock || 0)),
+        minimum_stock: type === "consumable" ? Math.max(0, Number(productForm.minimum_stock || 0)) : 0,
+        unit_cost:
+          productForm.unit_cost === "" || productForm.unit_cost === null || productForm.unit_cost === undefined
+            ? null
+            : Number.isFinite(parsedUnitCost)
+              ? Math.max(0, parsedUnitCost)
+              : null,
+        asset_code: type === "asset" ? String(productForm.asset_code || "").trim() || null : null,
+        location: type === "asset" ? String(productForm.location || "").trim() || null : null,
+      };
 
-      setShowAddProduct(false);
-      setProductForm({
-        name: "",
-        category_id: "",
-        type: "",
-        minimum_stock: "",
-        stock: "",
-        asset_code: "",
-        location: "",
-      });
-      setSuccess("Producto creado correctamente.");
+      if (isEditing) {
+        await updateProductMutation.mutateAsync({
+          id: editingProductId,
+          payload,
+        });
+        setSuccess("Producto actualizado correctamente.");
+      } else {
+        await createProductMutation.mutateAsync(payload);
+        setSuccess("Producto creado correctamente.");
+      }
+
+      closeProductForm();
     } catch (err) {
-      setError(normalizeApiError(err, "No fue posible crear el producto."));
+      const fallback = isEditing ? "No fue posible actualizar el producto." : "No fue posible crear el producto.";
+      setError(normalizeApiError(err, fallback));
     }
   };
 
@@ -290,12 +397,12 @@ function InventoryPage() {
         </div>
         <button
           type="button"
-          onClick={() => setShowAddProduct((prev) => !prev)}
+          onClick={openCreateProduct}
           className="rounded-2xl bg-blue-600 px-5 py-3 font-bold text-white transition hover:bg-blue-700"
           disabled={!resolvedCondominiumId || !selectedInventoryId}
         >
           <PlusCircle className="mr-2 inline h-5 w-5" />
-          Añadir Producto
+          Anadir Producto
         </button>
       </header>
 
@@ -340,8 +447,25 @@ function InventoryPage() {
 
       {showAddProduct ? (
         <section className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
-          <h2 className="text-xl font-bold text-gray-800">Nuevo producto</h2>
+          <h2 className="text-xl font-bold text-gray-800">{isEditing ? "Editar producto" : "Nuevo producto"}</h2>
           <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
+            <div>
+              <label className="mb-1.5 block text-sm font-semibold text-gray-700">Ubicacion de inventario</label>
+              <select
+                name="inventory_id"
+                value={productForm.inventory_id}
+                onChange={handleProductChange}
+                className="w-full rounded-2xl border border-gray-200 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-300"
+              >
+                <option value="">Seleccione ubicacion</option>
+                {inventories.map((inventory) => (
+                  <option key={inventory.id} value={inventory.id}>
+                    {inventory.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             <div>
               <label className="mb-1.5 block text-sm font-semibold text-gray-700">Nombre</label>
               <input
@@ -351,6 +475,19 @@ function InventoryPage() {
                 className="w-full rounded-2xl border border-gray-200 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-300"
                 placeholder="Nombre"
               />
+            </div>
+
+            <div>
+              <label className="mb-1.5 block text-sm font-semibold text-gray-700">Tipo</label>
+              <select
+                name="type"
+                value={productForm.type}
+                onChange={handleProductChange}
+                className="w-full rounded-2xl border border-gray-200 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-300"
+              >
+                <option value="consumable">Consumible</option>
+                <option value="asset">Activo fijo</option>
+              </select>
             </div>
 
             <div>
@@ -371,21 +508,24 @@ function InventoryPage() {
             </div>
 
             <div>
-              <label className="mb-1.5 block text-sm font-semibold text-gray-700">Tipo</label>
+              <label className="mb-1.5 block text-sm font-semibold text-gray-700">Proveedor</label>
               <select
-                name="type"
-                value={productForm.type}
+                name="supplier_id"
+                value={productForm.supplier_id}
                 onChange={handleProductChange}
                 className="w-full rounded-2xl border border-gray-200 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-300"
               >
-                <option value="">Seleccione tipo</option>
-                <option value="consumable">Consumible</option>
-                <option value="asset">Activo fijo</option>
+                <option value="">Seleccione proveedor</option>
+                {suppliers.map((supplier) => (
+                  <option key={supplier.id} value={supplier.id}>
+                    {supplier.name}
+                  </option>
+                ))}
               </select>
             </div>
 
             <div>
-              <label className="mb-1.5 block text-sm font-semibold text-gray-700">Stock inicial</label>
+              <label className="mb-1.5 block text-sm font-semibold text-gray-700">Stock</label>
               <input
                 name="stock"
                 type="number"
@@ -393,63 +533,98 @@ function InventoryPage() {
                 value={productForm.stock}
                 onChange={handleProductChange}
                 className="w-full rounded-2xl border border-gray-200 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-300"
-                placeholder="Stock inicial"
+                placeholder="Stock"
               />
-              <p className="mt-1 text-xs font-semibold text-gray-500">Cantidad disponible al crear el producto.</p>
             </div>
 
+            {productForm.type === "consumable" ? (
+              <div>
+                <label className="mb-1.5 block text-sm font-semibold text-gray-700">Stock minimo de alerta</label>
+                <input
+                  name="minimum_stock"
+                  type="number"
+                  min="0"
+                  value={productForm.minimum_stock}
+                  onChange={handleProductChange}
+                  className="w-full rounded-2xl border border-gray-200 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-300"
+                  placeholder="Stock minimo de alerta"
+                />
+              </div>
+            ) : null}
+
             <div>
-              <label className="mb-1.5 block text-sm font-semibold text-gray-700">Stock minimo de alerta</label>
+              <label className="mb-1.5 block text-sm font-semibold text-gray-700">Costo unitario</label>
               <input
-                name="minimum_stock"
+                name="unit_cost"
                 type="number"
                 min="0"
-                value={productForm.minimum_stock}
+                step="0.01"
+                value={productForm.unit_cost}
                 onChange={handleProductChange}
                 className="w-full rounded-2xl border border-gray-200 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-300"
-                placeholder="Stock minimo de alerta"
-              />
-              <p className="mt-1 text-xs font-semibold text-gray-500">
-                Cuando el stock sea menor a este valor se generara alerta de reposicion.
-              </p>
-            </div>
-
-            <div>
-              <label className="mb-1.5 block text-sm font-semibold text-gray-700">Ubicacion</label>
-              <input
-                name="location"
-                value={productForm.location}
-                onChange={handleProductChange}
-                className="w-full rounded-2xl border border-gray-200 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-300"
-                placeholder="Ubicacion"
+                placeholder="Costo unitario"
               />
             </div>
 
             {productForm.type === "asset" ? (
-              <div className="md:col-span-2">
-                <label className="mb-1.5 block text-sm font-semibold text-gray-700">Codigo de activo</label>
-                <input
-                  name="asset_code"
-                  value={productForm.asset_code}
-                  onChange={handleProductChange}
-                  className="w-full rounded-2xl border border-gray-200 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-300"
-                  placeholder="Codigo de activo"
-                />
-              </div>
+              <>
+                <div>
+                  <label className="mb-1.5 block text-sm font-semibold text-gray-700">Codigo de activo</label>
+                  <input
+                    name="asset_code"
+                    value={productForm.asset_code}
+                    onChange={handleProductChange}
+                    className="w-full rounded-2xl border border-gray-200 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-300"
+                    placeholder="Codigo de activo"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1.5 block text-sm font-semibold text-gray-700">Ubicacion</label>
+                  <input
+                    name="location"
+                    value={productForm.location}
+                    onChange={handleProductChange}
+                    className="w-full rounded-2xl border border-gray-200 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-300"
+                    placeholder="Ubicacion"
+                  />
+                </div>
+              </>
             ) : null}
           </div>
+
+          {suppliers.length === 0 ? (
+            <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
+              <p className="text-sm font-semibold text-amber-700">No hay proveedores registrados para esta propiedad.</p>
+              <button
+                type="button"
+                onClick={() =>
+                  navigate(routeCondominiumId ? `/condominio/${routeCondominiumId}/settings/suppliers` : "/settings/suppliers")
+                }
+                className="mt-2 rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-amber-700"
+              >
+                Crear proveedor
+              </button>
+            </div>
+          ) : null}
+
+          <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+            <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Valor total calculado</p>
+            <p className="mt-1 text-lg font-extrabold text-slate-800">{formatCurrency(calculatedTotalValue)}</p>
+          </div>
+
           <div className="mt-4 flex gap-2">
             <button
               type="button"
-              onClick={handleCreateProduct}
+              onClick={handleSaveProduct}
               disabled={savingProduct}
               className="rounded-2xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-blue-700 disabled:opacity-70"
             >
-              {savingProduct ? "Guardando..." : "Guardar producto"}
+              {savingProduct ? "Guardando..." : isEditing ? "Actualizar producto" : "Guardar producto"}
             </button>
             <button
               type="button"
-              onClick={() => setShowAddProduct(false)}
+              onClick={closeProductForm}
               className="rounded-2xl bg-gray-100 px-5 py-2.5 text-sm font-bold text-gray-700"
             >
               Cancelar
@@ -467,7 +642,7 @@ function InventoryPage() {
       ) : (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[2fr_1fr]">
           <div className="space-y-6">
-            <ProductTable products={products} />
+            <ProductTable products={products} onEdit={openEditProduct} saving={savingProduct} />
             <MovementHistory rows={movements} />
           </div>
           <div className="space-y-6">
@@ -501,6 +676,18 @@ function normalizeApiError(err, fallbackMessage) {
   }
 
   return responseData?.message || err?.message || fallbackMessage;
+}
+
+function formatCurrency(value) {
+  if (value === null || value === undefined || value === "") return "-";
+  const amount = Number(value);
+  if (!Number.isFinite(amount)) return "-";
+  return new Intl.NumberFormat("es-CO", {
+    style: "currency",
+    currency: "COP",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount);
 }
 
 export default InventoryPage;

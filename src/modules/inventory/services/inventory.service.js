@@ -26,6 +26,11 @@ export async function getProductsWithMovements(requestConfig, inventoryId, perPa
         ? product.last_movements.map((movement) => ({
             ...movement,
             product_name: product.name,
+            product_unit_cost: product.unit_cost,
+            movement_estimated_value:
+              product.unit_cost === null || product.unit_cost === undefined
+                ? null
+                : Number(movement?.quantity || 0) * Number(product.unit_cost),
           }))
         : []
     )
@@ -49,8 +54,18 @@ export async function getInventoryCategories(requestConfig) {
   return Array.isArray(response.data) ? response.data : [];
 }
 
+export async function getSuppliers(requestConfig) {
+  const response = await apiClient.get("/suppliers?active=1", requestConfig);
+  return Array.isArray(response.data) ? response.data : [];
+}
+
 export async function createProduct(payload, requestConfig) {
   const response = await apiClient.post("/products", payload, requestConfig);
+  return response.data;
+}
+
+export async function updateProduct(productId, payload, requestConfig) {
+  const response = await apiClient.put(`/products/${productId}`, payload, requestConfig);
   return response.data;
 }
 

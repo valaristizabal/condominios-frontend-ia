@@ -39,7 +39,7 @@ function InventoryFormModal({ open, initialValues, loading, onCancel, onSubmit }
         is_active: isActive,
       });
     } catch (err) {
-      const message = normalizeApiError(err, "No fue posible guardar el inventario.");
+      const message = normalizeApiError(err, "No fue posible guardar la ubicacion de inventario.");
       setError(message);
     }
   };
@@ -48,7 +48,7 @@ function InventoryFormModal({ open, initialValues, loading, onCancel, onSubmit }
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/45 p-4 sm:items-center">
       <div className="w-full max-w-lg rounded-2xl bg-white p-5 shadow-2xl">
         <h3 className="text-lg font-extrabold text-slate-900">
-          {isEditing ? "Editar inventario" : "Nuevo inventario"}
+          {isEditing ? "Editar ubicacion de inventario" : "Nueva ubicacion de inventario"}
         </h3>
 
         <form className="mt-4 space-y-4" onSubmit={handleSubmit}>
@@ -121,4 +121,3 @@ function normalizeApiError(err, fallbackMessage) {
 }
 
 export default InventoryFormModal;
-

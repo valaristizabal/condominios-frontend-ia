@@ -49,14 +49,19 @@ function InventorySettingsPage() {
         <p className="text-xs font-extrabold uppercase tracking-widest text-slate-400">Configuracion de inventario</p>
         <div className="mt-4 space-y-3">
           <ItemRow
-            title="Inventarios"
-            description="Configura bodegas e inventarios de la propiedad"
+            title="Ubicaciones de inventario"
+            description="Configura las ubicaciones fisicas (bodegas o areas) donde se almacenan los productos del inventario."
             onClick={() => navigate(`${basePath}/settings/inventories`)}
           />
           <ItemRow
             title="Categorias de inventario"
             description="Configura categorias de productos para inventario"
             onClick={() => navigate(`${basePath}/settings/inventory-categories`)}
+          />
+          <ItemRow
+            title="Proveedores"
+            description="Administra los proveedores que suministran productos al inventario."
+            onClick={() => navigate(`${basePath}/settings/suppliers`)}
           />
         </div>
       </Card>

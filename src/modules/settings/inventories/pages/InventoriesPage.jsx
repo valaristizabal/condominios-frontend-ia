@@ -56,9 +56,9 @@ function InventoriesPage() {
     <div className="mx-auto w-full max-w-6xl">
       <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-extrabold text-slate-900">Inventarios</h1>
+          <h1 className="text-2xl font-extrabold text-slate-900">Ubicaciones de inventario</h1>
           <p className="mt-1 text-sm text-slate-500">
-            Gestiona bodegas e inventarios activos para la propiedad.
+            Configura las ubicaciones fisicas (bodegas o areas) donde se almacenan los productos del inventario.
             {activeCondominiumId ? ` Contexto: #${activeCondominiumId}` : ""}
           </p>
         </div>
@@ -68,13 +68,13 @@ function InventoriesPage() {
           className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-indigo-700 disabled:opacity-70"
           disabled={!hasTenantContext || saving}
         >
-          + Crear inventario
+          + Crear ubicacion
         </button>
       </header>
 
       {!hasTenantContext ? (
         <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-          No hay propiedad activa para gestionar inventarios.
+          No hay propiedad activa para gestionar ubicaciones de inventario.
         </p>
       ) : null}
 

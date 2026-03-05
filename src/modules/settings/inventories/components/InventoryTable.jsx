@@ -2,7 +2,7 @@ function InventoryTable({ rows, busy, onEdit, onToggle }) {
   if (!rows.length) {
     return (
       <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center">
-        <p className="font-semibold text-slate-700">No hay inventarios registrados</p>
+        <p className="font-semibold text-slate-700">No hay ubicaciones de inventario registradas</p>
       </div>
     );
   }
@@ -59,4 +59,3 @@ function InventoryTable({ rows, busy, onEdit, onToggle }) {
 }
 
 export default InventoryTable;
-
