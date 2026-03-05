@@ -1,5 +1,6 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import { ClipboardList, MapPin, User } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useActiveCondominium } from "../../../context/useActiveCondominium";
 import apiClient from "../../../services/apiClient";
@@ -99,6 +100,7 @@ function extractErrorMessage(error, fallback) {
 
 export default function ControlIngresoPage() {
   const { activeCondominiumId } = useActiveCondominium();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
 
   const [selectedId, setSelectedId] = useState("");
@@ -231,6 +233,14 @@ export default function ControlIngresoPage() {
     <div className="w-full">
       <div className="mx-auto w-full max-w-6xl px-6 py-8">
         <div className="mb-6">
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className="mb-3 inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+          >
+            <span aria-hidden="true">←</span>
+            Atrás
+          </button>
           <SectionTitle subtitle="Gestion de personal" title="Control de Ingreso" />
           <p className="mt-2 text-sm text-slate-500">{ctaHint}</p>
         </div>
