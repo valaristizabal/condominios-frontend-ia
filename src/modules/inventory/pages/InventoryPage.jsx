@@ -18,6 +18,8 @@ import {
   registerExit,
 } from "../services/inventory.service";
 
+const EMPTY_LIST = [];
+
 function InventoryPage() {
   const { activeCondominiumId } = useActiveCondominium();
   const { id: routeCondominiumId } = useParams();
@@ -81,12 +83,18 @@ function InventoryPage() {
     },
   });
 
-  const inventories = inventoriesAndCategoriesQuery.data?.inventories || [];
-  const categories = inventoriesAndCategoriesQuery.data?.categories || [];
+  const inventories = useMemo(
+    () => inventoriesAndCategoriesQuery.data?.inventories ?? EMPTY_LIST,
+    [inventoriesAndCategoriesQuery.data?.inventories]
+  );
+  const categories = useMemo(
+    () => inventoriesAndCategoriesQuery.data?.categories ?? EMPTY_LIST,
+    [inventoriesAndCategoriesQuery.data?.categories]
+  );
 
   useEffect(() => {
     if (!inventories.length) {
-      setSelectedInventoryId("");
+      setSelectedInventoryId((prev) => (prev ? "" : prev));
       return;
     }
 
@@ -103,11 +111,22 @@ function InventoryPage() {
     queryFn: () => getProductsWithMovements(requestConfig, Number(selectedInventoryId), 20),
   });
 
-  const products = productsWithMovementsQuery.data?.products || [];
+  const products = useMemo(
+    () => productsWithMovementsQuery.data?.products ?? EMPTY_LIST,
+    [productsWithMovementsQuery.data?.products]
+  );
 
   useEffect(() => {
-    if (products.length > 0) return;
-    setMovementForm((prev) => ({ ...prev, product_id: "" }));
+    setMovementForm((prev) => {
+      if (!products.length) {
+        return prev.product_id ? { ...prev, product_id: "" } : prev;
+      }
+
+      if (!prev.product_id) return prev;
+
+      const exists = products.some((product) => String(product.id) === String(prev.product_id));
+      return exists ? prev : { ...prev, product_id: "" };
+    });
   }, [products]);
 
   const lowStockQuery = useQuery({
@@ -119,9 +138,11 @@ function InventoryPage() {
     },
   });
 
-  const lowStockProducts = lowStockQuery.data || [];
-
-  const movements = productsWithMovementsQuery.data?.movements || [];
+  const lowStockProducts = useMemo(() => lowStockQuery.data ?? EMPTY_LIST, [lowStockQuery.data]);
+  const movements = useMemo(
+    () => productsWithMovementsQuery.data?.movements ?? EMPTY_LIST,
+    [productsWithMovementsQuery.data?.movements]
+  );
 
   const loading =
     inventoriesAndCategoriesQuery.isLoading ||

@@ -1,15 +1,15 @@
-import { useMemo, useRef } from "react";
-import { Camera, Car, HeartCrack, MessageSquare, Shield, TriangleAlert, X } from "lucide-react";
+ï»¿import { useMemo, useRef } from "react";
+import { Camera, Car, HeartCrack, MessageSquare, MoreHorizontal, Shield, TriangleAlert, X } from "lucide-react";
 
 const inputBase =
-  "w-full h-14 rounded-2xl border border-slate-200 bg-white px-4 text-slate-900 outline-none focus:ring-2 focus:ring-blue-200";
+  "h-12 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100";
 
 const SectionTitle = ({ icon, title, eyebrow }) => (
   <div className="flex items-start gap-3">
-    <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-50 text-blue-700">{icon}</div>
+    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-700">{icon}</div>
     <div>
-      {eyebrow ? <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">{eyebrow}</p> : null}
-      <h2 className="mt-0.5 text-lg font-bold text-slate-900">{title}</h2>
+      {eyebrow ? <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">{eyebrow}</p> : null}
+      <h2 className="mt-0.5 text-base font-bold text-slate-900">{title}</h2>
     </div>
   </div>
 );
@@ -20,20 +20,22 @@ const IncidentOption = ({ icon, label, selected, onClick }) => (
   <button
     type="button"
     onClick={onClick}
-    className={`w-full border rounded-2xl px-4 py-4 flex items-center justify-between transition ${
-      selected ? "border-blue-600 bg-blue-50 shadow-sm" : "border-slate-200 bg-white hover:bg-slate-100"
-    }`}
+    className={[
+      "flex w-full items-center justify-between rounded-xl border px-4 py-3 text-left transition",
+      selected ? "border-blue-500 bg-blue-50" : "border-slate-200 bg-white hover:bg-slate-50",
+    ].join(" ")}
   >
     <div className="flex items-center gap-3">
-      <div className="text-xl">{icon}</div>
-      <div className="text-base font-semibold text-slate-900">{label}</div>
+      <div className="text-slate-600">{icon}</div>
+      <div className="text-sm font-semibold text-slate-900">{label}</div>
     </div>
     <div
-      className={`w-6 h-6 rounded-full border flex items-center justify-center ${
-        selected ? "border-blue-600" : "border-slate-300"
-      }`}
+      className={[
+        "flex h-5 w-5 items-center justify-center rounded-full border",
+        selected ? "border-blue-600" : "border-slate-300",
+      ].join(" ")}
     >
-      {selected ? <div className="w-3 h-3 rounded-full bg-blue-600" /> : null}
+      {selected ? <div className="h-2.5 w-2.5 rounded-full bg-blue-600" /> : null}
     </div>
   </button>
 );
@@ -60,7 +62,10 @@ function VehicleIncidentFormModal({
     () =>
       [
         ...new Map(
-          apartments.map((apt) => [apt?.unit_type?.id || apt?.unitType?.id, apt?.unit_type?.name || apt?.unitType?.name])
+          apartments.map((apartment) => [
+            apartment?.unit_type?.id || apartment?.unitType?.id,
+            apartment?.unit_type?.name || apartment?.unitType?.name,
+          ])
         ).values(),
       ].filter(Boolean),
     [apartments]
@@ -77,6 +82,7 @@ function VehicleIncidentFormModal({
       setPhotoList((prev) => [...prev, { file, src: String(reader.result || "") }]);
       clearFieldError?.("evidence");
     };
+
     reader.readAsDataURL(file);
     event.target.value = "";
   };
@@ -86,19 +92,13 @@ function VehicleIncidentFormModal({
   };
 
   return (
-    <form onSubmit={onSubmit} className="space-y-6">
-      <div className="space-y-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <SectionTitle icon={<Car className="h-5 w-5" />} eyebrow="Registro" title="Información del Vehículo" />
+    <form onSubmit={onSubmit} className="space-y-4">
+      <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <SectionTitle icon={<Car className="h-5 w-5" />} eyebrow="Registro" title="InformaciÃ³n del vehÃ­culo" />
 
         <div className="space-y-2">
-          <Label>Tipo de vehículo</Label>
-          <select
-            className={inputBase + " py-3"}
-            value={form.tipoVehiculo}
-            onChange={(event) => {
-              setField("tipoVehiculo", event.target.value);
-            }}
-          >
+          <Label>Tipo de vehÃ­culo</Label>
+          <select className={inputBase} value={form.tipoVehiculo} onChange={(event) => setField("tipoVehiculo", event.target.value)}>
             <option value="">Seleccione tipo</option>
             {vehicleTypes.map((type) => (
               <option key={type.id} value={String(type.id)}>
@@ -109,7 +109,7 @@ function VehicleIncidentFormModal({
         </div>
 
         <div className="space-y-2">
-          <Label>Placa del vehículo</Label>
+          <Label>Placa del vehÃ­culo</Label>
           <input
             className={inputBase}
             placeholder="ABC-123"
@@ -126,7 +126,7 @@ function VehicleIncidentFormModal({
           <div className="space-y-2">
             <Label>Tipo de unidad</Label>
             <select
-              className={inputBase + " py-3"}
+              className={inputBase}
               value={form.tipoUnidad}
               onChange={(event) => {
                 setField("tipoUnidad", event.target.value);
@@ -143,9 +143,9 @@ function VehicleIncidentFormModal({
           </div>
 
           <div className="space-y-2">
-            <Label>Número</Label>
+            <Label>NÃºmero</Label>
             <select
-              className={inputBase + " py-3"}
+              className={inputBase}
               value={form.numeroUnidad}
               onChange={(event) => {
                 setField("numeroUnidad", event.target.value);
@@ -164,10 +164,10 @@ function VehicleIncidentFormModal({
             <FieldError message={fieldErrors.apartment_id} />
           </div>
         </div>
-      </div>
+      </section>
 
-      <div className="space-y-3 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <SectionTitle icon={<TriangleAlert className="h-5 w-5" />} eyebrow="Clasificación" title="Tipo de Novedad" />
+      <section className="space-y-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <SectionTitle icon={<TriangleAlert className="h-5 w-5" />} eyebrow="ClasificaciÃ³n" title="Tipo de novedad" />
 
         <IncidentOption
           icon={<Shield className="h-5 w-5" />}
@@ -180,7 +180,7 @@ function VehicleIncidentFormModal({
         />
         <IncidentOption
           icon={<HeartCrack className="h-5 w-5" />}
-          label="Daño"
+          label="DaÃ±o"
           selected={form.tipoNovedad === "DANIO"}
           onClick={() => {
             setField("tipoNovedad", "DANIO");
@@ -188,7 +188,7 @@ function VehicleIncidentFormModal({
           }}
         />
         <IncidentOption
-          icon="…"
+          icon={<MoreHorizontal className="h-5 w-5" />}
           label="Otro"
           selected={form.tipoNovedad === "OTRO"}
           onClick={() => {
@@ -197,13 +197,13 @@ function VehicleIncidentFormModal({
           }}
         />
         <FieldError message={fieldErrors.incident_type} />
-      </div>
+      </section>
 
-      <div className="space-y-3 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <SectionTitle icon={<MessageSquare className="h-5 w-5" />} eyebrow="Detalle" title="Observaciones Generales" />
+      <section className="space-y-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <SectionTitle icon={<MessageSquare className="h-5 w-5" />} eyebrow="Detalle" title="Observaciones generales" />
 
         <textarea
-          className="min-h-[140px] w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none focus:ring-2 focus:ring-blue-200"
+          className="min-h-[130px] w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
           placeholder="Describa los detalles..."
           value={form.observaciones}
           onChange={(event) => {
@@ -212,10 +212,10 @@ function VehicleIncidentFormModal({
           }}
         />
         <FieldError message={fieldErrors.observations} />
-      </div>
+      </section>
 
-      <div className="space-y-3 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <SectionTitle icon={<Camera className="h-5 w-5" />} eyebrow="Soporte" title="Evidencia Fotográfica" />
+      <section className="space-y-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <SectionTitle icon={<Camera className="h-5 w-5" />} eyebrow="Soporte" title="Evidencia fotogrÃ¡fica" />
 
         <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onPhotoChange} />
 
@@ -223,19 +223,19 @@ function VehicleIncidentFormModal({
           <button
             type="button"
             onClick={pickPhoto}
-            className="flex h-[96px] min-w-[120px] flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 hover:bg-slate-100"
+            className="flex h-24 min-w-[112px] flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 text-xs font-bold text-slate-700 transition hover:bg-slate-100"
           >
-            <Camera className="h-6 w-6 text-slate-400" />
-            <div className="text-xs font-extrabold text-slate-700">AÑADIR</div>
+            <Camera className="mb-1 h-5 w-5 text-slate-500" />
+            AÃ±adir
           </button>
 
           {form.photoList.map((photoItem, idx) => (
-            <div key={idx} className="relative h-[96px] min-w-[120px] overflow-hidden rounded-2xl border border-slate-200 bg-white">
-              <img src={photoItem.src} alt="" className="w-full h-full object-cover" />
+            <div key={idx} className="relative h-24 min-w-[112px] overflow-hidden rounded-xl border border-slate-200 bg-white">
+              <img src={photoItem.src} alt="Evidencia" className="h-full w-full object-cover" />
               <button
                 type="button"
                 onClick={() => removePhotoAt(idx)}
-                className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-white"
+                className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -243,17 +243,17 @@ function VehicleIncidentFormModal({
           ))}
         </div>
         <FieldError message={fieldErrors.evidence} />
-      </div>
+      </section>
 
       <div>
         <button
           type="submit"
           disabled={submitting}
-          className="w-full rounded-2xl bg-blue-600 py-4 text-sm font-extrabold text-white shadow-sm transition hover:bg-blue-700 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-70"
+          className="w-full rounded-xl bg-blue-600 py-3 text-sm font-bold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
         >
-          {submitting ? "Reportando..." : "Reportar Novedad"}
+          {submitting ? "Reportando..." : "Reportar novedad"}
         </button>
-        <p className="mt-3 text-center text-xs font-semibold text-slate-500">
+        <p className="mt-2 text-center text-xs font-semibold text-slate-500">
           Completa los campos para registrar la novedad con evidencia.
         </p>
       </div>
@@ -262,4 +262,3 @@ function VehicleIncidentFormModal({
 }
 
 export default VehicleIncidentFormModal;
-
