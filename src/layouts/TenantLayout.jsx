@@ -122,7 +122,7 @@ function TenantLayout({ children }) {
               onClick={() => setMobileOpen(false)}
               aria-label="Cerrar menu"
             />
-            <div className="absolute left-0 top-0 h-full w-[300px] border-r border-slate-200 bg-white shadow-xl">
+            <div className="absolute left-0 top-0 flex h-full w-[300px] flex-col border-r border-slate-200 bg-white shadow-xl">
               <SidebarContent
                 sections={sidebarSections}
                 onNavigate={() => setMobileOpen(false)}
@@ -173,7 +173,7 @@ function SidebarContent({
   }, [condominiumLogo]);
 
   return (
-    <>
+    <div className="flex h-full flex-col">
       <div className="px-7 pb-5 pt-8">
         <div className="flex items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-white">
@@ -212,7 +212,7 @@ function SidebarContent({
         </div>
       ) : null}
 
-      <nav className="flex-1 overflow-y-auto px-5 pb-6">
+      <nav className="min-h-0 flex-1 overflow-y-auto px-5 pb-6">
         <div className="space-y-6">
           {sections.map((section) => (
             <div key={section.title}>
@@ -250,18 +250,18 @@ function SidebarContent({
         </div>
       </nav>
 
-      <div className="border-t border-slate-200 px-5 py-4">
-        <div className="flex items-center gap-2 rounded-xl px-2 py-1">
+      <div className="shrink-0 px-5 pb-5 pt-3">
+        <div className="flex flex-col items-center justify-center gap-1 text-center">
           <img
             src={ORGANIZATION_BRAND_LOGO}
             alt="Organización Gen"
             className="h-5 w-auto object-contain"
             loading="lazy"
           />
-          <span className="text-xs font-semibold text-slate-500">By Organización Gen</span>
+          <span className="text-[11px] font-semibold text-slate-500">By Organización Gen</span>
         </div>
       </div>
-    </>
+    </div>
   );
 }
 

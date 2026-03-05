@@ -50,42 +50,50 @@ export function useCondominiums() {
       setCondominiums(Array.isArray(response.data) ? response.data : []);
     } catch (err) {
       const message =
-        err?.response?.data?.message || err?.message || "No fue posible cargar condominios.";
+        err?.response?.data?.message || err?.message || "No fue posible cargar propiedades.";
       setError(message);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  const createCondominium = useCallback(async (payload) => {
-    setSaving(true);
-    try {
-      const response = hasLogoFile(payload)
-        ? await apiClient.post("/condominiums", toMultipartFormData(payload), {
-            headers: { "Content-Type": "multipart/form-data" },
-          })
-        : await apiClient.post("/condominiums", payload);
-      setCondominiums((prev) => [response.data, ...prev]);
-      return response.data;
-    } finally {
-      setSaving(false);
-    }
-  }, []);
+  const createCondominium = useCallback(
+    async (payload) => {
+      setSaving(true);
+      try {
+        const response = hasLogoFile(payload)
+          ? await apiClient.post("/condominiums", toMultipartFormData(payload), {
+              headers: { "Content-Type": "multipart/form-data" },
+            })
+          : await apiClient.post("/condominiums", payload);
 
-  const updateCondominium = useCallback(async (id, payload) => {
-    setSaving(true);
-    try {
-      const response = hasLogoFile(payload)
-        ? await apiClient.post(`/condominiums/${id}`, toMultipartFormData(payload, true), {
-            headers: { "Content-Type": "multipart/form-data" },
-          })
-        : await apiClient.put(`/condominiums/${id}`, payload);
-      setCondominiums((prev) => prev.map((item) => (item.id === id ? response.data : item)));
-      return response.data;
-    } finally {
-      setSaving(false);
-    }
-  }, []);
+        await loadCondominiums();
+        return response.data;
+      } finally {
+        setSaving(false);
+      }
+    },
+    [loadCondominiums]
+  );
+
+  const updateCondominium = useCallback(
+    async (id, payload) => {
+      setSaving(true);
+      try {
+        const response = hasLogoFile(payload)
+          ? await apiClient.post(`/condominiums/${id}`, toMultipartFormData(payload, true), {
+              headers: { "Content-Type": "multipart/form-data" },
+            })
+          : await apiClient.put(`/condominiums/${id}`, payload);
+
+        await loadCondominiums();
+        return response.data;
+      } finally {
+        setSaving(false);
+      }
+    },
+    [loadCondominiums]
+  );
 
   const toggleCondominiumStatus = useCallback(async (id) => {
     const response = await apiClient.patch(`/condominiums/${id}/toggle`);

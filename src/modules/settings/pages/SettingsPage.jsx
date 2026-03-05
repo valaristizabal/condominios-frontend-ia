@@ -156,10 +156,18 @@ export default function SettingsPage() {
               <p className="text-xs font-extrabold uppercase tracking-widest text-slate-400">1. Gestion del sistema</p>
 
               <div className="mt-4 space-y-3">
+                <p className="px-1 text-[11px] font-extrabold uppercase tracking-widest text-slate-400">
+                  Configuracion inicial
+                </p>
                 <ItemRow
-                  title="Operativos"
-                  description="Gestiona personal operativo y su configuracion laboral"
-                  onClick={() => navigate(`${basePath}/settings/operatives`)}
+                  title="Tipos de unidad"
+                  description="Configura los tipos de unidad disponibles en la propiedad"
+                  onClick={() => navigate(`${basePath}/settings/unit-types`)}
+                />
+                <ItemRow
+                  title="Apartamentos / Unidades"
+                  description="Administra unidades y apartamentos de la propiedad"
+                  onClick={() => navigate(`${basePath}/settings/apartments`)}
                 />
                 <ItemRow
                   title="Residentes"
@@ -167,20 +175,19 @@ export default function SettingsPage() {
                   onClick={() => navigate(`${basePath}/settings/residents`)}
                 />
                 <ItemRow
-                  title="Tipos de unidad"
-                  description="Configura los tipos de unidad disponibles en la propiedad"
-                  onClick={() => navigate(`${basePath}/settings/unit-types`)}
-                />
-                <ItemRow
-                  title="Apartamentos"
-                  description="Administra unidades y apartamentos de la propiedad"
-                  onClick={() => navigate(`${basePath}/settings/apartments`)}
+                  title="Operativos"
+                  description="Gestiona personal operativo y su configuracion laboral"
+                  onClick={() => navigate(`${basePath}/settings/operatives`)}
                 />
                 <ItemRow
                   title="Tipos de vehiculos"
                   description="Configura los tipos de vehiculo permitidos en la propiedad"
                   onClick={() => navigate(`${basePath}/settings/vehicle-types`)}
                 />
+
+                <p className="px-1 pt-2 text-[11px] font-extrabold uppercase tracking-widest text-slate-400">
+                  Seguridad
+                </p>
                 <ItemRow
                   title="Tipos de emergencia"
                   description="Configura tipos de emergencia y su nivel de criticidad"
@@ -191,6 +198,10 @@ export default function SettingsPage() {
                   description="Configura contactos y numeros de emergencia por propiedad"
                   onClick={() => navigate(`${basePath}/settings/emergency-contacts`)}
                 />
+
+                <p className="px-1 pt-2 text-[11px] font-extrabold uppercase tracking-widest text-slate-400">
+                  Operacion interna
+                </p>
                 <ItemRow
                   title="Aseo"
                   description="Configura zonas de aseo, checklists y seguimiento"

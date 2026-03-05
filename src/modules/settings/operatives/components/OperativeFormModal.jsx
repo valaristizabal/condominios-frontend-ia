@@ -47,9 +47,7 @@ function OperativeFormModal({ open, initialValues, roles = [], loading, onCancel
 
       await onSubmit(payload);
     } catch (err) {
-      const message =
-        err?.response?.data?.message || err?.message || "No fue posible guardar el operativo.";
-      setError(message);
+      setError(normalizeOperativeError(err, "No fue posible guardar el operativo."));
     }
   };
 
@@ -277,6 +275,33 @@ function buildInitialForm(initialValues) {
       : "",
     is_active: Boolean(initialValues.is_active),
   };
+}
+
+function normalizeOperativeError(err, fallbackMessage) {
+  const responseData = err?.response?.data;
+  const errors = responseData?.errors;
+
+  if (errors && typeof errors === "object") {
+    const firstFieldErrors = Object.values(errors).find(
+      (fieldErrors) => Array.isArray(fieldErrors) && fieldErrors.length > 0
+    );
+    if (firstFieldErrors) {
+      return translateOperativeValidationMessage(String(firstFieldErrors[0]));
+    }
+  }
+
+  const rawMessage = responseData?.message || err?.message || fallbackMessage;
+  return translateOperativeValidationMessage(String(rawMessage));
+}
+
+function translateOperativeValidationMessage(message) {
+  const normalized = String(message).trim().toLowerCase();
+
+  if (normalized.includes("email has already been taken")) {
+    return "Este correo ya está registrado en el sistema.";
+  }
+
+  return message;
 }
 
 export default OperativeFormModal;

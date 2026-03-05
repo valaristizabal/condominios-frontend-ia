@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { resolveCondominiumLogo } from "../../../utils/condominiumBrand";
 
 function CondominiumCard({ condominium, onEnter, onEdit, onToggle }) {
@@ -5,7 +6,12 @@ function CondominiumCard({ condominium, onEnter, onEdit, onToggle }) {
   const statusClass = condominium?.is_active
     ? "bg-emerald-100 text-emerald-700"
     : "bg-slate-200 text-slate-600";
-  const logoSrc = resolveCondominiumLogo(condominium);
+  const resolvedLogoSrc = resolveCondominiumLogo(condominium);
+  const [logoSrc, setLogoSrc] = useState(resolvedLogoSrc);
+
+  useEffect(() => {
+    setLogoSrc(resolvedLogoSrc);
+  }, [resolvedLogoSrc]);
 
   return (
     <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -15,6 +21,7 @@ function CondominiumCard({ condominium, onEnter, onEdit, onToggle }) {
             src={logoSrc}
             alt={condominium.name}
             className="h-full w-full object-contain p-2"
+            onError={() => setLogoSrc(null)}
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-200 to-slate-100">
