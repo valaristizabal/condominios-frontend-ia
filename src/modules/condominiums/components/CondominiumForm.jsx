@@ -12,6 +12,10 @@ const INITIAL_FORM = {
   is_active: true,
 };
 
+function resolveLogoPreview(initialValues) {
+  return initialValues?.logo_url || initialValues?.logo_path || initialValues?.image_url || "";
+}
+
 function toFormValues(initialValues) {
   if (!initialValues) {
     return INITIAL_FORM;
@@ -32,6 +36,8 @@ function toFormValues(initialValues) {
 
 function CondominiumForm({ initialValues, loading, onCancel, onSubmit }) {
   const [form, setForm] = useState(() => toFormValues(initialValues));
+  const [logoFile, setLogoFile] = useState(null);
+  const [logoPreview, setLogoPreview] = useState(() => resolveLogoPreview(initialValues));
   const [error, setError] = useState("");
 
   const handleChange = (event) => {
@@ -40,6 +46,18 @@ function CondominiumForm({ initialValues, loading, onCancel, onSubmit }) {
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
+  };
+
+  const handleLogoChange = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (logoPreview && logoPreview.startsWith("blob:")) {
+      URL.revokeObjectURL(logoPreview);
+    }
+
+    setLogoFile(file);
+    setLogoPreview(URL.createObjectURL(file));
   };
 
   const handleSubmit = async (event) => {
@@ -55,6 +73,10 @@ function CondominiumForm({ initialValues, loading, onCancel, onSubmit }) {
       address: form.address || null,
       contact_info: form.contact_info || null,
     };
+
+    if (logoFile) {
+      payload.logo = logoFile;
+    }
 
     try {
       await onSubmit(payload);
@@ -85,6 +107,25 @@ function CondominiumForm({ initialValues, loading, onCancel, onSubmit }) {
         required
       />
 
+      <label className="block">
+        <span className="mb-1.5 block text-sm font-semibold text-slate-700">Logo del condominio</span>
+        <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+          <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-white">
+            {logoPreview ? (
+              <img src={logoPreview} alt="Logo del condominio" className="h-full w-full object-cover" />
+            ) : (
+              <BuildingIcon />
+            )}
+          </div>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleLogoChange}
+            className="block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-indigo-100 file:px-3 file:py-2 file:text-xs file:font-bold file:text-indigo-700 hover:file:bg-indigo-200"
+          />
+        </div>
+      </label>
+
       <Field
         label="Tipo de Condominio"
         name="type"
@@ -102,7 +143,7 @@ function CondominiumForm({ initialValues, loading, onCancel, onSubmit }) {
           onChange={handleChange}
         />
         <Field
-          label="Número de Pisos"
+          label="Numero de Pisos"
           name="floors"
           type="number"
           min="1"
@@ -113,25 +154,25 @@ function CondominiumForm({ initialValues, loading, onCancel, onSubmit }) {
       </div>
 
       <TextArea
-        label="Áreas Comunes"
+        label="Areas Comunes"
         name="common_areas"
-        placeholder="Describe áreas comunes del condominio..."
+        placeholder="Describe areas comunes del condominio..."
         value={form.common_areas}
         onChange={handleChange}
       />
 
       <Field
-        label="Dirección Completa"
+        label="Direccion Completa"
         name="address"
-        placeholder="Calle, Número, Ciudad, Estado"
+        placeholder="Calle, Numero, Ciudad, Estado"
         value={form.address}
         onChange={handleChange}
       />
 
       <TextArea
-        label="Información de Contacto"
+        label="Informacion de Contacto"
         name="contact_info"
-        placeholder="Teléfonos de administración, correos, etc."
+        placeholder="Telefonos de administracion, correos, etc."
         value={form.contact_info}
         onChange={handleChange}
       />
@@ -195,6 +236,14 @@ function TextArea({ label, ...props }) {
         className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
       />
     </label>
+  );
+}
+
+function BuildingIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-8 w-8 fill-slate-300" aria-hidden="true">
+      <path d="M3 21h18v-2h-2V3H5v16H3v2Zm4-2V5h10v14H7Zm2-10h2v2H9V9Zm4 0h2v2h-2V9Zm-4 4h2v2H9v-2Zm4 0h2v2h-2v-2Z" />
+    </svg>
   );
 }
 

@@ -3,13 +3,14 @@ function CondominiumCard({ condominium, onEnter, onEdit, onToggle }) {
   const statusClass = condominium?.is_active
     ? "bg-emerald-100 text-emerald-700"
     : "bg-slate-200 text-slate-600";
+  const logoSrc = condominium?.logo_url || condominium?.logo_path || condominium?.image_url || null;
 
   return (
     <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
       <div className="relative h-36 bg-slate-100">
-        {condominium?.image_url ? (
+        {logoSrc ? (
           <img
-            src={condominium.image_url}
+            src={logoSrc}
             alt={condominium.name}
             className="h-full w-full object-cover"
           />

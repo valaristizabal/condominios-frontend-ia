@@ -1,5 +1,5 @@
 import { NavLink, useParams } from "react-router-dom";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Bell,
   ClipboardList,
@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { ActiveCondominiumContext } from "../context/ActiveCondominiumContext";
 import { useAuthContext } from "../context/useAuthContext";
+import apiClient from "../services/apiClient";
 import { canAccessInventoryOperation, isSuperUser } from "../utils/roles";
 
 function getSidebarSections(basePath, canInventoryOperate) {
@@ -67,12 +68,50 @@ function TenantLayout({ children }) {
     () => getSidebarSections(basePath, canInventoryOperate),
     [basePath, canInventoryOperate]
   );
+  const [activeCondominiumInfo, setActiveCondominiumInfo] = useState(null);
+
+  useEffect(() => {
+    const condominiumId = activeContextValue.activeCondominiumId;
+    if (!condominiumId) {
+      setActiveCondominiumInfo(null);
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadCondominiumInfo = async () => {
+      try {
+        const response = await apiClient.get("/condominiums");
+        if (cancelled) return;
+
+        const items = Array.isArray(response.data) ? response.data : [];
+        const current = items.find((item) => Number(item?.id) === Number(condominiumId)) || null;
+        setActiveCondominiumInfo(current);
+      } catch {
+        if (!cancelled) {
+          setActiveCondominiumInfo(null);
+        }
+      }
+    };
+
+    loadCondominiumInfo();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeContextValue.activeCondominiumId]);
 
   return (
     <ActiveCondominiumContext.Provider value={activeContextValue}>
       <div className="min-h-screen bg-white">
         <aside className="hidden border-r border-slate-200 bg-white lg:fixed lg:inset-y-0 lg:flex lg:w-80 lg:flex-col">
-          <SidebarContent sections={sidebarSections} />
+          <SidebarContent
+            sections={sidebarSections}
+            condominiumName={
+              activeCondominiumInfo?.name || `Condominio #${activeContextValue.activeCondominiumId || ""}`
+            }
+            condominiumLogo={activeCondominiumInfo?.logo_url || activeCondominiumInfo?.logo_path || null}
+          />
         </aside>
 
         {mobileOpen ? (
@@ -84,7 +123,15 @@ function TenantLayout({ children }) {
               aria-label="Cerrar menu"
             />
             <div className="absolute left-0 top-0 h-full w-[300px] border-r border-slate-200 bg-white shadow-xl">
-              <SidebarContent sections={sidebarSections} onNavigate={() => setMobileOpen(false)} />
+              <SidebarContent
+                sections={sidebarSections}
+                onNavigate={() => setMobileOpen(false)}
+                condominiumName={
+                  activeCondominiumInfo?.name ||
+                  `Condominio #${activeContextValue.activeCondominiumId || ""}`
+                }
+                condominiumLogo={activeCondominiumInfo?.logo_url || activeCondominiumInfo?.logo_path || null}
+              />
             </div>
           </div>
         ) : null}
@@ -106,16 +153,22 @@ function TenantLayout({ children }) {
   );
 }
 
-function SidebarContent({ sections = [], onNavigate }) {
+function SidebarContent({ sections = [], onNavigate, condominiumName, condominiumLogo }) {
   return (
     <>
       <div className="px-7 pb-5 pt-8">
         <div className="flex items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-white">
-            <img src="/image/isotipo1.png" alt="GenAccess" className="h-8 w-auto object-contain" />
+            {condominiumLogo ? (
+              <img src={condominiumLogo} alt={condominiumName || "Condominio"} className="h-full w-full object-cover" />
+            ) : (
+              <img src="/image/isotipo1.png" alt="Condominio" className="h-8 w-auto object-contain" />
+            )}
           </div>
           <div className="leading-tight">
-            <h2 className="text-lg font-extrabold text-slate-900">GenAccess</h2>
+            <h2 className="line-clamp-1 text-lg font-extrabold text-slate-900">
+              {condominiumName || "Condominio"}
+            </h2>
             <p className="text-xs font-bold tracking-widest text-slate-400">GESTION INTEGRAL</p>
           </div>
         </div>

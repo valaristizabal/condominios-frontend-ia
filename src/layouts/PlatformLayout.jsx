@@ -1,5 +1,6 @@
 import { NavLink } from "react-router-dom";
-import { Building2, Users } from "lucide-react";
+import { Building2, LogOut, Users } from "lucide-react";
+import { useAuthContext } from "../context/useAuthContext";
 
 const platformModules = [
   { to: "/condominiums", label: "Condominios" },
@@ -7,9 +8,11 @@ const platformModules = [
 ];
 
 function PlatformLayout({ children }) {
+  const { logout } = useAuthContext();
+
   return (
     <div className="min-h-screen bg-white lg:grid lg:grid-cols-[320px_1fr]">
-      <aside className="border-r border-slate-200 bg-white">
+      <aside className="flex flex-col border-r border-slate-200 bg-white">
         <div className="px-7 pb-5 pt-8">
           <div className="flex items-center gap-3">
             <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-white">
@@ -22,7 +25,7 @@ function PlatformLayout({ children }) {
           </div>
         </div>
 
-        <nav className="space-y-1 px-5 py-2">
+        <nav className="flex-1 space-y-1 px-5 py-2">
           <p className="mb-2 px-2 text-[11px] font-extrabold uppercase tracking-widest text-slate-400">
             Plataforma
           </p>
@@ -72,6 +75,17 @@ function PlatformLayout({ children }) {
             )}
           </div>
         </nav>
+
+        <div className="border-t border-slate-200 px-5 py-4">
+          <button
+            type="button"
+            onClick={logout}
+            className="group flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
+          >
+            <LogOut className="h-4 w-4 text-slate-400 transition group-hover:text-slate-600" />
+            Cerrar sesión
+          </button>
+        </div>
       </aside>
 
       <main className="bg-slate-50 p-4 lg:p-6">{children}</main>

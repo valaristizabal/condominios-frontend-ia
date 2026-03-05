@@ -7,7 +7,7 @@ import { useCondominiums } from "../hooks/useCondominiums";
 
 function CondominiumsPage() {
   const navigate = useNavigate();
-  const { user, logout } = useAuthContext();
+  const { user } = useAuthContext();
   const {
     condominiums,
     loading,
@@ -73,30 +73,13 @@ function CondominiumsPage() {
   return (
     <main className="min-h-screen bg-[#eef1f6] px-4 pb-24 pt-5 md:px-8">
       <section className="mx-auto max-w-6xl">
-        <header className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <header className="mb-5">
           <div>
-            <p className="text-sm font-semibold text-slate-500">Gestión de Condominios</p>
+            <p className="text-sm font-semibold text-slate-500">Gestion de Condominios</p>
             <h1 className="text-2xl font-extrabold text-slate-900">Condominios</h1>
             <p className="mt-1 text-sm text-slate-500">
-              Sesión: <span className="font-semibold">{user?.full_name || user?.email}</span>
+              Sesion: <span className="font-semibold">{user?.full_name || user?.email}</span>
             </p>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => navigate("/dashboard")}
-              className="rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-100"
-            >
-              Dashboard
-            </button>
-            <button
-              type="button"
-              onClick={logout}
-              className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800"
-            >
-              Cerrar sesión
-            </button>
           </div>
         </header>
 
