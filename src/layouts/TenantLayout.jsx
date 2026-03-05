@@ -1,6 +1,8 @@
-import { NavLink, useParams } from "react-router-dom";
+import { NavLink, useNavigate, useParams } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
+  ArrowLeft,
   Bell,
   ClipboardList,
   LayoutDashboard,
@@ -44,9 +46,13 @@ function getSidebarSections(basePath, canInventoryOperate) {
 
 function TenantLayout({ children }) {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { user } = useAuthContext();
   const [mobileOpen, setMobileOpen] = useState(false);
   const isSuperAdmin = isSuperUser(user?.role);
+  const parsedCondominiumId = Number(id);
+  const hasRouteCondominiumContext = Number.isFinite(parsedCondominiumId) && parsedCondominiumId > 0;
+  const showBackToCondominiums = isSuperAdmin && hasRouteCondominiumContext;
 
   const activeContextValue = useMemo(() => {
     if (isSuperAdmin) {
@@ -69,40 +75,23 @@ function TenantLayout({ children }) {
     () => getSidebarSections(basePath, canInventoryOperate),
     [basePath, canInventoryOperate]
   );
-  const [activeCondominiumInfo, setActiveCondominiumInfo] = useState(null);
+  const { data: activeCondominiumInfo } = useQuery({
+    queryKey: ["active-condominium-info", activeContextValue.activeCondominiumId],
+    enabled: Boolean(activeContextValue.activeCondominiumId),
+    staleTime: 1000 * 60,
+    queryFn: async () => {
+      const condominiumId = activeContextValue.activeCondominiumId;
+      if (!condominiumId) return null;
 
-  useEffect(() => {
-    const condominiumId = activeContextValue.activeCondominiumId;
-    if (!condominiumId) {
-      setActiveCondominiumInfo(null);
-      return;
-    }
+      const response = await apiClient.get("/condominiums/active", {
+        headers: {
+          "X-Active-Condominium-Id": String(condominiumId),
+        },
+      });
 
-    let cancelled = false;
-
-    const loadCondominiumInfo = async () => {
-      try {
-        const response = await apiClient.get("/condominiums/active", {
-          headers: {
-            "X-Active-Condominium-Id": String(condominiumId),
-          },
-        });
-        if (cancelled) return;
-
-        setActiveCondominiumInfo(response.data || null);
-      } catch {
-        if (!cancelled) {
-          setActiveCondominiumInfo(null);
-        }
-      }
-    };
-
-    loadCondominiumInfo();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [activeContextValue.activeCondominiumId]);
+      return response?.data || null;
+    },
+  });
 
   return (
     <ActiveCondominiumContext.Provider value={activeContextValue}>
@@ -114,6 +103,8 @@ function TenantLayout({ children }) {
               activeCondominiumInfo?.name || `Condominio #${activeContextValue.activeCondominiumId || ""}`
             }
             condominiumLogo={resolveCondominiumLogo(activeCondominiumInfo)}
+            showBackToCondominiums={showBackToCondominiums}
+            onBackToCondominiums={() => navigate("/condominiums")}
           />
         </aside>
 
@@ -134,6 +125,11 @@ function TenantLayout({ children }) {
                   `Condominio #${activeContextValue.activeCondominiumId || ""}`
                 }
                 condominiumLogo={resolveCondominiumLogo(activeCondominiumInfo)}
+                showBackToCondominiums={showBackToCondominiums}
+                onBackToCondominiums={() => {
+                  setMobileOpen(false);
+                  navigate("/condominiums");
+                }}
               />
             </div>
           </div>
@@ -156,14 +152,32 @@ function TenantLayout({ children }) {
   );
 }
 
-function SidebarContent({ sections = [], onNavigate, condominiumName, condominiumLogo }) {
+function SidebarContent({
+  sections = [],
+  onNavigate,
+  condominiumName,
+  condominiumLogo,
+  showBackToCondominiums = false,
+  onBackToCondominiums,
+}) {
+  const [logoSrc, setLogoSrc] = useState(condominiumLogo || null);
+
+  useEffect(() => {
+    setLogoSrc(condominiumLogo || null);
+  }, [condominiumLogo]);
+
   return (
     <>
       <div className="px-7 pb-5 pt-8">
         <div className="flex items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-white">
-            {condominiumLogo ? (
-              <img src={condominiumLogo} alt={condominiumName || "Condominio"} className="h-full w-full object-cover" />
+            {logoSrc ? (
+              <img
+                src={logoSrc}
+                alt={condominiumName || "Condominio"}
+                className="h-full w-full object-contain p-1"
+                onError={() => setLogoSrc(null)}
+              />
             ) : (
               <img src="/image/isotipo1.png" alt="Condominio" className="h-8 w-auto object-contain" />
             )}
@@ -176,6 +190,21 @@ function SidebarContent({ sections = [], onNavigate, condominiumName, condominiu
           </div>
         </div>
       </div>
+
+      {showBackToCondominiums ? (
+        <div className="px-5 pb-4">
+          <button
+            type="button"
+            onClick={onBackToCondominiums}
+            className="group relative flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
+          >
+            <span className="text-slate-400 transition group-hover:text-slate-600">
+              <ArrowLeft className="h-4 w-4" />
+            </span>
+            <span className="truncate">Atrás a Condominios</span>
+          </button>
+        </div>
+      ) : null}
 
       <nav className="flex-1 overflow-y-auto px-5 pb-6">
         <div className="space-y-6">

@@ -1,10 +1,9 @@
 import { NavLink } from "react-router-dom";
-import { Building2, LogOut, Users } from "lucide-react";
+import { Building2, LogOut } from "lucide-react";
 import { useAuthContext } from "../context/useAuthContext";
 
 const platformModules = [
   { to: "/condominiums", label: "Condominios" },
-  { to: null, label: "Usuarios globales" },
 ];
 
 function PlatformLayout({ children }) {
@@ -31,48 +30,33 @@ function PlatformLayout({ children }) {
           </p>
 
           <div className="space-y-1">
-            {platformModules.map((item) =>
-              item.to ? (
-                <NavLink key={item.label} to={item.to} className="block">
-                  {({ isActive }) => (
-                    <div
-                      className={`group relative flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition ${
-                        isActive
-                          ? "bg-blue-50 text-blue-700 shadow-sm"
-                          : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+            {platformModules.map((item) => (
+              <NavLink key={item.label} to={item.to} className="block">
+                {({ isActive }) => (
+                  <div
+                    className={`group relative flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition ${
+                      isActive
+                        ? "bg-blue-50 text-blue-700 shadow-sm"
+                        : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                    }`}
+                  >
+                    <span
+                      className={`absolute bottom-2 left-0 top-2 w-1 rounded-full transition ${
+                        isActive ? "bg-blue-600" : "bg-transparent"
+                      }`}
+                    />
+                    <span
+                      className={`transition ${
+                        isActive ? "text-blue-600" : "text-slate-400 group-hover:text-slate-600"
                       }`}
                     >
-                      <span
-                        className={`absolute bottom-2 left-0 top-2 w-1 rounded-full transition ${
-                          isActive ? "bg-blue-600" : "bg-transparent"
-                        }`}
-                      />
-                      <span
-                        className={`transition ${
-                          isActive ? "text-blue-600" : "text-slate-400 group-hover:text-slate-600"
-                        }`}
-                      >
-                        {iconByLabel(item.label)}
-                      </span>
-                      {item.label}
-                    </div>
-                  )}
-                </NavLink>
-              ) : (
-                <div
-                  key={item.label}
-                  className="flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-400"
-                >
-                  <span className="flex items-center gap-3">
-                    {iconByLabel(item.label)}
-                    <span>{item.label}</span>
-                  </span>
-                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold uppercase">
-                    Prox.
-                  </span>
-                </div>
-              )
-            )}
+                      {iconByLabel(item.label)}
+                    </span>
+                    {item.label}
+                  </div>
+                )}
+              </NavLink>
+            ))}
           </div>
         </nav>
 
@@ -97,7 +81,6 @@ function iconByLabel(label) {
   const className = "h-4 w-4";
   const map = {
     Condominios: <Building2 className={className} />,
-    "Usuarios globales": <Users className={className} />,
   };
 
   return map[label] ?? <Building2 className={className} />;
