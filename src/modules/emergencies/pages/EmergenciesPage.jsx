@@ -89,7 +89,7 @@ export default function EmergenciesPage() {
     setLocalError("");
 
     if (!activeCondominiumId) {
-      setLocalError("No hay condominio activo para reportar emergencias.");
+      setLocalError("No hay propiedad activa para reportar emergencias.");
       return;
     }
 
@@ -146,7 +146,7 @@ export default function EmergenciesPage() {
 
         {!activeCondominiumId ? (
           <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-700">
-            No hay condominio activo para gestionar emergencias.
+            No hay propiedad activa para gestionar emergencias.
           </div>
         ) : null}
 
@@ -244,7 +244,7 @@ export default function EmergenciesPage() {
               ))
             ) : (
               <div className="col-span-full rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm font-semibold text-slate-600">
-                No hay contactos de emergencia configurados para este condominio.
+                No hay contactos de emergencia configurados para esta propiedad.
               </div>
             )}
           </div>

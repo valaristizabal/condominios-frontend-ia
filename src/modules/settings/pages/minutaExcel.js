@@ -113,7 +113,7 @@ const BORDER_ALL = {
 
 export async function exportDailyMinutaWorkbook({ payload, fileName, condominiumLabel }) {
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = "Condominios IA";
+  workbook.creator = "Propiedades IA";
   workbook.created = new Date();
 
   const date = String(payload?.date || "");
@@ -143,7 +143,7 @@ export async function exportMonthlyMinutaWorkbook({
   condominiumLabel,
 }) {
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = "Condominios IA";
+  workbook.creator = "Propiedades IA";
   workbook.created = new Date();
 
   const details = aggregateDailyLogs(dailyLogs);
@@ -200,7 +200,7 @@ function addDailyCoverSheet(workbook, { condominiumLabel, date, generatedAt, cou
   sheet.getRow(1).height = 34;
 
   sheet.addRow([]);
-  sheet.addRow(["Condominio:", condominiumLabel || "-"]);
+  sheet.addRow(["Propiedad:", condominiumLabel || "-"]);
   sheet.addRow(["Fecha:", formatDate(date)]);
   sheet.addRow(["Generado el:", formatDateTime(generatedAt)]);
   sheet.addRow([]);
@@ -230,7 +230,7 @@ function addMonthlyCoverSheet(workbook, { condominiumLabel, month, generatedAt, 
   sheet.getRow(1).height = 34;
 
   sheet.addRow([]);
-  sheet.addRow(["Condominio:", condominiumLabel || "-"]);
+  sheet.addRow(["Propiedad:", condominiumLabel || "-"]);
   sheet.addRow(["Mes:", month || "-"]);
   sheet.addRow(["Generado el:", formatDateTime(generatedAt)]);
   sheet.addRow([]);
@@ -266,7 +266,7 @@ function addSummarySheet(workbook, sheetName, title, counts) {
 
   MODULE_ORDER.forEach((moduleKey) => {
     const count = Number(counts[moduleKey] || 0);
-    const bars = "█".repeat(Math.max(0, Math.round((count / max) * 30)));
+    const bars = "â–ˆ".repeat(Math.max(0, Math.round((count / max) * 30)));
     const row = sheet.addRow([MODULE_LABELS[moduleKey], count, bars]);
     styleDataRow(row);
   });

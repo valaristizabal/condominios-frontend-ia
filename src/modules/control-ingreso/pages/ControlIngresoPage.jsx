@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ClipboardList, MapPin, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -247,7 +247,7 @@ export default function ControlIngresoPage() {
 
         {!activeCondominiumId ? (
           <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-            No hay condominio activo para gestionar ingresos de personal.
+            No hay propiedad activa para gestionar ingresos de personal.
           </div>
         ) : null}
 
@@ -432,7 +432,7 @@ export default function ControlIngresoPage() {
 
               <div className="mt-2 flex items-center gap-2 px-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
                 <ClipboardList className="h-3.5 w-3.5" />
-                Resumen de asistencia del condominio activo
+                Resumen de asistencia de la propiedad activa
               </div>
             </Card>
           </div>

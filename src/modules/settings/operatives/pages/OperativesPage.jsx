@@ -66,7 +66,7 @@ function OperativesPage() {
         <div>
           <h1 className="text-2xl font-extrabold text-slate-900">Operativos</h1>
           <p className="mt-1 text-sm text-slate-500">
-            Gestión de personal operativo del condominio.
+            GestiÃ³n de personal operativo de la propiedad.
             {activeCondominiumId ? ` Contexto: #${activeCondominiumId}` : ""}
           </p>
         </div>
@@ -82,7 +82,7 @@ function OperativesPage() {
 
       {!hasTenantContext ? (
         <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-          No hay condominio activo para gestionar operativos.
+          No hay propiedad activa para gestionar operativos.
         </p>
       ) : null}
 

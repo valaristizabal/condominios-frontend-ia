@@ -302,7 +302,7 @@ function CleaningAreasPage() {
 
         {!hasTenantContext ? (
           <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700">
-            No hay condominio activo para gestionar areas de aseo.
+            No hay propiedad activa para gestionar areas de aseo.
           </div>
         ) : null}
 
@@ -462,7 +462,7 @@ function CleaningAreasPage() {
                                     {Number(linkedSchedule.repeat_interval || 1) > 1
                                       ? ` (cada ${linkedSchedule.repeat_interval})`
                                       : ""}
-                                    {" · "}
+                                    {" Â· "}
                                     {linkedSchedule.start_date}
                                     {linkedSchedule.end_date ? ` al ${linkedSchedule.end_date}` : ""}
                                   </div>

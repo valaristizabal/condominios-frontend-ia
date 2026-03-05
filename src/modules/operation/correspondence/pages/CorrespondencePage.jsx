@@ -39,7 +39,7 @@ export default function CorrespondencePage() {
   } = useCorrespondence();
 
   const couriers = useMemo(
-    () => ["Servientrega", "Interrapidísimo", "Coordinadora"],
+    () => ["Servientrega", "InterrapidÃ­simo", "Coordinadora"],
     []
   );
 
@@ -100,7 +100,7 @@ export default function CorrespondencePage() {
         receiver:
           item?.resident_receiver?.user?.full_name ||
           item?.resident_receiver?.user?.name ||
-          "—",
+          "â€”",
         delivered: (item.status || "") === "DELIVERED" || Boolean(item.delivered),
         date: formatDate(item.created_at),
         signatureUrl: item.signature_url || null,
@@ -173,10 +173,10 @@ export default function CorrespondencePage() {
 
     const nextLocalErrors = {};
     if (!form.receiverType) {
-      nextLocalErrors.receiverType = "Selecciona quién recibe.";
+      nextLocalErrors.receiverType = "Selecciona quiÃ©n recibe.";
     }
     if (form.receiverType === "dueno" && !signatureDataUrl) {
-      nextLocalErrors.signature = "La firma es obligatoria cuando recibe el dueño.";
+      nextLocalErrors.signature = "La firma es obligatoria cuando recibe el dueÃ±o.";
     }
 
     setLocalErrors(nextLocalErrors);
@@ -202,7 +202,7 @@ export default function CorrespondencePage() {
           await deliverCorrespondence(created.id, ownerResident.id, signatureDataUrl);
         } else {
           setLocalErrors({
-            receiverType: "No se encontró un residente propietario para esta unidad.",
+            receiverType: "No se encontrÃ³ un residente propietario para esta unidad.",
           });
           return;
         }
@@ -240,7 +240,7 @@ export default function CorrespondencePage() {
     <div className="w-full">
       <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 py-6">
         <div className="mb-6">
-          <Kicker>Gestión de accesos</Kicker>
+          <Kicker>GestiÃ³n de accesos</Kicker>
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
               <Title>Registro de Correspondencia</Title>
@@ -253,7 +253,7 @@ export default function CorrespondencePage() {
 
         {!activeCondominiumId ? (
           <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-700">
-            No hay condominio activo para gestionar correspondencia.
+            No hay propiedad activa para gestionar correspondencia.
           </div>
         ) : null}
 
@@ -360,8 +360,8 @@ function formatPackageType(value) {
 }
 
 function formatDate(value) {
-  if (!value) return "—";
+  if (!value) return "â€”";
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
+  if (Number.isNaN(date.getTime())) return "â€”";
   return date.toLocaleDateString("es-CO");
 }

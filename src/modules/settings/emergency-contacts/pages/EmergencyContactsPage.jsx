@@ -69,7 +69,7 @@ function EmergencyContactsPage() {
         <div>
           <h1 className="text-2xl font-extrabold text-slate-900">Contactos de Emergencia</h1>
           <p className="mt-1 text-sm text-slate-500">
-            Gestion de numeros de emergencia del condominio.
+            Gestion de numeros de emergencia de la propiedad.
             {activeCondominiumId ? ` Contexto: #${activeCondominiumId}` : ""}
           </p>
         </div>
@@ -85,7 +85,7 @@ function EmergencyContactsPage() {
 
       {!hasTenantContext ? (
         <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-          No hay condominio activo para gestionar contactos de emergencia.
+          No hay propiedad activa para gestionar contactos de emergencia.
         </p>
       ) : null}
 

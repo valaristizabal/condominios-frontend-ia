@@ -58,7 +58,7 @@ function InventoriesPage() {
         <div>
           <h1 className="text-2xl font-extrabold text-slate-900">Inventarios</h1>
           <p className="mt-1 text-sm text-slate-500">
-            Gestiona bodegas e inventarios activos para el condominio.
+            Gestiona bodegas e inventarios activos para la propiedad.
             {activeCondominiumId ? ` Contexto: #${activeCondominiumId}` : ""}
           </p>
         </div>
@@ -74,7 +74,7 @@ function InventoriesPage() {
 
       {!hasTenantContext ? (
         <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-          No hay condominio activo para gestionar inventarios.
+          No hay propiedad activa para gestionar inventarios.
         </p>
       ) : null}
 

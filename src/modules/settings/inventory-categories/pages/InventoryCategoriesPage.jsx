@@ -64,9 +64,9 @@ function InventoryCategoriesPage() {
     <div className="mx-auto w-full max-w-6xl">
       <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-extrabold text-slate-900">Categorías de Inventario</h1>
+          <h1 className="text-2xl font-extrabold text-slate-900">CategorÃ­as de Inventario</h1>
           <p className="mt-1 text-sm text-slate-500">
-            Gestiona categorías parametrizables para productos de inventario.
+            Gestiona categorÃ­as parametrizables para productos de inventario.
             {activeCondominiumId ? ` Contexto: #${activeCondominiumId}` : ""}
           </p>
         </div>
@@ -76,13 +76,13 @@ function InventoryCategoriesPage() {
           className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-indigo-700 disabled:opacity-70"
           disabled={!hasTenantContext || saving}
         >
-          + Crear categoría
+          + Crear categorÃ­a
         </button>
       </header>
 
       {!hasTenantContext ? (
         <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-          No hay condominio activo para gestionar categorías.
+          No hay propiedad activa para gestionar categorÃ­as.
         </p>
       ) : null}
 
@@ -112,7 +112,7 @@ function InventoryCategoriesPage() {
 
       {loading ? (
         <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-slate-500">
-          Cargando categorías...
+          Cargando categorÃ­as...
         </div>
       ) : (
         <InventoryCategoryTable rows={filtered} busy={saving} onEdit={openEdit} onToggle={handleToggle} />

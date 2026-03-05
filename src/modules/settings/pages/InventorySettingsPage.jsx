@@ -41,7 +41,7 @@ function InventorySettingsPage() {
         <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Configuracion</p>
         <h1 className="mt-1 text-2xl font-extrabold text-slate-900">Inventario</h1>
         <p className="mt-1 text-sm text-slate-500">
-          Agrupa la parametrizacion de inventarios y categorias para el condominio activo.
+          Agrupa la parametrizacion de inventarios y categorias para la propiedad activa.
         </p>
       </div>
 
@@ -50,7 +50,7 @@ function InventorySettingsPage() {
         <div className="mt-4 space-y-3">
           <ItemRow
             title="Inventarios"
-            description="Configura bodegas e inventarios del condominio"
+            description="Configura bodegas e inventarios de la propiedad"
             onClick={() => navigate(`${basePath}/settings/inventories`)}
           />
           <ItemRow

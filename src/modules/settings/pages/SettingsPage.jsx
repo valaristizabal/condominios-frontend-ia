@@ -100,7 +100,7 @@ export default function SettingsPage() {
       await exportDailyMinutaWorkbook({
         payload: response.data,
         fileName: `minuta-diaria-${today}.xlsx`,
-        condominiumLabel: `Condominio #${resolvedCondominiumId}`,
+        condominiumLabel: `Propiedad #${resolvedCondominiumId}`,
       });
     } catch (err) {
       setDownloadError(normalizeApiError(err, "No fue posible descargar la minuta diaria."));
@@ -132,7 +132,7 @@ export default function SettingsPage() {
         monthlySummary: summaryResponse.data,
         dailyLogs,
         fileName: `minuta-mensual-${month}.xlsx`,
-        condominiumLabel: `Condominio #${resolvedCondominiumId}`,
+        condominiumLabel: `Propiedad #${resolvedCondominiumId}`,
       });
     } catch (err) {
       setDownloadError(normalizeApiError(err, "No fue posible descargar la minuta mensual."));
@@ -147,7 +147,7 @@ export default function SettingsPage() {
         <PageTitle
           eyebrow="Configuracion"
           title="Ajustes"
-          subtitle="Administra la parametrizacion del condominio: unidades, apartamentos, residentes, operativos y tipos de vehiculos."
+          subtitle="Administra la parametrizacion de la propiedad: unidades, apartamentos, residentes, operativos y tipos de vehiculos."
         />
 
         <div className="mt-6 grid grid-cols-1 gap-5 lg:grid-cols-12">
@@ -168,17 +168,17 @@ export default function SettingsPage() {
                 />
                 <ItemRow
                   title="Tipos de unidad"
-                  description="Configura los tipos de unidad disponibles en el condominio"
+                  description="Configura los tipos de unidad disponibles en la propiedad"
                   onClick={() => navigate(`${basePath}/settings/unit-types`)}
                 />
                 <ItemRow
                   title="Apartamentos"
-                  description="Administra unidades y apartamentos del condominio"
+                  description="Administra unidades y apartamentos de la propiedad"
                   onClick={() => navigate(`${basePath}/settings/apartments`)}
                 />
                 <ItemRow
                   title="Tipos de vehiculos"
-                  description="Configura los tipos de vehiculo permitidos en el condominio"
+                  description="Configura los tipos de vehiculo permitidos en la propiedad"
                   onClick={() => navigate(`${basePath}/settings/vehicle-types`)}
                 />
                 <ItemRow
@@ -188,7 +188,7 @@ export default function SettingsPage() {
                 />
                 <ItemRow
                   title="Emergencias"
-                  description="Configura contactos y numeros de emergencia por condominio"
+                  description="Configura contactos y numeros de emergencia por propiedad"
                   onClick={() => navigate(`${basePath}/settings/emergency-contacts`)}
                 />
                 <ItemRow
@@ -199,7 +199,7 @@ export default function SettingsPage() {
                 {canSeeInventorySettings ? (
                   <ItemRow
                     title="Inventario"
-                    description="Gestiona inventarios y categorías de productos"
+                    description="Gestiona inventarios y categorÃ­as de productos"
                     onClick={() => navigate(`${basePath}/settings/inventory`)}
                   />
                 ) : null}
@@ -210,15 +210,15 @@ export default function SettingsPage() {
           <div className="space-y-5 lg:col-span-4">
             <Card>
               <p className="text-xs font-extrabold uppercase tracking-widest text-slate-400">Rol restringido</p>
-              <p className="mt-1 text-sm font-extrabold text-slate-900">Administrador de Condominios</p>
+              <p className="mt-1 text-sm font-extrabold text-slate-900">Administrador de Propiedades</p>
               <p className="mt-1 text-xs font-semibold text-slate-500">
-                Acceso a parametrizacion y mantenimiento del sistema en condominio activo.
+                Acceso a parametrizacion y mantenimiento del sistema en propiedad activa.
               </p>
 
               <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
                 <p className="text-xs font-extrabold text-slate-700">Recomendacion</p>
                 <p className="mt-1 text-xs font-semibold text-slate-500">
-                  Mantener la gestion por contexto tenant activo y evitar datos cruzados entre condominios.
+                  Mantener la gestion por contexto tenant activo y evitar datos cruzados entre propiedades.
                 </p>
               </div>
             </Card>
@@ -226,7 +226,7 @@ export default function SettingsPage() {
             <Card>
               <p className="text-xs font-extrabold uppercase tracking-widest text-slate-400">Descargas</p>
               <p className="mt-1 text-xs font-semibold text-slate-500">
-                Genera minutas automaticas del condominio activo.
+                Genera minutas automaticas de la propiedad activa.
               </p>
 
               <div className="mt-4 space-y-2">

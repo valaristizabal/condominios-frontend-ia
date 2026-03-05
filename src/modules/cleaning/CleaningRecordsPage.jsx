@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCleaningRecords } from "./useCleaningRecords";
 
@@ -162,7 +162,7 @@ function CleaningRecordsPage() {
 
       {!hasTenantContext ? (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700">
-          No hay condominio activo para operar este modulo.
+          No hay propiedad activa para operar este modulo.
         </div>
       ) : null}
 

@@ -75,8 +75,8 @@ function CondominiumsPage() {
       <section className="mx-auto max-w-6xl">
         <header className="mb-5">
           <div>
-            <p className="text-sm font-semibold text-slate-500">Gestion de Condominios</p>
-            <h1 className="text-2xl font-extrabold text-slate-900">Condominios</h1>
+            <p className="text-sm font-semibold text-slate-500">Gestión de Propiedades</p>
+            <h1 className="text-2xl font-extrabold text-slate-900">Propiedades</h1>
             <p className="mt-1 text-sm text-slate-500">
               Sesion: <span className="font-semibold">{user?.full_name || user?.email}</span>
             </p>
@@ -95,7 +95,7 @@ function CondominiumsPage() {
             onClick={openCreateModal}
             className="rounded-xl bg-[#174abf] px-4 py-3 text-sm font-bold text-white shadow-[0_8px_20px_rgba(23,74,191,0.35)] hover:bg-[#123ea3]"
           >
-            + Nuevo Condominio
+            + Nueva Propiedad
           </button>
         </div>
 
@@ -113,12 +113,12 @@ function CondominiumsPage() {
 
         {loading ? (
           <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center text-slate-500">
-            Cargando condominios...
+            Cargando propiedades...
           </div>
         ) : condominiums.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center">
-            <p className="text-lg font-semibold text-slate-700">No hay condominios registrados</p>
-            <p className="mt-2 text-sm text-slate-500">Crea el primer condominio para empezar.</p>
+            <p className="text-lg font-semibold text-slate-700">No hay propiedades registradas</p>
+            <p className="mt-2 text-sm text-slate-500">Crea la primera propiedad para empezar.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -140,7 +140,7 @@ function CondominiumsPage() {
           <div className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-5 shadow-2xl sm:p-6">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-xl font-extrabold text-slate-900">
-                {editingCondominium ? "Editar Condominio" : "Nuevo Condominio"}
+                {editingCondominium ? "Editar Propiedad" : "Nueva Propiedad"}
               </h2>
               <button
                 type="button"

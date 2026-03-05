@@ -1,4 +1,4 @@
-﻿import { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import VehicleIncidentFormModal from "../components/VehicleIncidentFormModal";
 import VehicleIncidentTable from "../components/VehicleIncidentTable";
 import { useVehicleIncidents } from "../hooks/useVehicleIncidents";
@@ -123,7 +123,7 @@ function VehicleIncidentsPage() {
 
       {!activeCondominiumId ? (
         <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700">
-          No hay condominio activo para gestionar novedades vehiculares.
+          No hay propiedad activa para gestionar novedades vehiculares.
         </div>
       ) : null}
 

@@ -1,4 +1,4 @@
-﻿import SectionTitle from "../components/SectionTitle";
+import SectionTitle from "../components/SectionTitle";
 import KpiCard from "../components/KpiCard";
 import QuickActions from "../components/QuickActions";
 import RecentActivityTable from "../components/RecentActivityTable";
@@ -20,10 +20,10 @@ function DashboardPage() {
       <header className="mb-8 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-extrabold text-slate-900">Panel Principal</h1>
-          <p className="mt-1 text-sm text-slate-500">Resumen operativo del condominio</p>
+          <p className="mt-1 text-sm text-slate-500">Resumen operativo de la propiedad</p>
           <p className="mt-1 text-xs font-semibold text-slate-400">
             Contexto activo:{" "}
-            {summary.activeCondominiumId ? `Condominio #${summary.activeCondominiumId}` : "Sin condominio"}
+            {summary.activeCondominiumId ? `Propiedad #${summary.activeCondominiumId}` : "Sin propiedad"}
           </p>
         </div>
         {summary?.source !== "api" ? (

@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useActiveCondominium } from "../../../../context/useActiveCondominium";
@@ -442,7 +442,7 @@ function VehiclesPage() {
 
         {!activeCondominiumId ? (
           <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700">
-            No hay condominio activo para gestionar ingresos vehiculares.
+            No hay propiedad activa para gestionar ingresos vehiculares.
           </div>
         ) : null}
 

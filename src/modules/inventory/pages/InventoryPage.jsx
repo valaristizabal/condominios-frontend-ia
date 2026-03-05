@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { PlusCircle } from "lucide-react";
 import { useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -286,7 +286,7 @@ function InventoryPage() {
       <header className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">Inventario</h1>
-          <p className="mt-2 text-lg text-gray-500">Control de productos, consumibles y activos del condominio</p>
+          <p className="mt-2 text-lg text-gray-500">Control de productos, consumibles y activos de la propiedad</p>
         </div>
         <button
           type="button"
@@ -318,13 +318,13 @@ function InventoryPage() {
 
       {!resolvedCondominiumId ? (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700">
-          No hay condominio activo para operar este modulo.
+          No hay propiedad activa para operar este modulo.
         </div>
       ) : null}
 
       {resolvedCondominiumId && inventories.length === 0 ? (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700">
-          No hay inventarios activos configurados para este condominio.
+          No hay inventarios activos configurados para esta propiedad.
         </div>
       ) : null}
 

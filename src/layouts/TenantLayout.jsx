@@ -20,6 +20,8 @@ import apiClient from "../services/apiClient";
 import { resolveCondominiumLogo } from "../utils/condominiumBrand";
 import { canAccessInventoryOperation, isSuperUser } from "../utils/roles";
 
+const ORGANIZATION_BRAND_LOGO = "/docs/GEN%20VERDE%20(2).png";
+
 function getSidebarSections(basePath, canInventoryOperate) {
   const resolvePath = (path) => `${basePath}${path}`;
 
@@ -104,7 +106,7 @@ function TenantLayout({ children }) {
           <SidebarContent
             sections={sidebarSections}
             condominiumName={
-              activeCondominiumInfo?.name || `Condominio #${activeContextValue.activeCondominiumId || ""}`
+              activeCondominiumInfo?.name || `Propiedad #${activeContextValue.activeCondominiumId || ""}`
             }
             condominiumLogo={resolveCondominiumLogo(activeCondominiumInfo)}
             showBackToCondominiums={showBackToCondominiums}
@@ -126,7 +128,7 @@ function TenantLayout({ children }) {
                 onNavigate={() => setMobileOpen(false)}
                 condominiumName={
                   activeCondominiumInfo?.name ||
-                  `Condominio #${activeContextValue.activeCondominiumId || ""}`
+                  `Propiedad #${activeContextValue.activeCondominiumId || ""}`
                 }
                 condominiumLogo={resolveCondominiumLogo(activeCondominiumInfo)}
                 showBackToCondominiums={showBackToCondominiums}
@@ -178,17 +180,17 @@ function SidebarContent({
             {logoSrc ? (
               <img
                 src={logoSrc}
-                alt={condominiumName || "Condominio"}
+                alt={condominiumName || "Propiedad"}
                 className="h-full w-full object-contain p-1"
                 onError={() => setLogoSrc(null)}
               />
             ) : (
-              <img src="/image/isotipo1.png" alt="Condominio" className="h-8 w-auto object-contain" />
+              <img src="/image/isotipo1.png" alt="Propiedad" className="h-8 w-auto object-contain" />
             )}
           </div>
           <div className="leading-tight">
             <h2 className="line-clamp-1 text-lg font-extrabold text-slate-900">
-              {condominiumName || "Condominio"}
+              {condominiumName || "Propiedad"}
             </h2>
             <p className="text-xs font-bold tracking-widest text-slate-400">GESTION INTEGRAL</p>
           </div>
@@ -205,7 +207,7 @@ function SidebarContent({
             <span className="text-slate-400 transition group-hover:text-slate-600">
               <ArrowLeft className="h-4 w-4" />
             </span>
-            <span className="truncate">Atrás a Condominios</span>
+            <span className="truncate">Atrás a Propiedades</span>
           </button>
         </div>
       ) : null}
@@ -247,6 +249,18 @@ function SidebarContent({
           ))}
         </div>
       </nav>
+
+      <div className="border-t border-slate-200 px-5 py-4">
+        <div className="flex items-center gap-2 rounded-xl px-2 py-1">
+          <img
+            src={ORGANIZATION_BRAND_LOGO}
+            alt="Organización Gen"
+            className="h-5 w-auto object-contain"
+            loading="lazy"
+          />
+          <span className="text-xs font-semibold text-slate-500">By Organización Gen</span>
+        </div>
+      </div>
     </>
   );
 }

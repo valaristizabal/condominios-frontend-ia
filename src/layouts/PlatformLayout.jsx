@@ -3,7 +3,7 @@ import { Building2, LogOut } from "lucide-react";
 import { useAuthContext } from "../context/useAuthContext";
 
 const platformModules = [
-  { to: "/condominiums", label: "Condominios" },
+  { to: "/condominiums", label: "Propiedades" },
 ];
 
 function PlatformLayout({ children }) {
@@ -80,7 +80,7 @@ function PlatformLayout({ children }) {
 function iconByLabel(label) {
   const className = "h-4 w-4";
   const map = {
-    Condominios: <Building2 className={className} />,
+    Propiedades: <Building2 className={className} />,
   };
 
   return map[label] ?? <Building2 className={className} />;

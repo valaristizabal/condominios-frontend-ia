@@ -58,7 +58,7 @@ function VehicleTypesPage() {
         <div>
           <h1 className="text-2xl font-extrabold text-slate-900">Tipos de Vehiculo</h1>
           <p className="mt-1 text-sm text-slate-500">
-            Gestion de tipos de vehiculo del condominio.
+            Gestion de tipos de vehiculo de la propiedad.
             {activeCondominiumId ? ` Contexto: #${activeCondominiumId}` : ""}
           </p>
         </div>
@@ -74,7 +74,7 @@ function VehicleTypesPage() {
 
       {!hasTenantContext ? (
         <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-          No hay condominio activo para gestionar tipos de vehiculo.
+          No hay propiedad activa para gestionar tipos de vehiculo.
         </p>
       ) : null}
 

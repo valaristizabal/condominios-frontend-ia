@@ -90,7 +90,7 @@ function ResidentsPage() {
         <div>
           <h1 className="text-2xl font-extrabold text-slate-900">Residentes</h1>
           <p className="mt-1 text-sm text-slate-500">
-            Gestion de residentes del condominio.
+            Gestion de residentes de la propiedad.
             {activeCondominiumId ? ` Contexto: #${activeCondominiumId}` : ""}
           </p>
         </div>
@@ -106,7 +106,7 @@ function ResidentsPage() {
 
       {!hasTenantContext ? (
         <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-          No hay condominio activo para gestionar residentes.
+          No hay propiedad activa para gestionar residentes.
         </p>
       ) : null}
 

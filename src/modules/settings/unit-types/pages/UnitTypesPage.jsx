@@ -58,7 +58,7 @@ function UnitTypesPage() {
         <div>
           <h1 className="text-2xl font-extrabold text-slate-900">Tipos de Unidad</h1>
           <p className="mt-1 text-sm text-slate-500">
-            Gestion de tipos de unidad del condominio.
+            Gestion de tipos de unidad de la propiedad.
             {activeCondominiumId ? ` Contexto: #${activeCondominiumId}` : ""}
           </p>
         </div>
@@ -74,7 +74,7 @@ function UnitTypesPage() {
 
       {!hasTenantContext ? (
         <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-          No hay condominio activo para gestionar tipos de unidad.
+          No hay propiedad activa para gestionar tipos de unidad.
         </p>
       ) : null}
 

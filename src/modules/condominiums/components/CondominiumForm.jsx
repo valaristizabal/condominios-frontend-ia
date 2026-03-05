@@ -82,7 +82,7 @@ function CondominiumForm({ initialValues, loading, onCancel, onSubmit }) {
       await onSubmit(payload);
     } catch (err) {
       const message =
-        err?.response?.data?.message || err?.message || "No fue posible guardar el condominio.";
+        err?.response?.data?.message || err?.message || "No fue posible guardar la propiedad.";
       setError(message);
     }
   };
@@ -90,7 +90,7 @@ function CondominiumForm({ initialValues, loading, onCancel, onSubmit }) {
   return (
     <form className="space-y-4" onSubmit={handleSubmit}>
       <Field
-        label="Nombre del Condominio"
+        label="Nombre de la Propiedad"
         name="name"
         placeholder="Ej. Residencial Las Palmeras"
         value={form.name}
@@ -108,11 +108,11 @@ function CondominiumForm({ initialValues, loading, onCancel, onSubmit }) {
       />
 
       <label className="block">
-        <span className="mb-1.5 block text-sm font-semibold text-slate-700">Logo del condominio</span>
+        <span className="mb-1.5 block text-sm font-semibold text-slate-700">Logo de la propiedad</span>
         <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
           <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-white">
             {logoPreview ? (
-              <img src={logoPreview} alt="Logo del condominio" className="h-full w-full object-cover" />
+              <img src={logoPreview} alt="Logo de la propiedad" className="h-full w-full object-cover" />
             ) : (
               <BuildingIcon />
             )}
@@ -127,7 +127,7 @@ function CondominiumForm({ initialValues, loading, onCancel, onSubmit }) {
       </label>
 
       <Field
-        label="Tipo de Condominio"
+        label="Tipo de Propiedad"
         name="type"
         placeholder="Residencial, Comercial, Mixto"
         value={form.type}
@@ -156,7 +156,7 @@ function CondominiumForm({ initialValues, loading, onCancel, onSubmit }) {
       <TextArea
         label="Areas Comunes"
         name="common_areas"
-        placeholder="Describe areas comunes del condominio..."
+        placeholder="Describe áreas comunes de la propiedad..."
         value={form.common_areas}
         onChange={handleChange}
       />
@@ -178,7 +178,7 @@ function CondominiumForm({ initialValues, loading, onCancel, onSubmit }) {
       />
 
       <label className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3">
-        <span className="text-sm font-semibold text-slate-700">Condominio activo</span>
+        <span className="text-sm font-semibold text-slate-700">Propiedad activa</span>
         <input
           type="checkbox"
           name="is_active"
@@ -200,7 +200,7 @@ function CondominiumForm({ initialValues, loading, onCancel, onSubmit }) {
           disabled={loading}
           className="flex-1 rounded-xl bg-[#174abf] px-4 py-3 text-sm font-bold text-white hover:bg-[#123ea3] disabled:opacity-70"
         >
-          {loading ? "Guardando..." : "Guardar Condominio"}
+          {loading ? "Guardando..." : "Guardar Propiedad"}
         </button>
         <button
           type="button"
