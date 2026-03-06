@@ -1,17 +1,26 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import BackButton from "../../../../components/common/BackButton";
 import InventoryFormModal from "../components/InventoryFormModal";
 import InventoryTable from "../components/InventoryTable";
 import { useInventories } from "../hooks/useInventories";
+import { useActiveCondominium } from "../../../../context/useActiveCondominium";
 
 function InventoriesPage() {
-  const { inventories, loading, saving, error, hasTenantContext, createInventory, updateInventory, toggleInventory } =
-    useInventories();
+  const { activeCondominiumId: contextActiveCondominiumId } = useActiveCondominium();
+  const activeCondominium = contextActiveCondominiumId ? { id: contextActiveCondominiumId } : null;
+  const activeCondominiumId = activeCondominium?.id;
+
+  const { inventories, loading, saving, error, hasTenantContext, loadInventories, createInventory, updateInventory, toggleInventory } = useInventories();
 
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("all");
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
+
+  useEffect(() => {
+    if (!activeCondominiumId) return;
+    loadInventories(activeCondominiumId);
+  }, [activeCondominiumId, loadInventories]);
 
   const filtered = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();

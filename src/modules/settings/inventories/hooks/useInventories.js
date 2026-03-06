@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useActiveCondominium } from "../../../../context/useActiveCondominium";
 import apiClient from "../../../../services/apiClient";
 
@@ -21,26 +21,47 @@ export function useInventories() {
     [activeCondominiumId]
   );
 
-  const fetchInventories = useCallback(async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const response = await apiClient.get("/inventories", requestConfig);
-      setItems(Array.isArray(response.data) ? response.data : []);
-    } catch (err) {
-      setError(normalizeApiError(err, "No fue posible cargar ubicaciones de inventario."));
-    } finally {
-      setLoading(false);
-    }
-  }, [requestConfig]);
+  const loadInventories = useCallback(
+    async (condominiumIdOverride) => {
+      const resolvedCondominiumId = Number(condominiumIdOverride || activeCondominiumId);
+      if (!resolvedCondominiumId) {
+        setItems([]);
+        setLoading(false);
+        setError("");
+        return;
+      }
+
+      setLoading(true);
+      setError("");
+      try {
+        const response = await apiClient.get("/inventories", {
+          headers: {
+            "X-Active-Condominium-Id": String(resolvedCondominiumId),
+          },
+        });
+        setItems(Array.isArray(response.data) ? response.data : []);
+      } catch (err) {
+        setError(normalizeApiError(err, "No fue posible cargar ubicaciones de inventario."));
+      } finally {
+        setLoading(false);
+      }
+    },
+    [activeCondominiumId]
+  );
 
   const createInventory = useCallback(
     async (payload) => {
+      if (!requestConfig) {
+        const tenantError = new Error("No hay condominio activo para crear ubicaciones de inventario.");
+        setError(tenantError.message);
+        throw tenantError;
+      }
+
       setSaving(true);
       setError("");
       try {
         const response = await apiClient.post("/inventories", payload, requestConfig);
-        await fetchInventories();
+        await loadInventories();
         return response.data;
       } catch (err) {
         setError(normalizeApiError(err, "No fue posible crear la ubicacion de inventario."));
@@ -49,16 +70,22 @@ export function useInventories() {
         setSaving(false);
       }
     },
-    [fetchInventories, requestConfig]
+    [loadInventories, requestConfig]
   );
 
   const updateInventory = useCallback(
     async (id, payload) => {
+      if (!requestConfig) {
+        const tenantError = new Error("No hay condominio activo para actualizar ubicaciones de inventario.");
+        setError(tenantError.message);
+        throw tenantError;
+      }
+
       setSaving(true);
       setError("");
       try {
         const response = await apiClient.put(`/inventories/${id}`, payload, requestConfig);
-        await fetchInventories();
+        await loadInventories();
         return response.data;
       } catch (err) {
         setError(normalizeApiError(err, "No fue posible actualizar la ubicacion de inventario."));
@@ -67,16 +94,22 @@ export function useInventories() {
         setSaving(false);
       }
     },
-    [fetchInventories, requestConfig]
+    [loadInventories, requestConfig]
   );
 
   const toggleInventory = useCallback(
     async (id) => {
+      if (!requestConfig) {
+        const tenantError = new Error("No hay condominio activo para cambiar el estado de ubicaciones de inventario.");
+        setError(tenantError.message);
+        throw tenantError;
+      }
+
       setSaving(true);
       setError("");
       try {
         const response = await apiClient.patch(`/inventories/${id}/toggle`, {}, requestConfig);
-        await fetchInventories();
+        await loadInventories();
         return response.data;
       } catch (err) {
         setError(normalizeApiError(err, "No fue posible cambiar estado de la ubicacion de inventario."));
@@ -85,12 +118,8 @@ export function useInventories() {
         setSaving(false);
       }
     },
-    [fetchInventories, requestConfig]
+    [loadInventories, requestConfig]
   );
-
-  useEffect(() => {
-    fetchInventories();
-  }, [fetchInventories]);
 
   return {
     inventories: items,
@@ -99,7 +128,7 @@ export function useInventories() {
     error,
     hasTenantContext: Boolean(activeCondominiumId),
     activeCondominiumId,
-    fetchInventories,
+    loadInventories,
     createInventory,
     updateInventory,
     toggleInventory,
