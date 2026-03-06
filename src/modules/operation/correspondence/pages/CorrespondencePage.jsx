@@ -36,12 +36,22 @@ export default function CorrespondencePage() {
   } = useCorrespondence();
 
   const couriers = useMemo(
-    () => ["Servientrega", "Interrapidísimo", "Coordinadora"],
+    () => [
+      "Servientrega",
+      "Inter Rapidísimo",
+      "Coordinadora",
+      "4-72",
+      "TCC",
+      "Envía",
+      "Deprisa",
+      "Otro",
+    ],
     []
   );
 
   const [form, setForm] = useState({
     courier: "Servientrega",
+    courierOther: "",
     unitTypeId: "",
     unitId: "",
     packageType: "documento",
@@ -121,6 +131,7 @@ export default function CorrespondencePage() {
 
   const canSubmit =
     form.courier &&
+    (form.courier !== "Otro" || String(form.courierOther || "").trim()) &&
     form.unitTypeId &&
     form.unitId &&
     form.packageType;
@@ -158,6 +169,10 @@ export default function CorrespondencePage() {
     setForm((prev) => ({ ...prev, [name]: value }));
 
     if (name === "unitId") clearFieldError("apartment_id");
+    if (name === "courierOther") {
+      clearFieldError("courier_company");
+      setLocalErrors((prev) => ({ ...prev, courierOther: "" }));
+    }
     if (name === "receiverType") {
       setLocalErrors((prev) => ({ ...prev, receiverType: "", signature: "" }));
     }
@@ -169,6 +184,9 @@ export default function CorrespondencePage() {
     if (!canSubmit || !activeCondominiumId || submitting) return;
 
     const nextLocalErrors = {};
+    if (form.courier === "Otro" && !String(form.courierOther || "").trim()) {
+      nextLocalErrors.courierOther = "Ingresa la empresa de mensajería.";
+    }
     if (!form.receiverType) {
       nextLocalErrors.receiverType = "Selecciona quién recibe.";
     }
@@ -180,8 +198,11 @@ export default function CorrespondencePage() {
     if (Object.keys(nextLocalErrors).length > 0) return;
 
     try {
+      const resolvedCourierCompany =
+        form.courier === "Otro" ? String(form.courierOther || "").trim() : form.courier;
+
       const created = await createCorrespondence({
-        courier_company: form.courier,
+        courier_company: resolvedCourierCompany,
         package_type: form.packageType,
         apartment_id: Number(form.unitId),
         evidence_photo: photoFile,
@@ -207,6 +228,7 @@ export default function CorrespondencePage() {
 
       setForm({
         courier: "Servientrega",
+        courierOther: "",
         unitTypeId: "",
         unitId: "",
         packageType: "documento",
@@ -278,7 +300,13 @@ export default function CorrespondencePage() {
             submitting={submitting}
             onChange={handleChange}
             onCourierChange={(value) => {
-              setForm((prev) => ({ ...prev, courier: String(value) }));
+              const nextCourier = String(value);
+              setForm((prev) => ({
+                ...prev,
+                courier: nextCourier,
+                courierOther: nextCourier === "Otro" ? prev.courierOther : "",
+              }));
+              setLocalErrors((prev) => ({ ...prev, courierOther: "" }));
               clearFieldError("courier_company");
             }}
             onUnitTypeChange={(value) => {

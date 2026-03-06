@@ -143,136 +143,115 @@ export default function SettingsPage() {
 
   return (
     <div className="w-full">
-      <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6">
+      <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
         <PageTitle eyebrow="Configuración" title="Ajustes" />
 
-        <div className="mt-6 grid grid-cols-1 gap-5 lg:grid-cols-12">
-          <div className="space-y-5 lg:col-span-8">
-            <Card>
-              <p className="text-xs font-extrabold uppercase tracking-widest text-slate-400">1. Gestión del sistema</p>
+        <Card>
+          <p className="text-xs font-extrabold uppercase tracking-widest text-slate-400">1. Gestión del sistema</p>
 
-              <div className="mt-4 space-y-3">
-                <p className="px-1 text-[11px] font-extrabold uppercase tracking-widest text-slate-400">
-                  Configuración inicial
-                </p>
-                <ItemRow
-                  title="Tipos de unidad"
-                  description="Configura los tipos de unidad disponibles en la propiedad"
-                  onClick={() => navigate(`${basePath}/settings/unit-types`)}
-                />
-                <ItemRow
-                  title="Inmuebles / Unidades"
-                  description="Administra unidades y inmuebles de la propiedad"
-                  onClick={() => navigate(`${basePath}/settings/apartments`)}
-                />
-                <ItemRow
-                  title="Residentes"
-                  description="Gestiona residentes, estados y relación con inmuebles"
-                  onClick={() => navigate(`${basePath}/settings/residents`)}
-                />
-                <ItemRow
-                  title="Operativos"
-                  description="Gestiona personal operativo y su configuración laboral"
-                  onClick={() => navigate(`${basePath}/settings/operatives`)}
-                />
-                {canSeeUsersPermissions ? (
-                  <ItemRow
-                    title="Usuarios y permisos"
-                    description="Configura permisos por módulo para usuarios del condominio"
-                    onClick={() => navigate(`${basePath}/settings/users`)}
-                  />
-                ) : null}
-                <ItemRow
-                  title="Tipos de vehículos"
-                  description="Configura los tipos de vehículo permitidos en la propiedad"
-                  onClick={() => navigate(`${basePath}/settings/vehicle-types`)}
-                />
+          <div className="mt-4 space-y-3">
+            <p className="px-1 text-[11px] font-extrabold uppercase tracking-widest text-slate-400">
+              Configuración inicial
+            </p>
+            <ItemRow
+              title="Tipos de unidad"
+              description="Configura los tipos de unidad disponibles en la propiedad"
+              onClick={() => navigate(`${basePath}/settings/unit-types`)}
+            />
+            <ItemRow
+              title="Inmuebles / Unidades"
+              description="Administra unidades y inmuebles de la propiedad"
+              onClick={() => navigate(`${basePath}/settings/apartments`)}
+            />
+            <ItemRow
+              title="Residentes"
+              description="Gestiona residentes, estados y relación con inmuebles"
+              onClick={() => navigate(`${basePath}/settings/residents`)}
+            />
+            <ItemRow
+              title="Operativos"
+              description="Gestiona personal operativo y su configuración laboral"
+              onClick={() => navigate(`${basePath}/settings/operatives`)}
+            />
+            {canSeeUsersPermissions ? (
+              <ItemRow
+                title="Usuarios y permisos"
+                description="Configura permisos por módulo para usuarios del condominio"
+                onClick={() => navigate(`${basePath}/settings/users`)}
+              />
+            ) : null}
+            <ItemRow
+              title="Tipos de vehículos"
+              description="Configura los tipos de vehículo permitidos en la propiedad"
+              onClick={() => navigate(`${basePath}/settings/vehicle-types`)}
+            />
 
-                <p className="px-1 pt-2 text-[11px] font-extrabold uppercase tracking-widest text-slate-400">
-                  Seguridad
-                </p>
-                <ItemRow
-                  title="Tipos de emergencia"
-                  description="Configura tipos de emergencia y su nivel de criticidad"
-                  onClick={() => navigate(`${basePath}/settings/emergency-types`)}
-                />
-                <ItemRow
-                  title="Emergencias"
-                  description="Configura contactos y números de emergencia por propiedad"
-                  onClick={() => navigate(`${basePath}/settings/emergency-contacts`)}
-                />
+            <p className="px-1 pt-2 text-[11px] font-extrabold uppercase tracking-widest text-slate-400">
+              Seguridad
+            </p>
+            <ItemRow
+              title="Tipos de emergencia"
+              description="Configura tipos de emergencia y su nivel de criticidad"
+              onClick={() => navigate(`${basePath}/settings/emergency-types`)}
+            />
+            <ItemRow
+              title="Emergencias"
+              description="Configura contactos y números de emergencia por propiedad"
+              onClick={() => navigate(`${basePath}/settings/emergency-contacts`)}
+            />
 
-                <p className="px-1 pt-2 text-[11px] font-extrabold uppercase tracking-widest text-slate-400">
-                  Operación interna
-                </p>
+            <p className="px-1 pt-2 text-[11px] font-extrabold uppercase tracking-widest text-slate-400">
+              Operación interna
+            </p>
+            <ItemRow
+              title="Aseo"
+              description="Configura zonas de aseo, checklists y seguimiento"
+              onClick={() => navigate(`${basePath}/settings/cleaning`)}
+            />
+            {canSeeInventorySettings ? (
                 <ItemRow
-                  title="Aseo"
-                  description="Configura zonas de aseo, checklists y seguimiento"
-                  onClick={() => navigate(`${basePath}/settings/cleaning`)}
+                  title="Inventario"
+                  description="Gestiona inventarios y categorías de productos"
+                  onClick={() => navigate(`${basePath}/settings/inventory`)}
                 />
-                {canSeeInventorySettings ? (
-                  <ItemRow
-                    title="Inventario"
-                    description="Gestiona inventarios y categorías de productos"
-                    onClick={() => navigate(`${basePath}/settings/inventory`)}
-                  />
-                ) : null}
-              </div>
-            </Card>
+            ) : null}
+          </div>
+        </Card>
+
+        <Card>
+          <p className="text-xs font-extrabold uppercase tracking-widest text-slate-400">Descargas</p>
+          <p className="mt-1 text-xs font-semibold text-slate-500">
+            Genera minutas automáticas de la propiedad activa.
+          </p>
+
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+            <button
+              type="button"
+              onClick={downloadDailyLog}
+              disabled={!resolvedCondominiumId || downloading === "daily"}
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 py-3 text-sm font-extrabold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70 sm:px-6"
+            >
+              <DownloadIcon />
+              {downloading === "daily" ? "Descargando..." : "Descargar minuta diaria"}
+            </button>
+
+            <button
+              type="button"
+              onClick={downloadMonthlySummary}
+              disabled={!resolvedCondominiumId || downloading === "monthly"}
+              className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-extrabold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-70 sm:px-6"
+            >
+              <DownloadIcon />
+              {downloading === "monthly" ? "Descargando..." : "Descargar minuta mensual"}
+            </button>
           </div>
 
-          <div className="space-y-5 lg:col-span-4">
-            <Card>
-              <p className="text-xs font-extrabold uppercase tracking-widest text-slate-400">Rol restringido</p>
-              <p className="mt-1 text-sm font-extrabold text-slate-900">Administrador de Propiedades</p>
-              <p className="mt-1 text-xs font-semibold text-slate-500">
-                Acceso a parametrización y mantenimiento del sistema en propiedad activa.
-              </p>
-
-              <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                <p className="text-xs font-extrabold text-slate-700">Recomendación</p>
-                <p className="mt-1 text-xs font-semibold text-slate-500">
-                  Mantener la gestión por contexto tenant activo y evitar datos cruzados entre propiedades.
-                </p>
-              </div>
-            </Card>
-
-            <Card>
-              <p className="text-xs font-extrabold uppercase tracking-widest text-slate-400">Descargas</p>
-              <p className="mt-1 text-xs font-semibold text-slate-500">
-                Genera minutas automáticas de la propiedad activa.
-              </p>
-
-              <div className="mt-4 flex flex-col items-center gap-2">
-                <button
-                  type="button"
-                  onClick={downloadDailyLog}
-                  disabled={!resolvedCondominiumId || downloading === "daily"}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 py-3 text-sm font-extrabold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70 sm:w-auto sm:px-6"
-                >
-                  <DownloadIcon />
-                  {downloading === "daily" ? "Descargando..." : "Descargar minuta diaria"}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={downloadMonthlySummary}
-                  disabled={!resolvedCondominiumId || downloading === "monthly"}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-extrabold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-70 sm:w-auto sm:px-6"
-                >
-                  <DownloadIcon />
-                  {downloading === "monthly" ? "Descargando..." : "Descargar minuta mensual"}
-                </button>
-              </div>
-
-              {downloadError ? (
-                <p className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700">
-                  {downloadError}
-                </p>
-              ) : null}
-            </Card>
-          </div>
-        </div>
+          {downloadError ? (
+            <p className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700">
+              {downloadError}
+            </p>
+          ) : null}
+        </Card>
       </div>
     </div>
   );

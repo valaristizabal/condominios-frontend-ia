@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Ambulance, Building2, Flame, Phone, Shield, Siren } from "lucide-react";
 import BackButton from "../../../components/common/BackButton";
 import { useEmergencies } from "../hooks/useEmergencies";
@@ -78,7 +78,7 @@ export default function EmergenciesPage() {
     event_date: localDatetimeNow(),
   });
   const [localError, setLocalError] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const hasTypes = useMemo(() => emergencyTypes.length > 0, [emergencyTypes]);
 
@@ -87,12 +87,6 @@ export default function EmergenciesPage() {
     clearFieldError?.(name);
     setLocalError("");
   };
-
-  useEffect(() => {
-    if (!successMessage) return undefined;
-    const timer = window.setTimeout(() => setSuccessMessage(""), 4000);
-    return () => window.clearTimeout(timer);
-  }, [successMessage]);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -123,7 +117,7 @@ export default function EmergenciesPage() {
         description: "",
         event_date: localDatetimeNow(),
       }));
-      setSuccessMessage("La emergencia quedó registrada en la minuta.");
+      setShowSuccessModal(true);
     } catch {
       // Error state is handled by hook state.
     }
@@ -257,9 +251,23 @@ export default function EmergenciesPage() {
         </div>
       </div>
 
-      {successMessage ? (
-        <div className="fixed bottom-4 right-4 z-50 max-w-sm rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700 shadow-lg">
-          {successMessage}
+      {showSuccessModal ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4">
+          <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl">
+            <h3 className="text-lg font-extrabold text-slate-900">Registro exitoso</h3>
+            <p className="mt-3 text-sm font-semibold text-slate-600">
+              {"La emergencia fue registrada con \u00E9xito. Podr\u00E1 consultar la informaci\u00F3n al descargar la minuta."}
+            </p>
+            <div className="mt-6 flex justify-center">
+              <button
+                type="button"
+                onClick={() => setShowSuccessModal(false)}
+                className="inline-flex items-center justify-center rounded-2xl bg-blue-600 px-6 py-2.5 text-sm font-extrabold text-white transition hover:bg-blue-700"
+              >
+                Aceptar
+              </button>
+            </div>
+          </div>
         </div>
       ) : null}
     </div>

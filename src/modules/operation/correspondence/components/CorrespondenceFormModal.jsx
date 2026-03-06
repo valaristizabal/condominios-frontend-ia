@@ -383,6 +383,20 @@ export default function CorrespondenceFormModal({
             onChange={onCourierChange}
           />
           <FieldError message={fieldErrors.courier_company} />
+
+          {form.courier === "Otro" ? (
+            <div className="mt-4">
+              <Label>¿Cuál empresa?</Label>
+              <input
+                name="courierOther"
+                value={form.courierOther || ""}
+                onChange={onChange}
+                placeholder="Escribe el nombre de la empresa"
+                className={inputBase}
+              />
+              <FieldError message={fieldErrors.courierOther} />
+            </div>
+          ) : null}
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

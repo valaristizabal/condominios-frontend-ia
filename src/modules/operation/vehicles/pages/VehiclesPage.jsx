@@ -597,30 +597,32 @@ function VehiclesPage() {
                 />
               </div>
 
-              <button
-                type="submit"
-                disabled={submitting || !activeCondominiumId}
-                className={[
-                  "w-full rounded-2xl py-4 text-sm font-extrabold shadow-sm transition sm:mx-auto sm:block sm:w-auto sm:px-6",
-                  submitting || !activeCondominiumId
-                    ? "bg-slate-200 text-slate-500 cursor-not-allowed"
-                    : "bg-blue-600 text-white hover:bg-blue-700 active:scale-[0.99]",
-                ].join(" ")}
-              >
-                {submitting ? "Registrando..." : "Registrar ingreso"}
-              </button>
+              <div className="mt-4 flex flex-wrap justify-center gap-4">
+                <button
+                  type="submit"
+                  disabled={submitting || !activeCondominiumId}
+                  className={[
+                    "w-full rounded-2xl py-4 text-sm font-extrabold shadow-sm transition sm:w-auto sm:px-6",
+                    submitting || !activeCondominiumId
+                      ? "bg-slate-200 text-slate-500 cursor-not-allowed"
+                      : "bg-blue-600 text-white hover:bg-blue-700 active:scale-[0.99]",
+                  ].join(" ")}
+                >
+                  {submitting ? "Registrando..." : "Registrar ingreso"}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => navigate(id ? `/condominio/${id}/vehiculos/novedad` : "/vehiculos/novedad")}
+                  className="w-full rounded-2xl border border-rose-300 bg-rose-600 py-3 text-xs font-extrabold text-white transition hover:bg-rose-700 sm:w-auto sm:px-6"
+                >
+                  Reportar Novedad con Vehículo
+                </button>
+              </div>
 
               <p className="text-center text-xs font-semibold text-slate-400">
                 Completa los campos obligatorios para habilitar el registro.
               </p>
-
-              <button
-                type="button"
-                onClick={() => navigate(id ? `/condominio/${id}/vehiculos/novedad` : "/vehiculos/novedad")}
-                className="w-full rounded-2xl border border-rose-300 bg-rose-600 py-3 text-xs font-extrabold text-white transition hover:bg-rose-700 sm:mx-auto sm:block sm:w-auto sm:px-6"
-              >
-                Reportar Novedad con Vehículo
-              </button>
             </form>
           </Card>
 
