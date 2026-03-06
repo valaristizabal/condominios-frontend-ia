@@ -77,6 +77,24 @@ export function useResidents() {
     }
   }, [loadResidents, requestConfig]);
 
+  const changeUserPassword = useCallback(async (userId, payload) => {
+    setSaving(true);
+    setError("");
+    try {
+      const response = await apiClient.patch(`/users/${userId}/change-password`, payload, requestConfig);
+      return response.data;
+    } catch (err) {
+      const message = normalizeApiError(
+        err,
+        "No fue posible actualizar la contraseña."
+      );
+      setError(message);
+      throw err;
+    } finally {
+      setSaving(false);
+    }
+  }, [requestConfig]);
+
   useEffect(() => {
     loadResidents();
   }, [loadResidents]);
@@ -93,6 +111,7 @@ export function useResidents() {
     loadResidents,
     createResident,
     updateResident,
+    changeUserPassword,
   };
 }
 

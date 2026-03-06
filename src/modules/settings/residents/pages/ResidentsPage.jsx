@@ -1,11 +1,15 @@
 import { useMemo, useState } from "react";
 import BackButton from "../../../../components/common/BackButton";
+import ChangeUserPasswordModal from "../../../../components/common/ChangeUserPasswordModal";
+import { useAuthContext } from "../../../../context/useAuthContext";
 import ResidentFormModal from "../components/ResidentFormModal";
 import ResidentTable from "../components/ResidentTable";
 import { useResidents } from "../hooks/useResidents";
+import { isSuperUser, isTenantAdminRole } from "../../../../utils/roles";
 
 function ResidentsPage() {
-  const { residents, loading, saving, error, hasTenantContext, createResident, updateResident } =
+  const { user } = useAuthContext();
+  const { residents, loading, saving, error, hasTenantContext, createResident, updateResident, changeUserPassword } =
     useResidents();
 
   const [query, setQuery] = useState("");
@@ -15,6 +19,11 @@ function ResidentsPage() {
   const [success, setSuccess] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
+  const [passwordModalTarget, setPasswordModalTarget] = useState(null);
+  const canChangePassword = useMemo(() => {
+    if (user?.is_platform_admin === true) return true;
+    return isSuperUser(user?.role) || isTenantAdminRole(user?.role);
+  }, [user?.is_platform_admin, user?.role]);
 
   const propertyTypeOptions = useMemo(() => {
     const unique = Array.from(
@@ -66,10 +75,21 @@ function ResidentsPage() {
     setModalOpen(true);
   };
 
+  const openPasswordModal = (item) => {
+    if (!canChangePassword) return;
+    setSuccess("");
+    setPasswordModalTarget(item);
+  };
+
   const closeModal = () => {
     if (saving) return;
     setModalOpen(false);
     setEditing(null);
+  };
+
+  const closePasswordModal = () => {
+    if (saving) return;
+    setPasswordModalTarget(null);
   };
 
   const handleSubmit = async (payload) => {
@@ -81,6 +101,17 @@ function ResidentsPage() {
       setSuccess("Residente creado correctamente.");
     }
     closeModal();
+  };
+
+  const handlePasswordSubmit = async (payload) => {
+    const targetUserId = Number(passwordModalTarget?.user_id || passwordModalTarget?.user?.id || 0);
+    if (!targetUserId) {
+      throw new Error("No se pudo identificar el usuario a actualizar.");
+    }
+
+    await changeUserPassword(targetUserId, payload);
+    setSuccess("Contraseña actualizada correctamente.");
+    closePasswordModal();
   };
 
   return (
@@ -179,7 +210,13 @@ function ResidentsPage() {
           Cargando residentes...
         </div>
       ) : (
-        <ResidentTable rows={filtered} busy={saving} onEdit={openEdit} />
+        <ResidentTable
+          rows={filtered}
+          busy={saving}
+          onEdit={openEdit}
+          onChangePassword={openPasswordModal}
+          canChangePassword={canChangePassword}
+        />
       )}
 
       {modalOpen ? (
@@ -190,6 +227,16 @@ function ResidentsPage() {
           loading={saving}
           onCancel={closeModal}
           onSubmit={handleSubmit}
+        />
+      ) : null}
+
+      {passwordModalTarget && canChangePassword ? (
+        <ChangeUserPasswordModal
+          open={Boolean(passwordModalTarget)}
+          loading={saving}
+          targetLabel={passwordModalTarget?.user?.full_name || passwordModalTarget?.full_name || "-"}
+          onCancel={closePasswordModal}
+          onSubmit={handlePasswordSubmit}
         />
       ) : null}
     </div>

@@ -69,6 +69,16 @@ export function useOperatives() {
     }
   }, [requestConfig]);
 
+  const changeUserPassword = useCallback(async (userId, payload) => {
+    setSaving(true);
+    try {
+      const response = await apiClient.patch(`/users/${userId}/change-password`, payload, requestConfig);
+      return response.data;
+    } finally {
+      setSaving(false);
+    }
+  }, [requestConfig]);
+
   useEffect(() => {
     loadOperatives();
   }, [loadOperatives]);
@@ -90,5 +100,6 @@ export function useOperatives() {
     loadOperatives,
     createOperative,
     updateOperative,
+    changeUserPassword,
   };
 }

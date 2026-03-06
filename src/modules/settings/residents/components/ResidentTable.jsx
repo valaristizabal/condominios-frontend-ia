@@ -1,4 +1,4 @@
-function ResidentTable({ rows, busy, onEdit }) {
+function ResidentTable({ rows, busy, onEdit, onChangePassword, canChangePassword = false }) {
   if (!rows.length) {
     return (
       <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center">
@@ -49,14 +49,26 @@ function ResidentTable({ rows, busy, onEdit }) {
                 </span>
               </td>
               <td className="px-4 py-3 text-right">
-                <button
-                  type="button"
-                  onClick={() => onEdit(item)}
-                  disabled={busy}
-                  className="rounded-lg bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 disabled:opacity-60"
-                >
-                  Editar
-                </button>
+                <div className="flex justify-end gap-2">
+                  {canChangePassword ? (
+                    <button
+                      type="button"
+                      onClick={() => onChangePassword?.(item)}
+                      disabled={busy}
+                      className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200 disabled:opacity-60"
+                    >
+                      Cambiar contraseña
+                    </button>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={() => onEdit(item)}
+                    disabled={busy}
+                    className="rounded-lg bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 disabled:opacity-60"
+                  >
+                    Editar
+                  </button>
+                </div>
               </td>
             </tr>
           ))}
@@ -81,4 +93,3 @@ function formatResidentType(type) {
 }
 
 export default ResidentTable;
-

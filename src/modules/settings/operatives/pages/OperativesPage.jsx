@@ -1,10 +1,14 @@
 import { useMemo, useState } from "react";
 import BackButton from "../../../../components/common/BackButton";
+import ChangeUserPasswordModal from "../../../../components/common/ChangeUserPasswordModal";
+import { useAuthContext } from "../../../../context/useAuthContext";
 import OperativeFormModal from "../components/OperativeFormModal";
 import OperativeTable from "../components/OperativeTable";
 import { useOperatives } from "../hooks/useOperatives";
+import { isSuperUser, isTenantAdminRole } from "../../../../utils/roles";
 
 function OperativesPage() {
+  const { user } = useAuthContext();
   const {
     operatives,
     operativeRoles,
@@ -14,13 +18,20 @@ function OperativesPage() {
     hasTenantContext,
     createOperative,
     updateOperative,
+    changeUserPassword,
   } = useOperatives();
 
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("all");
   const [contractType, setContractType] = useState("all");
+  const [success, setSuccess] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
+  const [passwordModalTarget, setPasswordModalTarget] = useState(null);
+  const canChangePassword = useMemo(() => {
+    if (user?.is_platform_admin === true) return true;
+    return isSuperUser(user?.role) || isTenantAdminRole(user?.role);
+  }, [user?.is_platform_admin, user?.role]);
 
   const filtered = useMemo(() => {
     return operatives.filter((item) => {
@@ -35,13 +46,21 @@ function OperativesPage() {
   }, [contractType, operatives, query, status]);
 
   const openCreate = () => {
+    setSuccess("");
     setEditing(null);
     setModalOpen(true);
   };
 
   const openEdit = (item) => {
+    setSuccess("");
     setEditing(item);
     setModalOpen(true);
+  };
+
+  const openPasswordModal = (item) => {
+    if (!canChangePassword) return;
+    setSuccess("");
+    setPasswordModalTarget(item);
   };
 
   const closeModal = () => {
@@ -50,13 +69,31 @@ function OperativesPage() {
     setEditing(null);
   };
 
+  const closePasswordModal = () => {
+    if (saving) return;
+    setPasswordModalTarget(null);
+  };
+
   const handleSubmit = async (payload) => {
     if (editing) {
       await updateOperative(editing.id, payload);
+      setSuccess("Operativo actualizado correctamente.");
     } else {
       await createOperative(payload);
+      setSuccess("Operativo creado correctamente.");
     }
     closeModal();
+  };
+
+  const handlePasswordSubmit = async (payload) => {
+    const targetUserId = Number(passwordModalTarget?.user_id || passwordModalTarget?.user?.id || 0);
+    if (!targetUserId) {
+      throw new Error("No se pudo identificar el usuario a actualizar.");
+    }
+
+    await changeUserPassword(targetUserId, payload);
+    setSuccess("Contraseña actualizada correctamente.");
+    closePasswordModal();
   };
 
   return (
@@ -87,6 +124,12 @@ function OperativesPage() {
       {error ? (
         <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}
+        </p>
+      ) : null}
+
+      {success ? (
+        <p className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+          {success}
         </p>
       ) : null}
 
@@ -126,7 +169,12 @@ function OperativesPage() {
           Cargando operativos...
         </div>
       ) : (
-        <OperativeTable rows={filtered} onEdit={openEdit} />
+        <OperativeTable
+          rows={filtered}
+          onEdit={openEdit}
+          onChangePassword={openPasswordModal}
+          canChangePassword={canChangePassword}
+        />
       )}
 
       {modalOpen ? (
@@ -138,6 +186,16 @@ function OperativesPage() {
           loading={saving}
           onCancel={closeModal}
           onSubmit={handleSubmit}
+        />
+      ) : null}
+
+      {passwordModalTarget && canChangePassword ? (
+        <ChangeUserPasswordModal
+          open={Boolean(passwordModalTarget)}
+          loading={saving}
+          targetLabel={passwordModalTarget?.user?.full_name || passwordModalTarget?.full_name || "-"}
+          onCancel={closePasswordModal}
+          onSubmit={handlePasswordSubmit}
         />
       ) : null}
     </div>
