@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+﻿import { useMemo, useState } from "react";
 import { Ambulance, Building2, Flame, Phone, Shield, Siren } from "lucide-react";
 import BackButton from "../../../components/common/BackButton";
 import { useEmergencies } from "../hooks/useEmergencies";
@@ -52,7 +52,7 @@ function formatNow() {
     hour: "2-digit",
     minute: "2-digit",
   });
-  return `${date}, ${time} (Automático)`;
+  return `${date}, ${time} (AutomÃ¡tico)`;
 }
 
 function localDatetimeNow() {
@@ -134,7 +134,7 @@ export default function EmergenciesPage() {
         </header>
 
         <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">
-          Usa este formulario solo para reportar incidentes críticos que requieren atención inmediata.
+          Usa este formulario solo para reportar incidentes crÃ­ticos que requieren atenciÃ³n inmediata.
         </div>
 
         {!activeCondominiumId ? (
@@ -181,19 +181,19 @@ export default function EmergenciesPage() {
                   value={form.event_location}
                   onChange={(event) => setField("event_location", event.target.value)}
                 >
-                  <option value="">Seleccione ubicación...</option>
+                  <option value="">Seleccione ubicaciÃ³n...</option>
                   <option>Lobby</option>
                   <option>Parqueadero</option>
                   <option>Piscina</option>
                   <option>Gimnasio</option>
-                  <option>Apartamento</option>
-                  <option>Zona común</option>
+                  <option>Inmueble</option>
+                  <option>Zona comÃºn</option>
                 </select>
                 <FieldError message={fieldErrors.event_location} />
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-semibold text-slate-700">Descripción</label>
+                <label className="text-sm font-semibold text-slate-700">DescripciÃ³n</label>
                 <textarea
                   className={`${inputBase} min-h-[120px] py-3`}
                   placeholder="Detalles del incidente..."
@@ -209,7 +209,7 @@ export default function EmergenciesPage() {
                   className={inputBase}
                   value={form.event_type}
                   onChange={(event) => setField("event_type", event.target.value)}
-                  placeholder="Ej: Convulsión"
+                  placeholder="Ej: ConvulsiÃ³n"
                 />
                 <FieldError message={fieldErrors.event_type} />
               </div>
@@ -286,7 +286,7 @@ function formatDateLabel(datetimeValue) {
     hour: "2-digit",
     minute: "2-digit",
   });
-  return `${datePart}, ${timePart} (Automático)`;
+  return `${datePart}, ${timePart} (AutomÃ¡tico)`;
 }
 
 function resolveEmergencyIcon(iconName) {
@@ -301,3 +301,4 @@ function resolveEmergencyIcon(iconName) {
 
   return <Shield className={iconClass} />;
 }
+

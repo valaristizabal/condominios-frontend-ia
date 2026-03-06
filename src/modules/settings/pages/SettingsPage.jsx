@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+﻿import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuthContext } from "../../../context/useAuthContext";
 import { useActiveCondominium } from "../../../context/useActiveCondominium";
@@ -161,13 +161,13 @@ export default function SettingsPage() {
                   onClick={() => navigate(`${basePath}/settings/unit-types`)}
                 />
                 <ItemRow
-                  title="Apartamentos / Unidades"
-                  description="Administra unidades y apartamentos de la propiedad"
+                  title="Inmuebles / Unidades"
+                  description="Administra unidades y inmuebles de la propiedad"
                   onClick={() => navigate(`${basePath}/settings/apartments`)}
                 />
                 <ItemRow
                   title="Residentes"
-                  description="Gestiona residentes, estados y relacion con apartamentos"
+                  description="Gestiona residentes, estados y relacion con inmuebles"
                   onClick={() => navigate(`${basePath}/settings/residents`)}
                 />
                 <ItemRow
@@ -317,3 +317,4 @@ function normalizeApiError(err, fallbackMessage) {
 
   return responseData?.message || err?.message || fallbackMessage;
 }
+

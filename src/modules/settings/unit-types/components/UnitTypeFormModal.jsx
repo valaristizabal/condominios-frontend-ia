@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 
 function UnitTypeFormModal({ open, initialValues, loading, onCancel, onSubmit }) {
   const [name, setName] = useState("");
@@ -60,7 +60,7 @@ function UnitTypeFormModal({ open, initialValues, loading, onCancel, onSubmit })
               onChange={(event) => setName(event.target.value)}
               maxLength={100}
               className="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
-              placeholder="Ej: Apartamento"
+              placeholder="Ej: Inmueble"
               required
             />
           </label>
@@ -121,3 +121,4 @@ function normalizeApiError(err, fallbackMessage) {
 }
 
 export default UnitTypeFormModal;
+

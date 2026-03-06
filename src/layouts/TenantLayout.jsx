@@ -207,7 +207,7 @@ function SidebarContent({
             <span className="text-slate-400 transition group-hover:text-slate-600">
               <ArrowLeft className="h-4 w-4" />
             </span>
-            <span className="truncate">Atras a Propiedades</span>
+            <span className="truncate">Atrás a Propiedades</span>
           </button>
         </div>
       ) : null}

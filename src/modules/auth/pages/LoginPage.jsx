@@ -25,11 +25,15 @@ function LoginPage() {
           </div>
         </section>
 
-        <footer className="mt-3 pb-1 text-center text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-slate-400 sm:mt-4 sm:text-[0.78rem]">
-          <p>GenAccess Platform Console</p>
-          <p className="mt-1 text-[0.75rem] normal-case tracking-normal text-slate-500 sm:text-[0.86rem]">
-            &copy; 2024 GenAccess - Todos los derechos reservados
-          </p>
+        <footer className="mt-4 pb-1">
+          <div className="flex flex-col items-center justify-center gap-2 text-center">
+            <img
+              src="/docs/GEN VERDE (2).png"
+              alt="Organización Gen"
+              className="h-6 w-auto opacity-80 sm:h-7"
+            />
+            <span className="text-xs font-semibold text-slate-500">By Organización Gen</span>
+          </div>
         </footer>
       </div>
     </main>

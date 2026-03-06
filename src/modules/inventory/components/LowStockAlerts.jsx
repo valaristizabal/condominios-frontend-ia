@@ -3,7 +3,7 @@ import { AlertTriangle } from "lucide-react";
 function LowStockAlerts({ products }) {
   return (
     <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
-      <h2 className="text-xl font-bold text-gray-800">Alertas de Reposición</h2>
+      <h2 className="text-xl font-bold text-gray-800">Alertas de reposición</h2>
       <div className="mt-4 space-y-3">
         {products.map((product) => (
           <div key={product.id} className="rounded-2xl border border-amber-200 bg-amber-50 p-4">

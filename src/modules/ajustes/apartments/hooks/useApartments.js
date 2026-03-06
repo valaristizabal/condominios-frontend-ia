@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+﻿import { useCallback, useEffect, useMemo, useState } from "react";
 import { useActiveCondominium } from "../../../../context/useActiveCondominium";
 import apiClient from "../../../../services/apiClient";
 
@@ -29,7 +29,7 @@ export function useApartments() {
       const response = await apiClient.get("/apartments", requestConfig);
       setItems(Array.isArray(response.data) ? response.data : []);
     } catch (err) {
-      setError(normalizeApiError(err, "No fue posible cargar apartamentos."));
+      setError(normalizeApiError(err, "No fue posible cargar inmuebles."));
     } finally {
       setLoading(false);
     }
@@ -44,7 +44,7 @@ export function useApartments() {
         await fetchApartments();
         return response.data;
       } catch (err) {
-        setError(normalizeApiError(err, "No fue posible crear el apartamento."));
+        setError(normalizeApiError(err, "No fue posible crear el inmueble."));
         throw err;
       } finally {
         setSaving(false);
@@ -62,7 +62,7 @@ export function useApartments() {
         await fetchApartments();
         return response.data;
       } catch (err) {
-        setError(normalizeApiError(err, "No fue posible actualizar el apartamento."));
+        setError(normalizeApiError(err, "No fue posible actualizar el inmueble."));
         throw err;
       } finally {
         setSaving(false);
@@ -80,7 +80,7 @@ export function useApartments() {
         await fetchApartments();
         return response.data;
       } catch (err) {
-        setError(normalizeApiError(err, "No fue posible cambiar el estado del apartamento."));
+        setError(normalizeApiError(err, "No fue posible cambiar el estado del inmueble."));
         throw err;
       } finally {
         setSaving(false);
@@ -124,4 +124,5 @@ function normalizeApiError(err, fallbackMessage) {
 
   return responseData?.message || err?.message || fallbackMessage;
 }
+
 

@@ -1,4 +1,4 @@
-function ResidentTable({ rows, busy, onEdit, onChangePassword, canChangePassword = false }) {
+﻿function ResidentTable({ rows, busy, onEdit, onChangePassword, canChangePassword = false }) {
   if (!rows.length) {
     return (
       <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center">
@@ -14,7 +14,7 @@ function ResidentTable({ rows, busy, onEdit, onChangePassword, canChangePassword
           <tr>
             <th className="px-4 py-3">Nombre</th>
             <th className="px-4 py-3">Tipo inmueble</th>
-            <th className="px-4 py-3">Apartamento</th>
+            <th className="px-4 py-3">Inmueble</th>
             <th className="px-4 py-3">Tipo residente</th>
             <th className="px-4 py-3">Estado</th>
             <th className="px-4 py-3 text-right">Acciones</th>
@@ -57,7 +57,7 @@ function ResidentTable({ rows, busy, onEdit, onChangePassword, canChangePassword
                       disabled={busy}
                       className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200 disabled:opacity-60"
                     >
-                      Cambiar contraseña
+                      Cambiar contraseÃ±a
                     </button>
                   ) : null}
                   <button
@@ -93,3 +93,4 @@ function formatResidentType(type) {
 }
 
 export default ResidentTable;
+

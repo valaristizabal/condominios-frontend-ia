@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { useActiveCondominium } from "../../../../context/useActiveCondominium";
 import apiClient from "../../../../services/apiClient";
 
@@ -61,7 +61,7 @@ function ResidentFormModal({ open, initialValues, loading, onCancel, onSubmit })
         if (!cancelled) {
           setUnitTypes([]);
           setApartments([]);
-          setError(normalizeApiError(err, "No fue posible cargar tipos y apartamentos."));
+          setError(normalizeApiError(err, "No fue posible cargar tipos y inmuebles."));
         }
       } finally {
         if (!cancelled) {
@@ -141,7 +141,7 @@ function ResidentFormModal({ open, initialValues, loading, onCancel, onSubmit })
     }
 
     if (!apartmentId) {
-      setError("Debes seleccionar el apartamento.");
+      setError("Debes seleccionar el inmueble.");
       return;
     }
 
@@ -152,7 +152,7 @@ function ResidentFormModal({ open, initialValues, loading, onCancel, onSubmit })
     );
 
     if (!apartmentMatchesUnitType) {
-      setError("El apartamento seleccionado no corresponde al tipo de inmueble elegido.");
+      setError("El inmueble seleccionado no corresponde al tipo de inmueble elegido.");
       return;
     }
 
@@ -246,7 +246,7 @@ function ResidentFormModal({ open, initialValues, loading, onCancel, onSubmit })
             </label>
 
             <label className="block">
-              <span className="mb-1.5 block text-sm font-semibold text-slate-700">Apartamento</span>
+              <span className="mb-1.5 block text-sm font-semibold text-slate-700">Inmueble</span>
               <select
                 name="apartment_id"
                 value={form.apartment_id ?? ""}
@@ -260,7 +260,7 @@ function ResidentFormModal({ open, initialValues, loading, onCancel, onSubmit })
                     ? "Primero selecciona tipo"
                     : catalogLoading
                     ? "Cargando..."
-                    : "Selecciona apartamento"}
+                    : "Selecciona inmueble"}
                 </option>
                 {filteredApartments.map((item) => (
                   <option key={item.id} value={item.id}>
@@ -379,3 +379,4 @@ function normalizeApiError(err, fallbackMessage) {
 }
 
 export default ResidentFormModal;
+

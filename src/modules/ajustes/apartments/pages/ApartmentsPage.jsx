@@ -67,7 +67,7 @@ function ApartmentsPage() {
       </div>
       <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-extrabold text-slate-900">Apartamentos</h1>
+          <h1 className="text-2xl font-extrabold text-slate-900">Inmuebles</h1>
         </div>
         <button
           type="button"
@@ -75,13 +75,13 @@ function ApartmentsPage() {
           className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-indigo-700 disabled:opacity-70"
           disabled={!hasTenantContext || saving}
         >
-          + Crear apartamento
+          + Crear inmueble
         </button>
       </header>
 
       {!hasTenantContext ? (
         <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-          No hay propiedad activa para gestionar apartamentos.
+          No hay propiedad activa para gestionar inmuebles.
         </p>
       ) : null}
 
@@ -121,7 +121,7 @@ function ApartmentsPage() {
 
       {loading ? (
         <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-slate-500">
-          Cargando apartamentos...
+          Cargando inmuebles...
         </div>
       ) : (
         <ApartmentTable rows={filtered} busy={saving} onEdit={openEdit} onToggle={handleToggle} />

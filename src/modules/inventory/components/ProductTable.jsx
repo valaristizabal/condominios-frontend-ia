@@ -10,8 +10,8 @@ function ProductTable({ products, onEdit, saving = false }) {
             <tr>
               <th className="px-4 py-3">Producto</th>
               <th className="px-4 py-3">Tipo</th>
-              <th className="px-4 py-3">Categoria</th>
-              <th className="px-4 py-3">Ubicacion</th>
+              <th className="px-4 py-3">Categoría</th>
+              <th className="px-4 py-3">Ubicación</th>
               <th className="px-4 py-3">Proveedor</th>
               <th className="px-4 py-3">Stock</th>
               <th className="px-4 py-3">Costo unitario</th>

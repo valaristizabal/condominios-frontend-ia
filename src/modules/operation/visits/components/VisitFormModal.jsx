@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+﻿import { useEffect, useMemo, useRef, useState } from "react";
 
 const Card = ({ children, className = "" }) => (
   <div className={`rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5 ${className}`}>
@@ -95,7 +95,7 @@ function SearchableSelect({
         <span className={selectedOption ? "text-slate-900" : "text-slate-500"}>
           {selectedOption?.label || placeholder}
         </span>
-        <span className="text-slate-400">{open ? "▲" : "▼"}</span>
+        <span className="text-slate-400">{open ? "â–²" : "â–¼"}</span>
       </button>
 
       {open ? (
@@ -178,7 +178,7 @@ export default function VisitFormModal({ apartments = [], onSubmit, loading }) {
     () =>
       filteredApartments.map((apartment) => ({
         value: apartment.id,
-        label: apartment.name || apartment.number || `Apto ${apartment.id}`,
+        label: apartment.name || apartment.number || `Inmueble ${apartment.id}`,
       })),
     [filteredApartments]
   );
@@ -197,7 +197,7 @@ export default function VisitFormModal({ apartments = [], onSubmit, loading }) {
     if (!document.trim()) next.document = "Ingresa el documento.";
     if (!phone.trim()) next.phone = "Ingresa el celular.";
     if (!unitTypeId) next.unitTypeId = "Selecciona el tipo de unidad.";
-    if (!apartmentId) next.apartmentId = "Selecciona el apartamento destino.";
+    if (!apartmentId) next.apartmentId = "Selecciona el inmueble destino.";
     if (!antecedentesConsultados) {
       next.antecedentes = "Debes confirmar que consultaste antecedentes.";
     }
@@ -212,7 +212,7 @@ export default function VisitFormModal({ apartments = [], onSubmit, loading }) {
     if (!file) return;
 
     if (!file.type?.startsWith("image/")) {
-      alert("Selecciona una imagen válida.");
+      alert("Selecciona una imagen vÃ¡lida.");
       event.target.value = "";
       return;
     }
@@ -239,7 +239,7 @@ export default function VisitFormModal({ apartments = [], onSubmit, loading }) {
 
     const selectedApartment = apartmentsOptions.find((item) => String(item.id) === String(apartmentId));
     const resolvedDestination =
-      selectedApartment?.number ? `Apto ${selectedApartment.number}` : `Apto ${apartmentId}`;
+      selectedApartment?.number ? `Inmueble ${selectedApartment.number}` : `Inmueble ${apartmentId}`;
 
     await onSubmit?.({
       apartment_id: Number(apartmentId),
@@ -277,7 +277,7 @@ export default function VisitFormModal({ apartments = [], onSubmit, loading }) {
         </div>
 
         <div className="mt-6">
-          <Label>Evidencia fotográfica</Label>
+          <Label>Evidencia fotogrÃ¡fica</Label>
 
           <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onFileChange} />
 
@@ -313,7 +313,7 @@ export default function VisitFormModal({ apartments = [], onSubmit, loading }) {
               <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl border border-slate-200 bg-white shadow-sm">
                 <CameraIcon className="h-5 w-5 text-slate-600" />
               </div>
-              <p className="text-sm font-extrabold text-slate-900">Tomar / Cargar fotografía</p>
+              <p className="text-sm font-extrabold text-slate-900">Tomar / Cargar fotografÃ­a</p>
               <p className="mt-1 text-xs font-semibold text-slate-500">
                 Para la demo puedes cargar una imagen desde tu computador
               </p>
@@ -330,7 +330,7 @@ export default function VisitFormModal({ apartments = [], onSubmit, loading }) {
               className={`${inputBase} ${
                 errors.fullName ? "border-red-400 focus:ring-red-200" : "border-slate-200 focus:ring-blue-200"
               }`}
-              placeholder="Ej. Ana María Pérez"
+              placeholder="Ej. Ana MarÃ­a PÃ©rez"
               value={fullName}
               onChange={(event) => setFullName(event.target.value)}
             />
@@ -382,13 +382,13 @@ export default function VisitFormModal({ apartments = [], onSubmit, loading }) {
           </div>
 
           <div>
-            <Label>Apartamento destino</Label>
+            <Label>Inmueble destino</Label>
             <SearchableSelect
               value={apartmentId}
               disabled={!unitTypeId}
               hasError={Boolean(errors.apartmentId)}
-              placeholder={!unitTypeId ? "Primero selecciona tipo de unidad" : "Selecciona apartamento"}
-              searchPlaceholder="Buscar apartamento..."
+              placeholder={!unitTypeId ? "Primero selecciona tipo de unidad" : "Selecciona inmueble"}
+              searchPlaceholder="Buscar inmueble..."
               options={apartmentSelectOptions}
               onChange={(nextValue) => setApartmentId(String(nextValue))}
             />
@@ -399,7 +399,7 @@ export default function VisitFormModal({ apartments = [], onSubmit, loading }) {
             <Label>Objetos que trae</Label>
             <textarea
               className="w-full min-h-[110px] rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none focus:ring-2 focus:ring-blue-200"
-              placeholder="Ej. maleta, portátil, caja..."
+              placeholder="Ej. maleta, portÃ¡til, caja..."
               value={objects}
               onChange={(event) => setObjects(event.target.value)}
             />
@@ -460,3 +460,4 @@ export default function VisitFormModal({ apartments = [], onSubmit, loading }) {
     </div>
   );
 }
+

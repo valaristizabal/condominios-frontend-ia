@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { useActiveCondominium } from "../../../../context/useActiveCondominium";
 import apiClient from "../../../../services/apiClient";
 
@@ -95,12 +95,12 @@ function ApartmentFormModal({ open, initialValues, loading, onCancel, onSubmit }
     const unitTypeId = Number(form.unit_type_id);
 
     if (!number) {
-      setError("El número del apartamento es obligatorio.");
+      setError("El nÃºmero del inmueble es obligatorio.");
       return;
     }
 
     if (number.length > 50) {
-      setError("El número no puede superar 50 caracteres.");
+      setError("El nÃºmero no puede superar 50 caracteres.");
       return;
     }
 
@@ -116,7 +116,7 @@ function ApartmentFormModal({ open, initialValues, loading, onCancel, onSubmit }
 
     const floorNumber = floorText === "" ? null : Number(floorText);
     if (floorNumber !== null && !Number.isInteger(floorNumber)) {
-      setError("El piso debe ser un número entero.");
+      setError("El piso debe ser un nÃºmero entero.");
       return;
     }
 
@@ -129,7 +129,7 @@ function ApartmentFormModal({ open, initialValues, loading, onCancel, onSubmit }
         is_active: Boolean(form.is_active),
       });
     } catch (err) {
-      setError(normalizeApiError(err, "No fue posible guardar el apartamento."));
+      setError(normalizeApiError(err, "No fue posible guardar el inmueble."));
     }
   };
 
@@ -137,7 +137,7 @@ function ApartmentFormModal({ open, initialValues, loading, onCancel, onSubmit }
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/45 p-4 sm:items-center">
       <div className="w-full max-w-xl rounded-2xl bg-white p-5 shadow-2xl">
         <h3 className="text-lg font-extrabold text-slate-900">
-          {isEditing ? "Editar apartamento" : "Nuevo apartamento"}
+          {isEditing ? "Editar inmueble" : "Nuevo inmueble"}
         </h3>
 
         <form className="mt-4 space-y-4" onSubmit={handleSubmit}>
@@ -259,3 +259,4 @@ function normalizeApiError(err, fallbackMessage) {
 }
 
 export default ApartmentFormModal;
+
