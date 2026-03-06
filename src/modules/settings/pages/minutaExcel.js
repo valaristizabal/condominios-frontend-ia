@@ -6,7 +6,6 @@ const MODULE_ORDER = [
   "vehicle_entries",
   "correspondences",
   "cleaning_records",
-  "inventory_movements",
   "emergencies",
 ];
 
@@ -16,7 +15,6 @@ const MODULE_LABELS = {
   vehicle_entries: "Ingresos vehiculares",
   correspondences: "Correspondencia recibida",
   cleaning_records: "Registros de aseo",
-  inventory_movements: "Movimientos de inventario",
   emergencies: "Emergencias reportadas",
 };
 
@@ -78,17 +76,6 @@ const MODULE_SHEETS = {
       { header: "Estado", value: (row) => row?.status || "-" },
       { header: "Observaciones", value: (row) => row?.observations || "-" },
       { header: "Registrado por", value: (row) => row?.registered_by_id || "-" },
-    ],
-  },
-  inventory_movements: {
-    name: "INVENTARIO",
-    columns: [
-      { header: "Fecha", value: (row) => formatDate(row?.movement_date || row?.created_at) },
-      { header: "Producto ID", value: (row) => row?.product_id || "-" },
-      { header: "Tipo", value: (row) => row?.type || "-" },
-      { header: "Cantidad", value: (row) => row?.quantity ?? "-" },
-      { header: "Registrado por", value: (row) => row?.registered_by_id || "-" },
-      { header: "Observaciones", value: (row) => row?.observations || "-" },
     ],
   },
   emergencies: {
@@ -153,7 +140,6 @@ export async function exportMonthlyMinutaWorkbook({
     vehicle_entries: Number(monthlySummary?.vehicle_entries_total || 0),
     correspondences: Number(monthlySummary?.correspondences_total || 0),
     cleaning_records: Number(monthlySummary?.cleaning_records_total || 0),
-    inventory_movements: Number(monthlySummary?.inventory_movements_total || 0),
     emergencies: Number(monthlySummary?.emergencies_total || 0),
   };
 
@@ -358,7 +344,6 @@ function moduleCounts(payload) {
     vehicle_entries: countRows(payload?.vehicle_entries),
     correspondences: countRows(payload?.correspondences),
     cleaning_records: countRows(payload?.cleaning_records),
-    inventory_movements: countRows(payload?.inventory_movements),
     emergencies: countRows(payload?.emergencies),
   };
 }
@@ -370,7 +355,6 @@ function aggregateDailyLogs(dailyLogs) {
     vehicle_entries: [],
     correspondences: [],
     cleaning_records: [],
-    inventory_movements: [],
     emergencies: [],
   };
 

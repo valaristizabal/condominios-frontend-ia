@@ -1,6 +1,6 @@
 import { Pencil, Trash } from "lucide-react";
 
-function ProductTable({ products, onEdit, saving = false }) {
+function ProductTable({ products, onEdit, saving = false, canEdit = true }) {
   return (
     <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
       <h2 className="text-xl font-bold text-gray-800">Listado de Productos</h2>
@@ -17,7 +17,7 @@ function ProductTable({ products, onEdit, saving = false }) {
               <th className="px-4 py-3">Costo unitario</th>
               <th className="px-4 py-3">Valor total</th>
               <th className="px-4 py-3">Estado</th>
-              <th className="px-4 py-3 text-right">Acciones</th>
+              {canEdit ? <th className="px-4 py-3 text-right">Acciones</th> : null}
             </tr>
           </thead>
           <tbody>
@@ -40,21 +40,23 @@ function ProductTable({ products, onEdit, saving = false }) {
                   <td className="px-4 py-3">
                     <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${status.className}`}>{status.label}</span>
                   </td>
-                  <td className="px-4 py-3">
-                    <div className="flex justify-end gap-2 text-gray-400">
-                      <button
-                        type="button"
-                        className="rounded-lg bg-gray-100 p-2"
-                        disabled={!onEdit || saving}
-                        onClick={() => onEdit?.(product)}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </button>
-                      <button type="button" className="rounded-lg bg-gray-100 p-2" disabled>
-                        <Trash className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </td>
+                  {canEdit ? (
+                    <td className="px-4 py-3">
+                      <div className="flex justify-end gap-2 text-gray-400">
+                        <button
+                          type="button"
+                          className="rounded-lg bg-gray-100 p-2"
+                          disabled={!onEdit || saving}
+                          onClick={() => onEdit?.(product)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                        <button type="button" className="rounded-lg bg-gray-100 p-2" disabled>
+                          <Trash className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  ) : null}
                 </tr>
               );
             })}

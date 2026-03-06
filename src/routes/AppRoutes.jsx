@@ -134,7 +134,7 @@ function AppRoutes() {
           <TenantRoute>
             <InventoryOperationRoute>
               <TenantLayout>
-                <InventoryPage />
+                <InventoryPage allowProductManagement={false} />
               </TenantLayout>
             </InventoryOperationRoute>
           </TenantRoute>
@@ -249,6 +249,18 @@ function AppRoutes() {
             <InventorySettingsRoute>
               <TenantLayout>
                 <InventorySettingsPage />
+              </TenantLayout>
+            </InventorySettingsRoute>
+          </TenantRoute>
+        }
+      />
+      <Route
+        path="/settings/inventory/products"
+        element={
+          <TenantRoute>
+            <InventorySettingsRoute>
+              <TenantLayout>
+                <InventoryPage allowProductManagement showOperationTools={false} />
               </TenantLayout>
             </InventorySettingsRoute>
           </TenantRoute>
@@ -402,7 +414,7 @@ function AppRoutes() {
           <ProtectedRoute>
             <SuperAdminRoute>
               <TenantLayout>
-                <InventoryPage />
+                <InventoryPage allowProductManagement={false} />
               </TenantLayout>
             </SuperAdminRoute>
           </ProtectedRoute>
@@ -535,6 +547,18 @@ function AppRoutes() {
             <SuperAdminRoute>
               <TenantLayout>
                 <InventorySettingsPage />
+              </TenantLayout>
+            </SuperAdminRoute>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/condominio/:id/settings/inventory/products"
+        element={
+          <ProtectedRoute>
+            <SuperAdminRoute>
+              <TenantLayout>
+                <InventoryPage allowProductManagement showOperationTools={false} />
               </TenantLayout>
             </SuperAdminRoute>
           </ProtectedRoute>

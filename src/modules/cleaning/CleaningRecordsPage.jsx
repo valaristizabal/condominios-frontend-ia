@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import BackButton from "../../components/common/BackButton";
 import { useCleaningRecords } from "./useCleaningRecords";
@@ -38,6 +38,13 @@ function CleaningRecordsPage() {
   const areas = initialDataQuery.data?.areas || [];
   const operatives = initialDataQuery.data?.operatives || [];
   const records = initialDataQuery.data?.records || [];
+  const areaNameById = useMemo(() => {
+    const map = new Map();
+    areas.forEach((area) => {
+      map.set(String(area?.id), String(area?.name || ""));
+    });
+    return map;
+  }, [areas]);
 
   useEffect(() => {
     if (!records.length) {
@@ -119,7 +126,7 @@ function CleaningRecordsPage() {
   useEffect(() => {
     const queryError = initialDataQuery.error || checklistQuery.error;
     if (!queryError) return;
-    setError(normalizeApiError(queryError, "No fue posible cargar el módulo de aseo."));
+    setError(normalizeApiError(queryError, "No fue posible cargar el mÃ³dulo de aseo."));
   }, [initialDataQuery.error, checklistQuery.error]);
 
   const createRecord = async () => {
@@ -194,7 +201,7 @@ function CleaningRecordsPage() {
                 className={inputBase}
                 disabled={!hasTenantContext || saving || loading}
               >
-                <option value="">Seleccione área</option>
+                <option value="">Seleccione Área</option>
                 {areas.map((area) => (
                   <option key={area.id} value={area.id}>
                     {area.name}
@@ -253,7 +260,7 @@ function CleaningRecordsPage() {
                           : "border-slate-200 bg-white hover:border-blue-200",
                     ].join(" ")}
                   >
-                    <p className="truncate text-sm font-bold text-slate-900">{record.cleaningArea?.name || "Área"}</p>
+                    <p className="truncate text-sm font-bold text-slate-900">{resolveCleaningAreaName(record, areaNameById) || "Area"}</p>
                     <p className="mt-1 truncate text-xs font-semibold text-slate-500">
                       {record.operative?.user?.full_name || "Operario"}
                     </p>
@@ -282,7 +289,7 @@ function CleaningRecordsPage() {
           <Card>
             <div>
               <h2 className="text-xl font-extrabold text-slate-900">
-                {selectedRecord.cleaningArea?.name || "Área de limpieza"}
+                {resolveCleaningAreaName(selectedRecord, areaNameById) || "Area de limpieza"}
               </h2>
               <p className="mt-1 text-sm text-slate-500">
                 {selectedRecord.operative?.user?.full_name || "Operario"} {" - "}
@@ -335,7 +342,7 @@ function CleaningRecordsPage() {
               <div className="mt-6">
                 <h3 className="text-sm font-semibold text-slate-600">Observación final</h3>
                 <div className="mt-2 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-slate-700">
-                  {selectedRecord.observations || "Sin observación."}
+                  {selectedRecord.observations || "Sin observaciÃ³n."}
                 </div>
               </div>
             ) : (
@@ -388,3 +395,16 @@ function normalizeApiError(err, fallbackMessage) {
 }
 
 export default CleaningRecordsPage;
+
+
+function resolveCleaningAreaName(record, areaNameById) {
+  const relationName = String(record?.cleaningArea?.name || "").trim();
+  if (relationName) return relationName;
+
+  const id = record?.cleaning_area_id ?? record?.cleaningArea?.id;
+  if (id === null || id === undefined) return "";
+
+  return String(areaNameById?.get(String(id)) || "").trim();
+}
+
+
