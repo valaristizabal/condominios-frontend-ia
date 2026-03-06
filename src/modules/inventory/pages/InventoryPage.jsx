@@ -554,7 +554,7 @@ function InventoryPage({ allowProductManagement = false, showOperationTools = tr
                   value={productForm.minimum_stock}
                   onChange={handleProductChange}
                   className="w-full rounded-2xl border border-gray-200 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-300"
-                  placeholder="Stock mÃ­nimo de alerta"
+                  placeholder="Stock mí­nimo de alerta"
                 />
               </div>
             ) : null}
@@ -582,7 +582,7 @@ function InventoryPage({ allowProductManagement = false, showOperationTools = tr
                     value={productForm.asset_code}
                     onChange={handleProductChange}
                     className="w-full rounded-2xl border border-gray-200 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-300"
-                    placeholder="CÃ³digo de activo"
+                    placeholder="Código de activo"
                   />
                 </div>
 
@@ -593,7 +593,7 @@ function InventoryPage({ allowProductManagement = false, showOperationTools = tr
                     value={productForm.location}
                     onChange={handleProductChange}
                     className="w-full rounded-2xl border border-gray-200 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-300"
-                    placeholder="UbicaciÃ³n"
+                    placeholder="Ubicación"
                   />
                 </div>
               </>
