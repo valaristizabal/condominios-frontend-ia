@@ -3,7 +3,12 @@ import BackButton from "../../../../components/common/BackButton";
 import { useActiveCondominium } from "../../../../context/useActiveCondominium";
 import { useAuthContext } from "../../../../context/useAuthContext";
 import apiClient from "../../../../services/apiClient";
-import { AVAILABLE_MODULES, canManageUserPermissions } from "../../../../utils/roles";
+import {
+  AVAILABLE_MODULES,
+  canManageUserPermissions,
+  isSuperUser,
+  isTenantAdminRole,
+} from "../../../../utils/roles";
 
 const MODULE_LABELS = {
   visits: "Visitantes",
@@ -45,9 +50,10 @@ function UsersPermissionsPage() {
 
   const filteredUsers = useMemo(() => {
     const q = String(query || "").trim().toLowerCase();
-    if (!q) return users;
+    const nonAdminUsers = users.filter((item) => !isAdminUser(item));
+    if (!q) return nonAdminUsers;
 
-    return users.filter((item) => {
+    return nonAdminUsers.filter((item) => {
       const name = String(item?.full_name || "").toLowerCase();
       const email = String(item?.email || "").toLowerCase();
       return name.includes(q) || email.includes(q);
@@ -305,6 +311,29 @@ function normalizeApiError(err, fallbackMessage) {
   }
 
   return responseData?.message || err?.message || fallbackMessage;
+}
+
+function isAdminUser(userItem) {
+  const roles = [];
+
+  if (typeof userItem?.role === "string" && userItem.role.trim()) {
+    roles.push(userItem.role);
+  }
+
+  if (Array.isArray(userItem?.roles)) {
+    userItem.roles.forEach((roleItem) => {
+      if (typeof roleItem === "string" && roleItem.trim()) {
+        roles.push(roleItem);
+        return;
+      }
+
+      if (typeof roleItem?.name === "string" && roleItem.name.trim()) {
+        roles.push(roleItem.name);
+      }
+    });
+  }
+
+  return roles.some((roleName) => isSuperUser(roleName) || isTenantAdminRole(roleName));
 }
 
 export default UsersPermissionsPage;
