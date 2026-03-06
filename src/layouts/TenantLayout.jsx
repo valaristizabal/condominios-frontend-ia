@@ -1,5 +1,5 @@
 import { NavLink, useLocation, useNavigate, useParams } from "react-router-dom";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowLeft,
@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { ActiveCondominiumContext } from "../context/ActiveCondominiumContext";
 import { useAuthContext } from "../context/useAuthContext";
+import PropertyLogo from "../components/common/PropertyLogo";
 import apiClient from "../services/apiClient";
 import { resolveCondominiumLogo } from "../utils/condominiumBrand";
 import { canAccessInventoryOperation, isSuperUser } from "../utils/roles";
@@ -27,11 +28,11 @@ function getSidebarSections(basePath, canInventoryOperate) {
 
   return [
     {
-      title: "Operacion",
+      title: "Operación",
       items: [
-        { label: "Dashboard", to: resolvePath("/dashboard"), enabled: true },
+        { label: "Menú principal", to: resolvePath("/dashboard"), enabled: true },
         { label: "Visitantes", to: resolvePath("/visits"), enabled: true },
-        { label: "Vehiculos", to: resolvePath("/vehicles"), enabled: true },
+        { label: "Vehículos", to: resolvePath("/vehicles"), enabled: true },
         { label: "Ingreso de personal", to: resolvePath("/employee-entries"), enabled: true },
         { label: "Correspondencia", to: resolvePath("/correspondence"), enabled: true },
         { label: "Emergencias", to: resolvePath("/emergencies"), enabled: true },
@@ -40,7 +41,7 @@ function getSidebarSections(basePath, canInventoryOperate) {
       ],
     },
     {
-      title: "Configuracion",
+      title: "Configuración",
       items: [{ label: "Ajustes", to: resolvePath("/settings"), enabled: true }],
     },
   ];
@@ -120,7 +121,7 @@ function TenantLayout({ children }) {
               type="button"
               className="absolute inset-0 bg-black/40"
               onClick={() => setMobileOpen(false)}
-              aria-label="Cerrar menu"
+              aria-label="Cerrar menú"
             />
             <div className="absolute left-0 top-0 flex h-full w-[300px] flex-col border-r border-slate-200 bg-white shadow-xl">
               <SidebarContent
@@ -145,7 +146,7 @@ function TenantLayout({ children }) {
           type="button"
           className="fixed right-4 top-4 z-[998] flex h-12 w-12 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-800 shadow-md lg:hidden"
           onClick={() => setMobileOpen(true)}
-          aria-label="Abrir menu"
+          aria-label="Abrir menú"
         >
           <MenuIcon />
         </button>
@@ -166,28 +167,17 @@ function SidebarContent({
   showBackToCondominiums = false,
   onBackToCondominiums,
 }) {
-  const [logoSrc, setLogoSrc] = useState(condominiumLogo || null);
-
-  useEffect(() => {
-    setLogoSrc(condominiumLogo || null);
-  }, [condominiumLogo]);
-
   return (
     <div className="flex h-full flex-col">
       <div className="px-7 pb-5 pt-8">
         <div className="flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-white">
-            {logoSrc ? (
-              <img
-                src={logoSrc}
-                alt={condominiumName || "Propiedad"}
-                className="h-full w-full object-contain p-1"
-                onError={() => setLogoSrc(null)}
-              />
-            ) : (
-              <img src="/image/isotipo1.png" alt="Propiedad" className="h-8 w-auto object-contain" />
-            )}
-          </div>
+          <PropertyLogo
+            src={condominiumLogo}
+            alt={condominiumName || "Propiedad"}
+            size={48}
+            variant="circle"
+            fit="cover"
+          />
           <div className="leading-tight">
             <h2 className="line-clamp-1 text-lg font-extrabold text-slate-900">
               {condominiumName || "Propiedad"}
@@ -300,9 +290,9 @@ function MenuIcon() {
 function iconByLabel(label) {
   const className = "h-4 w-4";
   const map = {
-    Dashboard: <LayoutDashboard className={className} />,
+    "Menú principal": <LayoutDashboard className={className} />,
     Visitantes: <Users className={className} />,
-    Vehiculos: <Car className={className} />,
+    Vehículos: <Car className={className} />,
     "Ingreso de personal": <UserCheck className={className} />,
     Correspondencia: <ClipboardList className={className} />,
     Emergencias: <Bell className={className} />,

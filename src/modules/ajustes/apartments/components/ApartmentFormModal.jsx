@@ -95,12 +95,12 @@ function ApartmentFormModal({ open, initialValues, loading, onCancel, onSubmit }
     const unitTypeId = Number(form.unit_type_id);
 
     if (!number) {
-      setError("El numero del apartamento es obligatorio.");
+      setError("El número del apartamento es obligatorio.");
       return;
     }
 
     if (number.length > 50) {
-      setError("El numero no puede superar 50 caracteres.");
+      setError("El número no puede superar 50 caracteres.");
       return;
     }
 
@@ -116,7 +116,7 @@ function ApartmentFormModal({ open, initialValues, loading, onCancel, onSubmit }
 
     const floorNumber = floorText === "" ? null : Number(floorText);
     if (floorNumber !== null && !Number.isInteger(floorNumber)) {
-      setError("El piso debe ser un numero entero.");
+      setError("El piso debe ser un número entero.");
       return;
     }
 

@@ -1,4 +1,5 @@
 import { useNavigate, useParams } from "react-router-dom";
+import BackButton from "../../../components/common/BackButton";
 
 function Card({ children, className = "" }) {
   return (
@@ -37,16 +38,16 @@ function InventorySettingsPage() {
 
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6">
+      <div className="mb-4">
+        <BackButton variant="settings" />
+      </div>
       <div className="mb-6">
-        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Configuracion</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Configuración</p>
         <h1 className="mt-1 text-2xl font-extrabold text-slate-900">Inventario</h1>
-        <p className="mt-1 text-sm text-slate-500">
-          Agrupa la parametrizacion de inventarios y categorias para la propiedad activa.
-        </p>
       </div>
 
       <Card>
-        <p className="text-xs font-extrabold uppercase tracking-widest text-slate-400">Configuracion de inventario</p>
+        <p className="text-xs font-extrabold uppercase tracking-widest text-slate-400">Configuración de inventario</p>
         <div className="mt-4 space-y-3">
           <ItemRow
             title="Ubicaciones de inventario"
@@ -54,8 +55,8 @@ function InventorySettingsPage() {
             onClick={() => navigate(`${basePath}/settings/inventories`)}
           />
           <ItemRow
-            title="Categorias de inventario"
-            description="Configura categorias de productos para inventario"
+            title="Categorías de inventario"
+            description="Configura categorías de productos para inventario"
             onClick={() => navigate(`${basePath}/settings/inventory-categories`)}
           />
           <ItemRow

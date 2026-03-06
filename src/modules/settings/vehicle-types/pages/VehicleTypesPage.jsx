@@ -1,11 +1,10 @@
 import { useMemo, useState } from "react";
-import { useActiveCondominium } from "../../../../context/useActiveCondominium";
+import BackButton from "../../../../components/common/BackButton";
 import VehicleTypeFormModal from "../components/VehicleTypeFormModal";
 import VehicleTypeTable from "../components/VehicleTypeTable";
 import { useVehicleTypes } from "../hooks/useVehicleTypes";
 
 function VehicleTypesPage() {
-  const { activeCondominiumId } = useActiveCondominium();
   const { vehicleTypes, loading, saving, error, hasTenantContext, createVehicleType, updateVehicleType, toggleVehicleType } =
     useVehicleTypes();
 
@@ -54,13 +53,12 @@ function VehicleTypesPage() {
 
   return (
     <div className="mx-auto w-full max-w-6xl">
+      <div className="mb-3">
+        <BackButton variant="settings" />
+      </div>
       <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-extrabold text-slate-900">Tipos de Vehiculo</h1>
-          <p className="mt-1 text-sm text-slate-500">
-            Gestion de tipos de vehiculo de la propiedad.
-            {activeCondominiumId ? ` Contexto: #${activeCondominiumId}` : ""}
-          </p>
+          <h1 className="text-2xl font-extrabold text-slate-900">Tipos de Vehículo</h1>
         </div>
         <button
           type="button"
@@ -68,13 +66,13 @@ function VehicleTypesPage() {
           className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-indigo-700 disabled:opacity-70"
           disabled={!hasTenantContext || saving}
         >
-          + Crear tipo de vehiculo
+          + Crear tipo de vehículo
         </button>
       </header>
 
       {!hasTenantContext ? (
         <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-          No hay propiedad activa para gestionar tipos de vehiculo.
+          No hay propiedad activa para gestionar tipos de vehículo.
         </p>
       ) : null}
 
@@ -104,7 +102,7 @@ function VehicleTypesPage() {
 
       {loading ? (
         <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-slate-500">
-          Cargando tipos de vehiculo...
+          Cargando tipos de vehículo...
         </div>
       ) : (
         <VehicleTypeTable rows={filtered} busy={saving} onEdit={openEdit} onToggle={handleToggle} />

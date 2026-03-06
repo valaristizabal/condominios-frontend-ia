@@ -1,11 +1,10 @@
 import { useMemo, useState } from "react";
-import { useActiveCondominium } from "../../../../context/useActiveCondominium";
+import BackButton from "../../../../components/common/BackButton";
 import InventoryFormModal from "../components/InventoryFormModal";
 import InventoryTable from "../components/InventoryTable";
 import { useInventories } from "../hooks/useInventories";
 
 function InventoriesPage() {
-  const { activeCondominiumId } = useActiveCondominium();
   const { inventories, loading, saving, error, hasTenantContext, createInventory, updateInventory, toggleInventory } =
     useInventories();
 
@@ -54,9 +53,12 @@ function InventoriesPage() {
 
   return (
     <div className="mx-auto w-full max-w-6xl">
+      <div className="mb-3">
+        <BackButton variant="inventorySettings" label="Atrás a Inventario" />
+      </div>
       <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-extrabold text-slate-900">Ubicaciones de inventario</h1>
+          <h1 className="text-2xl font-extrabold text-slate-900">Inventarios</h1>
           <p className="mt-1 text-sm text-slate-500">
             Configura las ubicaciones fisicas (bodegas o areas) donde se almacenan los productos del inventario.
             {activeCondominiumId ? ` Contexto: #${activeCondominiumId}` : ""}

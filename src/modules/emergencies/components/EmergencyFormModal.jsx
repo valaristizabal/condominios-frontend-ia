@@ -129,7 +129,7 @@ function EmergencyFormModal({ open, loading, emergencyTypes = [], fieldErrors = 
           </label>
 
           <label className="block">
-            <span className="mb-1.5 block text-sm font-semibold text-slate-700">Descripcion</span>
+            <span className="mb-1.5 block text-sm font-semibold text-slate-700">Descripción</span>
             <textarea
               value={form.description}
               onChange={(event) => setField("description", event.target.value)}

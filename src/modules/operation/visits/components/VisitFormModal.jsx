@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 const Card = ({ children, className = "" }) => (
-  <div className={`rounded-3xl border border-slate-200 bg-white p-5 shadow-sm ${className}`}>
+  <div className={`rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5 ${className}`}>
     {children}
   </div>
 );
@@ -320,7 +320,7 @@ export default function VisitFormModal({ apartments = [], onSubmit, loading }) {
             </button>
           )}
 
-            <Hint>Recomendado: capturar rostro del visitante para soporte de seguridad.</Hint>
+          <Hint>Recomendado: capturar rostro del visitante para soporte de seguridad.</Hint>
         </div>
 
         <div className="mt-6 space-y-4">

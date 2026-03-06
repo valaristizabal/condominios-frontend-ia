@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import BackButton from "../../../../components/common/BackButton";
 import VehicleIncidentFormModal from "../components/VehicleIncidentFormModal";
 import VehicleIncidentTable from "../components/VehicleIncidentTable";
 import { useVehicleIncidents } from "../hooks/useVehicleIncidents";
@@ -114,11 +115,11 @@ function VehicleIncidentsPage() {
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6">
       <header className="mb-6">
+        <div className="mb-3">
+          <BackButton variant="vehicles" />
+        </div>
         <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">Gestión de accesos</p>
         <h1 className="mt-1 text-2xl font-extrabold text-slate-900">Novedades vehiculares</h1>
-        <p className="mt-1 text-sm text-slate-500">
-          Reporta incidencias vehiculares, adjunta evidencia y gestiona el estado del caso.
-        </p>
       </header>
 
       {!activeCondominiumId ? (

@@ -1,11 +1,10 @@
 import { useMemo, useState } from "react";
-import { useActiveCondominium } from "../../../../context/useActiveCondominium";
+import BackButton from "../../../../components/common/BackButton";
 import EmergencyContactFormModal from "../components/EmergencyContactFormModal";
 import EmergencyContactTable from "../components/EmergencyContactTable";
 import { useEmergencyContacts } from "../hooks/useEmergencyContacts";
 
 function EmergencyContactsPage() {
-  const { activeCondominiumId } = useActiveCondominium();
   const {
     emergencyContacts,
     loading,
@@ -65,13 +64,12 @@ function EmergencyContactsPage() {
 
   return (
     <div className="mx-auto w-full max-w-6xl">
+      <div className="mb-3">
+        <BackButton variant="settings" />
+      </div>
       <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-extrabold text-slate-900">Contactos de Emergencia</h1>
-          <p className="mt-1 text-sm text-slate-500">
-            Gestion de numeros de emergencia de la propiedad.
-            {activeCondominiumId ? ` Contexto: #${activeCondominiumId}` : ""}
-          </p>
         </div>
         <button
           type="button"
@@ -79,7 +77,7 @@ function EmergencyContactsPage() {
           className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-indigo-700 disabled:opacity-70"
           disabled={!hasTenantContext || saving}
         >
-          + Crear numero de emergencia
+          + Crear número de emergencia
         </button>
       </header>
 
@@ -98,7 +96,7 @@ function EmergencyContactsPage() {
           label="Buscar"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Nombre o numero"
+          placeholder="Nombre o número"
         />
 
         <Select

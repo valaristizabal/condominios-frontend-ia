@@ -30,7 +30,7 @@ function EmergencyTable({ rows = [], loading = false, actingIds = {}, onProgress
               <th className="px-4 py-3">Ubicacion</th>
               <th className="px-4 py-3">Fecha</th>
               <th className="px-4 py-3">Estado</th>
-              <th className="px-4 py-3 text-right">Accion</th>
+              <th className="px-4 py-3 text-right">Acción</th>
             </tr>
           </thead>
           <tbody>

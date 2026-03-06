@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from "react";
+import BackButton from "../../../../components/common/BackButton";
 import CorrespondenceFormModal from "../components/CorrespondenceFormModal";
 import CorrespondenceTable from "../components/CorrespondenceTable";
 import DeliveryModal from "../components/DeliveryModal";
@@ -14,10 +15,6 @@ const Title = ({ children }) => (
   <h1 className="mt-2 text-2xl font-extrabold text-slate-900 leading-tight">
     {children}
   </h1>
-);
-
-const Subtitle = ({ children }) => (
-  <p className="mt-2 text-sm font-semibold text-slate-500">{children}</p>
 );
 
 export default function CorrespondencePage() {
@@ -39,7 +36,7 @@ export default function CorrespondencePage() {
   } = useCorrespondence();
 
   const couriers = useMemo(
-    () => ["Servientrega", "InterrapidÃ­simo", "Coordinadora"],
+    () => ["Servientrega", "Interrapidísimo", "Coordinadora"],
     []
   );
 
@@ -100,7 +97,7 @@ export default function CorrespondencePage() {
         receiver:
           item?.resident_receiver?.user?.full_name ||
           item?.resident_receiver?.user?.name ||
-          "â€”",
+          "-",
         delivered: (item.status || "") === "DELIVERED" || Boolean(item.delivered),
         date: formatDate(item.created_at),
         signatureUrl: item.signature_url || null,
@@ -173,10 +170,10 @@ export default function CorrespondencePage() {
 
     const nextLocalErrors = {};
     if (!form.receiverType) {
-      nextLocalErrors.receiverType = "Selecciona quiÃ©n recibe.";
+      nextLocalErrors.receiverType = "Selecciona quién recibe.";
     }
     if (form.receiverType === "dueno" && !signatureDataUrl) {
-      nextLocalErrors.signature = "La firma es obligatoria cuando recibe el dueÃ±o.";
+      nextLocalErrors.signature = "La firma es obligatoria cuando recibe el dueño.";
     }
 
     setLocalErrors(nextLocalErrors);
@@ -202,7 +199,7 @@ export default function CorrespondencePage() {
           await deliverCorrespondence(created.id, ownerResident.id, signatureDataUrl);
         } else {
           setLocalErrors({
-            receiverType: "No se encontrÃ³ un residente propietario para esta unidad.",
+            receiverType: "No se encontró un residente propietario para esta unidad.",
           });
           return;
         }
@@ -240,13 +237,13 @@ export default function CorrespondencePage() {
     <div className="w-full">
       <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 py-6">
         <div className="mb-6">
-          <Kicker>GestiÃ³n de accesos</Kicker>
+          <div className="mb-3">
+            <BackButton variant="dashboard" />
+          </div>
+          <Kicker>Gestión de accesos</Kicker>
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
-              <Title>Registro de Correspondencia</Title>
-              <Subtitle>
-                Registra la entrega con evidencia, datos del destinatario y firma.
-              </Subtitle>
+              <Title>Correspondencia</Title>
             </div>
           </div>
         </div>
@@ -360,8 +357,8 @@ function formatPackageType(value) {
 }
 
 function formatDate(value) {
-  if (!value) return "â€”";
+  if (!value) return "-";
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "â€”";
+  if (Number.isNaN(date.getTime())) return "-";
   return date.toLocaleDateString("es-CO");
 }

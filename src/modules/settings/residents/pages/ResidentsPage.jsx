@@ -1,11 +1,10 @@
 import { useMemo, useState } from "react";
-import { useActiveCondominium } from "../../../../context/useActiveCondominium";
+import BackButton from "../../../../components/common/BackButton";
 import ResidentFormModal from "../components/ResidentFormModal";
 import ResidentTable from "../components/ResidentTable";
 import { useResidents } from "../hooks/useResidents";
 
 function ResidentsPage() {
-  const { activeCondominiumId } = useActiveCondominium();
   const { residents, loading, saving, error, hasTenantContext, createResident, updateResident } =
     useResidents();
 
@@ -86,13 +85,12 @@ function ResidentsPage() {
 
   return (
     <div className="mx-auto w-full max-w-6xl">
+      <div className="mb-3">
+        <BackButton variant="settings" />
+      </div>
       <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-extrabold text-slate-900">Residentes</h1>
-          <p className="mt-1 text-sm text-slate-500">
-            Gestion de residentes de la propiedad.
-            {activeCondominiumId ? ` Contexto: #${activeCondominiumId}` : ""}
-          </p>
         </div>
         <button
           type="button"

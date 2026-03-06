@@ -17,7 +17,7 @@ function LoginPage() {
               GenAccess
             </h1>
             <p className="mx-auto mt-2 max-w-[260px] text-[0.98rem] leading-snug text-slate-400 sm:text-[1.02rem]">
-              Plataforma Inteligente de Gestion para Propiedad Horizontal
+              Plataforma Inteligente de Gestión para Propiedad Horizontal
             </p>
             </div>
 

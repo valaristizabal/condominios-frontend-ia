@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useActiveCondominium } from "../../../../context/useActiveCondominium";
 import apiClient from "../../../../services/apiClient";
+import BackButton from "../../../../components/common/BackButton";
 
 const Card = ({ children, className = "" }) => (
   <div className={["rounded-3xl border border-slate-200 bg-white p-6 shadow-sm", className].join(" ")}>{children}</div>
@@ -226,7 +227,7 @@ function VehiclesPage() {
 
   useEffect(() => {
     if (!queryError) return;
-    setGlobalError(normalizeApiError(queryError, "Error cargando datos del modulo."));
+    setGlobalError(normalizeApiError(queryError, "Error cargando datos del módulo."));
   }, [queryError]);
 
   function handleChange(event) {
@@ -362,7 +363,7 @@ function VehiclesPage() {
 
     const plate = normalizePlate(form.placa);
     if (!form.tipoUsuario || !plate || !form.vehicleTypeId) {
-      alert("Completa los campos obligatorios: Tipo de usuario, Placa y Tipo de vehiculo.");
+      alert("Completa los campos obligatorios: Tipo de usuario, Placa y Tipo de vehículo.");
       return;
     }
 
@@ -385,7 +386,7 @@ function VehiclesPage() {
   async function onCheckoutEntry(entry) {
     if (!entry?.id || !activeCondominiumId) return;
 
-    const ok = confirm("Registrar salida de este vehiculo?");
+    const ok = confirm("¿Registrar salida de este vehículo?");
     if (!ok) return;
 
     try {
@@ -423,19 +424,10 @@ function VehiclesPage() {
     <div className="w-full">
       <div className="mx-auto w-full max-w-6xl px-6 py-6">
         <div className="mb-6">
-          <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">GESTION DE ACCESOS</p>
-
           <div className="mt-1 flex items-center gap-3">
-            <button
-              type="button"
-              className="h-10 w-10 rounded-2xl border border-slate-200 bg-white shadow-sm hover:bg-slate-50 flex items-center justify-center"
-              onClick={() => window.history.back()}
-            >
-              <span className="text-slate-700">{"<"}</span>
-            </button>
+            <BackButton variant="dashboard" />
             <div>
-              <h1 className="text-xl font-extrabold text-slate-900">Ingreso Vehicular</h1>
-              <p className="mt-1 text-sm text-slate-500">Registra el ingreso y controla la salida en tiempo real.</p>
+              <h1 className="text-xl font-extrabold text-slate-900">Vehículos</h1>
             </div>
           </div>
         </div>
@@ -458,7 +450,7 @@ function VehiclesPage() {
               <div>
                 <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">REGISTRO</p>
                 <h2 className="mt-1 text-lg font-bold text-slate-900">Nuevo ingreso</h2>
-                <p className="mt-1 text-sm text-slate-500">Completa los datos y registra el ingreso del vehiculo.</p>
+                <p className="mt-1 text-sm text-slate-500">Completa los datos y registra el ingreso del vehículo.</p>
               </div>
 
               {loadingInit ? <SmallTag>Cargando...</SmallTag> : <SmallTag>Formulario</SmallTag>}
@@ -466,7 +458,7 @@ function VehiclesPage() {
 
             <form onSubmit={onRegisterIngreso} className="mt-6 space-y-5">
               <div>
-                <FieldLabel>Evidencia fotografica</FieldLabel>
+                <FieldLabel>Evidencia fotográfica</FieldLabel>
                 <div className="mt-2 rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 p-5 text-center">
                   <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onEvidenceChange} />
 
@@ -475,7 +467,7 @@ function VehiclesPage() {
                       <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-sm">
                         <span className="text-blue-600">[ ]</span>
                       </div>
-                      <p className="text-sm font-extrabold text-slate-900">Tomar / Cargar fotografia</p>
+                      <p className="text-sm font-extrabold text-slate-900">Tomar / Cargar fotografía</p>
                       <p className="mt-1 text-xs font-semibold text-slate-500">
                         Para la demo puedes cargar una imagen desde tu computador
                       </p>
@@ -533,18 +525,18 @@ function VehiclesPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <FieldLabel>Placa del vehiculo</FieldLabel>
+                  <FieldLabel>Placa del vehículo</FieldLabel>
                   <input name="placa" value={form.placa} onChange={handleChange} placeholder="ABC-123" className={`${inputBase} mt-2`} />
                 </div>
 
                 <div>
-                  <FieldLabel>Tipo de vehiculo</FieldLabel>
+                  <FieldLabel>Tipo de vehículo</FieldLabel>
                   <SearchableSelect
                     className="mt-2"
                     value={form.vehicleTypeId}
                     options={vehicleTypeOptions}
                     placeholder="Seleccionar tipo..."
-                    searchPlaceholder="Buscar tipo de vehiculo..."
+                    searchPlaceholder="Buscar tipo de vehículo..."
                     onChange={(value) => setForm((prev) => ({ ...prev, vehicleTypeId: String(value) }))}
                   />
                 </div>
@@ -600,7 +592,7 @@ function VehiclesPage() {
                   name="observaciones"
                   value={form.observaciones}
                   onChange={handleChange}
-                  placeholder="Ej: Vehiculo con golpe en puerta derecha..."
+                  placeholder="Ej: Vehículo con golpe en puerta derecha..."
                   className={`${inputBase} mt-2 min-h-[110px] py-3`}
                 />
               </div>
@@ -636,7 +628,7 @@ function VehiclesPage() {
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">CONTROL EN TIEMPO REAL</p>
-                <h2 className="mt-1 text-lg font-bold text-slate-900">Vehiculos actuales ({activeEntries.length})</h2>
+                <h2 className="mt-1 text-lg font-bold text-slate-900">Vehículos actuales ({activeEntries.length})</h2>
                 <p className="mt-1 text-sm text-slate-500">Registra la salida para mantener el control del parqueadero.</p>
               </div>
 
@@ -652,12 +644,12 @@ function VehiclesPage() {
             <div className="mt-6 space-y-3">
               {loadingActive ? (
                 <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-600">
-                  Cargando vehiculos activos...
+                  Cargando vehículos activos...
                 </div>
               ) : !activeEntries.length ? (
                 <EmptyState
-                  title="Sin vehiculos activos"
-                  subtitle="Cuando registres ingresos, apareceran aqui para controlar la salida."
+                  title="Sin vehículos activos"
+                  subtitle="Cuando registres ingresos, aparecerán aquí para controlar la salida."
                 />
               ) : (
                 activeEntries.map((entry) => {

@@ -43,7 +43,7 @@ function EmergencyContactFormModal({ open, initialValues, loading, onCancel, onS
     }
 
     if (!cleanPhone) {
-      setError("El numero telefonico es obligatorio.");
+      setError("El número telefónico es obligatorio.");
       return;
     }
 

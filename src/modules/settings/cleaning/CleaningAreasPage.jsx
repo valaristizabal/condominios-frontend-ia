@@ -1,24 +1,25 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Pencil, PlusCircle } from "lucide-react";
+import { Pencil, PlusCircle } from "lucide-react";
+import BackButton from "../../../components/common/BackButton";
 import { useCleaningAreas } from "./useCleaningAreas";
 
 const inputBase =
   "w-full bg-white border border-gray-200 rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-200";
 
 const FREQUENCY_OPTIONS = [
-  { value: "daily", label: "Daily" },
-  { value: "weekly", label: "Weekly" },
-  { value: "monthly", label: "Monthly" },
-  { value: "custom", label: "Custom interval" },
+  { value: "daily", label: "Diaria" },
+  { value: "weekly", label: "Semanal" },
+  { value: "monthly", label: "Mensual" },
+  { value: "custom", label: "Intervalo personalizado" },
 ];
 
 const WEEK_DAYS = [
   { value: 1, label: "Lunes" },
   { value: 2, label: "Martes" },
-  { value: 3, label: "Miercoles" },
+  { value: 3, label: "Miércoles" },
   { value: 4, label: "Jueves" },
   { value: 5, label: "Viernes" },
-  { value: 6, label: "Sabado" },
+  { value: 6, label: "Sábado" },
   { value: 0, label: "Domingo" },
 ];
 
@@ -124,9 +125,9 @@ function CleaningAreasPage() {
     try {
       await createCleaningArea({ name: cleanName });
       setNewAreaName("");
-      setSuccess("Area creada correctamente.");
+      setSuccess("Área creada correctamente.");
     } catch (err) {
-      setLocalError(normalizeApiError(err, "No fue posible crear el area."));
+      setLocalError(normalizeApiError(err, "No fue posible crear el área."));
     }
   };
 
@@ -153,9 +154,9 @@ function CleaningAreasPage() {
         name: String(editingName).trim(),
       });
       cancelEdit();
-      setSuccess("Area actualizada correctamente.");
+      setSuccess("Área actualizada correctamente.");
     } catch (err) {
-      setLocalError(normalizeApiError(err, "No fue posible actualizar el area."));
+      setLocalError(normalizeApiError(err, "No fue posible actualizar el área."));
     }
   };
 
@@ -165,9 +166,9 @@ function CleaningAreasPage() {
 
     try {
       await toggleCleaningArea(area.id);
-      setSuccess(area.is_active ? "Area desactivada correctamente." : "Area activada correctamente.");
+      setSuccess(area.is_active ? "Área desactivada correctamente." : "Área activada correctamente.");
     } catch (err) {
-      setLocalError(normalizeApiError(err, "No fue posible cambiar estado del area."));
+      setLocalError(normalizeApiError(err, "No fue posible cambiar estado del área."));
     }
   };
 
@@ -220,7 +221,7 @@ function CleaningAreasPage() {
     }
 
     if (scheduleConfig.enabled && scheduleConfig.frequency_type === "weekly" && !scheduleConfig.days_of_week.length) {
-      setLocalError("Debes seleccionar al menos un dia para frecuencia semanal.");
+      setLocalError("Debes seleccionar al menos un día para frecuencia semanal.");
       return;
     }
 
@@ -277,32 +278,20 @@ function CleaningAreasPage() {
     <div className="min-h-screen bg-[#F7F9FC]">
       <div className="bg-white border-b border-gray-100">
         <div className="px-4 pt-4 pb-3 flex items-start gap-3 max-w-3xl mx-auto">
-          <button
-            type="button"
-            className="w-10 h-10 rounded-full hover:bg-gray-100 flex items-center justify-center mt-0.5"
-            onClick={() => window.history.back()}
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </button>
+          <BackButton variant="settings" />
 
           <div>
-            <h1 className="text-xl font-extrabold text-blue-700">Parametrizacion de Aseo</h1>
-            <div className="text-xs tracking-widest text-gray-500 font-bold">AJUSTES DE CONDOMINIO</div>
+            <h1 className="text-xl font-extrabold text-blue-700">Aseo</h1>
           </div>
         </div>
       </div>
 
       <div className="px-4 pb-10 max-w-3xl mx-auto">
-        <div className="pt-6">
-          <h2 className="text-3xl font-extrabold text-gray-900">Gestion de Areas</h2>
-          <p className="text-gray-600 mt-2">
-            Configure las zonas y protocolos de limpieza de su copropiedad.
-          </p>
-        </div>
+        <div className="pt-6" />
 
         {!hasTenantContext ? (
           <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700">
-            No hay propiedad activa para gestionar areas de aseo.
+            No hay propiedad activa para gestionar áreas de aseo.
           </div>
         ) : null}
 
@@ -323,11 +312,11 @@ function CleaningAreasPage() {
             <div className="w-9 h-9 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-700 font-black">
               <PlusCircle className="h-5 w-5" />
             </div>
-            <div className="text-lg font-extrabold text-gray-900">Nueva Area</div>
+            <div className="text-lg font-extrabold text-gray-900">Nueva área</div>
           </div>
 
           <div className="mt-4 space-y-2">
-            <Label>Nombre del area</Label>
+            <Label>Nombre del área</Label>
             <input
               className={inputBase}
               placeholder="Ej: Lobby, Gimnasio, Piscina..."
@@ -343,14 +332,14 @@ function CleaningAreasPage() {
             disabled={!hasTenantContext || saving}
             className="mt-4 w-full bg-blue-600 text-white rounded-2xl py-4 font-extrabold shadow-lg hover:bg-blue-700 disabled:opacity-70"
           >
-            Guardar Area
+            Guardar área
           </button>
         </div>
 
         <div className="mt-8 space-y-4">
           {loading ? (
             <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-5 text-sm font-semibold text-gray-500">
-              Cargando areas...
+              Cargando áreas...
             </div>
           ) : (
             cleaningAreas.map((area) => {
@@ -457,18 +446,18 @@ function CleaningAreasPage() {
 
                                 {linkedSchedule ? (
                                   <div className="mt-2 text-xs text-gray-500">
-                                    Programada:{" "}
+                              Programada:{" "}
                                     {frequencyLabelByValue[linkedSchedule.frequency_type] || linkedSchedule.frequency_type}
                                     {Number(linkedSchedule.repeat_interval || 1) > 1
                                       ? ` (cada ${linkedSchedule.repeat_interval})`
                                       : ""}
-                                    {" Â· "}
+                                    {" - "}
                                     {linkedSchedule.start_date}
                                     {linkedSchedule.end_date ? ` al ${linkedSchedule.end_date}` : ""}
                                   </div>
                                 ) : (
                                   <div className="mt-2 text-xs text-amber-600">
-                                    Sin programacion (se ejecuta solo manual).
+                                    Sin programación (se ejecuta solo manual).
                                   </div>
                                 )}
                               </div>

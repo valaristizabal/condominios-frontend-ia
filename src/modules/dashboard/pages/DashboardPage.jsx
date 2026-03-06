@@ -10,7 +10,7 @@ function DashboardPage() {
   if (loading) {
     return (
       <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center text-slate-500">
-        Cargando dashboard...
+        Cargando menú principal...
       </div>
     );
   }
@@ -19,12 +19,7 @@ function DashboardPage() {
     <div className="mx-auto w-full max-w-6xl">
       <header className="mb-8 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold text-slate-900">Panel Principal</h1>
-          <p className="mt-1 text-sm text-slate-500">Resumen operativo de la propiedad</p>
-          <p className="mt-1 text-xs font-semibold text-slate-400">
-            Contexto activo:{" "}
-            {summary.activeCondominiumId ? `Propiedad #${summary.activeCondominiumId}` : "Sin propiedad"}
-          </p>
+          <h1 className="text-2xl font-extrabold text-slate-900">Menú principal</h1>
         </div>
         {summary?.source !== "api" ? (
           <div className="flex flex-col items-end gap-1">
@@ -45,12 +40,12 @@ function DashboardPage() {
       ) : null}
 
       <section className="mb-8 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <SectionTitle title="Gestion de personal" subtitle="Registro de ingresos y salidas del equipo operativo." />
+        <SectionTitle title="Gestión de personal" subtitle="Registro de ingresos y salidas del equipo operativo." />
         <QuickActions />
       </section>
 
       <section className="mb-8">
-        <SectionTitle title="Indicadores rapidos" subtitle="Metricas clave del dia." />
+        <SectionTitle title="Indicadores rápidos" subtitle="Métricas clave del día." />
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
           <KpiCard
             label="Valor total inventario"
@@ -67,7 +62,7 @@ function DashboardPage() {
       </section>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <SectionTitle title="Actividad reciente" subtitle="Ultimos eventos del sistema." />
+        <SectionTitle title="Actividad reciente" subtitle="Últimos eventos del sistema." />
         <RecentActivityTable rows={summary.recentActivity} placeholder={summary.source !== "api"} />
       </section>
     </div>

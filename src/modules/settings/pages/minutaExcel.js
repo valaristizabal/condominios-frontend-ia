@@ -11,7 +11,7 @@ const MODULE_ORDER = [
 ];
 
 const MODULE_LABELS = {
-  visits: "Visitas del dia",
+  visits: "Visitas del día",
   employee_entries: "Ingresos de personal",
   vehicle_entries: "Ingresos vehiculares",
   correspondences: "Correspondencia recibida",
@@ -50,7 +50,7 @@ const MODULE_SHEETS = {
     name: "VEHICULOS",
     columns: [
       { header: "Fecha", value: (row) => formatDateTime(row?.check_in_at || row?.created_at) },
-      { header: "Vehiculo ID", value: (row) => row?.vehicle_id || "-" },
+      { header: "Vehículo ID", value: (row) => row?.vehicle_id || "-" },
       { header: "Hora ingreso", value: (row) => formatDateTime(row?.check_in_at) },
       { header: "Hora salida", value: (row) => formatDateTime(row?.check_out_at) },
       { header: "Estado", value: (row) => row?.status || "-" },
@@ -73,7 +73,7 @@ const MODULE_SHEETS = {
     name: "ASEO",
     columns: [
       { header: "Fecha", value: (row) => formatDate(row?.cleaning_date) },
-      { header: "Area", value: (row) => row?.cleaning_area_id || "-" },
+      { header: "Área", value: (row) => row?.cleaning_area_id || "-" },
       { header: "Operario", value: (row) => row?.operative_id || "-" },
       { header: "Estado", value: (row) => row?.status || "-" },
       { header: "Observaciones", value: (row) => row?.observations || "-" },
@@ -97,8 +97,8 @@ const MODULE_SHEETS = {
       { header: "Fecha", value: (row) => formatDateTime(row?.event_date || row?.created_at) },
       { header: "Tipo de emergencia", value: (row) => row?.emergency_type_id || "-" },
       { header: "Nivel", value: (row) => row?.level || "-" },
-      { header: "Ubicacion", value: (row) => row?.event_location || "-" },
-      { header: "Descripcion", value: (row) => row?.description || "-" },
+      { header: "Ubicación", value: (row) => row?.event_location || "-" },
+      { header: "Descripción", value: (row) => row?.description || "-" },
       { header: "Estado", value: (row) => row?.status || "-" },
     ],
   },
@@ -194,7 +194,7 @@ function addDailyCoverSheet(workbook, { condominiumLabel, date, generatedAt, cou
 
   sheet.columns = [{ width: 30 }, { width: 38 }, { width: 28 }, { width: 22 }];
   sheet.mergeCells("A1:D1");
-  sheet.getCell("A1").value = "MINUTA OPERATIVA DEL CONDOMINIO";
+  sheet.getCell("A1").value = "MINUTA OPERATIVA DE LA PROPIEDAD";
   sheet.getCell("A1").font = { bold: true, size: 18, color: { argb: "FF0F172A" } };
   sheet.getCell("A1").alignment = { horizontal: "center", vertical: "middle" };
   sheet.getRow(1).height = 34;
@@ -224,7 +224,7 @@ function addMonthlyCoverSheet(workbook, { condominiumLabel, month, generatedAt, 
 
   sheet.columns = [{ width: 32 }, { width: 34 }, { width: 26 }, { width: 22 }];
   sheet.mergeCells("A1:D1");
-  sheet.getCell("A1").value = "MINUTA MENSUAL DEL CONDOMINIO";
+  sheet.getCell("A1").value = "MINUTA MENSUAL DE LA PROPIEDAD";
   sheet.getCell("A1").font = { bold: true, size: 18, color: { argb: "FF0F172A" } };
   sheet.getCell("A1").alignment = { horizontal: "center", vertical: "middle" };
   sheet.getRow(1).height = 34;
@@ -259,14 +259,14 @@ function addSummarySheet(workbook, sheetName, title, counts) {
   sheet.getRow(1).height = 26;
   sheet.addRow([]);
 
-  const header = sheet.addRow(["Modulo", "Cantidad", "Grafico de barras"]);
+  const header = sheet.addRow(["Módulo", "Cantidad", "Gráfico de barras"]);
   styleHeaderRow(header);
 
   const max = Math.max(...MODULE_ORDER.map((key) => Number(counts[key] || 0)), 1);
 
   MODULE_ORDER.forEach((moduleKey) => {
     const count = Number(counts[moduleKey] || 0);
-    const bars = "â–ˆ".repeat(Math.max(0, Math.round((count / max) * 30)));
+    const bars = "#".repeat(Math.max(0, Math.round((count / max) * 30)));
     const row = sheet.addRow([MODULE_LABELS[moduleKey], count, bars]);
     styleDataRow(row);
   });

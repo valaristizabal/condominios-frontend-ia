@@ -30,7 +30,7 @@ function LoginForm() {
       navigate(targetRoute, { replace: true });
     } catch (err) {
       const message =
-        err?.response?.data?.message || err?.message || "No fue posible iniciar sesion.";
+        err?.response?.data?.message || err?.message || "No fue posible iniciar sesión.";
       setError(message);
     } finally {
       setLoading(false);
@@ -54,7 +54,7 @@ function LoginForm() {
 
       <div>
         <label htmlFor="password" className="mb-2 block text-base font-semibold text-slate-600 sm:text-[1.05rem]">
-          Contrasena
+          Contraseña
         </label>
         <div className="relative">
           <input
@@ -70,7 +70,7 @@ function LoginForm() {
           <button
             type="button"
             onClick={() => setShowPassword((v) => !v)}
-            aria-label={showPassword ? "Ocultar contrasena" : "Mostrar contrasena"}
+            aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
             className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-500 hover:text-slate-700"
           >
             {showPassword ? <EyeOffIcon /> : <EyeIcon />}
@@ -85,7 +85,7 @@ function LoginForm() {
           onChange={(e) => setRememberDevice(e.target.checked)}
           className="h-4 w-4 rounded border-slate-300 text-[#2e64df] focus:ring-[#2e64df]/30"
         />
-        <span className="text-[0.95rem] font-medium text-slate-400 sm:text-base">Recordar sesion</span>
+        <span className="text-[0.95rem] font-medium text-slate-400 sm:text-base">Recordar sesión</span>
       </label>
 
       {error ? (
@@ -97,7 +97,7 @@ function LoginForm() {
         disabled={loading}
         className="mt-1 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#2e64df] text-lg font-semibold text-white shadow-[0_10px_18px_rgba(46,100,223,0.32)] transition hover:bg-[#2453bf] disabled:cursor-not-allowed disabled:opacity-70"
       >
-        <span>{loading ? "Ingresando..." : "Iniciar sesion"}</span>
+        <span>{loading ? "Ingresando..." : "Iniciar sesión"}</span>
         <ArrowRightIcon />
       </button>
     </form>

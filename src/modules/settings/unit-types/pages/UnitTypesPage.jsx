@@ -1,11 +1,10 @@
 import { useMemo, useState } from "react";
-import { useActiveCondominium } from "../../../../context/useActiveCondominium";
+import BackButton from "../../../../components/common/BackButton";
 import UnitTypeFormModal from "../components/UnitTypeFormModal";
 import UnitTypeTable from "../components/UnitTypeTable";
 import { useUnitTypes } from "../hooks/useUnitTypes";
 
 function UnitTypesPage() {
-  const { activeCondominiumId } = useActiveCondominium();
   const { unitTypes, loading, saving, error, hasTenantContext, createUnitType, updateUnitType, toggleUnitType } =
     useUnitTypes();
 
@@ -54,13 +53,12 @@ function UnitTypesPage() {
 
   return (
     <div className="mx-auto w-full max-w-6xl">
+      <div className="mb-3">
+        <BackButton variant="settings" />
+      </div>
       <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-extrabold text-slate-900">Tipos de Unidad</h1>
-          <p className="mt-1 text-sm text-slate-500">
-            Gestion de tipos de unidad de la propiedad.
-            {activeCondominiumId ? ` Contexto: #${activeCondominiumId}` : ""}
-          </p>
         </div>
         <button
           type="button"

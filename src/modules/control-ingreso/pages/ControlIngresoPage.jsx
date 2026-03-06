@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { ClipboardList, MapPin, User } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useActiveCondominium } from "../../../context/useActiveCondominium";
 import apiClient from "../../../services/apiClient";
+import BackButton from "../../../components/common/BackButton";
 import HybridAttendanceButton from "../components/HybridAttendanceButton";
 import {
   cancelEmployeeEntry,
@@ -18,7 +18,7 @@ const Card = ({ children, className = "" }) => (
 
 const SectionTitle = ({ title, subtitle }) => (
   <div>
-    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{subtitle}</p>
+    {subtitle ? <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{subtitle}</p> : null}
     <h1 className="mt-1 text-2xl font-bold text-slate-900">{title}</h1>
   </div>
 );
@@ -100,7 +100,6 @@ function extractErrorMessage(error, fallback) {
 
 export default function ControlIngresoPage() {
   const { activeCondominiumId } = useActiveCondominium();
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
 
   const [selectedId, setSelectedId] = useState("");
@@ -200,10 +199,6 @@ export default function ControlIngresoPage() {
     setError(extractErrorMessage(queryError, "No se pudo cargar el control de ingreso."));
   }, [operativesQuery.error, entriesQuery.error]);
 
-  const ctaHint = isPresent
-    ? "El empleado esta en turno. Puedes registrar salida o cancelar ingreso."
-    : "Puedes registrar el ingreso del empleado seleccionado.";
-
   const handleToggleAttendance = async () => {
     if (!selectedOperative?.id || saving || !activeCondominiumId) return;
 
@@ -233,16 +228,8 @@ export default function ControlIngresoPage() {
     <div className="w-full">
       <div className="mx-auto w-full max-w-6xl px-6 py-8">
         <div className="mb-6">
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            className="mb-3 inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-          >
-            <span aria-hidden="true">←</span>
-            Atrás
-          </button>
-          <SectionTitle subtitle="Gestion de personal" title="Control de Ingreso" />
-          <p className="mt-2 text-sm text-slate-500">{ctaHint}</p>
+          <BackButton variant="dashboard" className="mb-3" />
+          <SectionTitle title="Ingreso de personal" />
         </div>
 
         {!activeCondominiumId ? (
@@ -423,7 +410,7 @@ export default function ControlIngresoPage() {
                       ))
                     ) : (
                       <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
-                        Aun no hay historial de salidas.
+                        Aún no hay historial de salidas.
                       </div>
                     )}
                   </div>

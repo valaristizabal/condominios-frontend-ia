@@ -18,13 +18,12 @@ function Card({ children, className = "" }) {
   );
 }
 
-function PageTitle({ eyebrow, title, subtitle }) {
+function PageTitle({ eyebrow, title }) {
   return (
     <div className="flex items-start justify-between gap-4">
       <div>
         {eyebrow ? <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{eyebrow}</p> : null}
         <h1 className="mt-1 text-2xl font-extrabold text-slate-900">{title}</h1>
-        {subtitle ? <p className="mt-1 max-w-[52ch] text-sm text-slate-500">{subtitle}</p> : null}
       </div>
 
       <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-sm">
@@ -144,20 +143,16 @@ export default function SettingsPage() {
   return (
     <div className="w-full">
       <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6">
-        <PageTitle
-          eyebrow="Configuracion"
-          title="Ajustes"
-          subtitle="Administra la parametrizacion de la propiedad: unidades, apartamentos, residentes, operativos y tipos de vehiculos."
-        />
+        <PageTitle eyebrow="Configuración" title="Ajustes" />
 
         <div className="mt-6 grid grid-cols-1 gap-5 lg:grid-cols-12">
           <div className="space-y-5 lg:col-span-8">
             <Card>
-              <p className="text-xs font-extrabold uppercase tracking-widest text-slate-400">1. Gestion del sistema</p>
+              <p className="text-xs font-extrabold uppercase tracking-widest text-slate-400">1. Gestión del sistema</p>
 
               <div className="mt-4 space-y-3">
                 <p className="px-1 text-[11px] font-extrabold uppercase tracking-widest text-slate-400">
-                  Configuracion inicial
+                  Configuración inicial
                 </p>
                 <ItemRow
                   title="Tipos de unidad"
@@ -171,17 +166,17 @@ export default function SettingsPage() {
                 />
                 <ItemRow
                   title="Residentes"
-                  description="Gestiona residentes, estados y relacion con apartamentos"
+                  description="Gestiona residentes, estados y relación con apartamentos"
                   onClick={() => navigate(`${basePath}/settings/residents`)}
                 />
                 <ItemRow
                   title="Operativos"
-                  description="Gestiona personal operativo y su configuracion laboral"
+                  description="Gestiona personal operativo y su configuración laboral"
                   onClick={() => navigate(`${basePath}/settings/operatives`)}
                 />
                 <ItemRow
-                  title="Tipos de vehiculos"
-                  description="Configura los tipos de vehiculo permitidos en la propiedad"
+                  title="Tipos de vehículos"
+                  description="Configura los tipos de vehículo permitidos en la propiedad"
                   onClick={() => navigate(`${basePath}/settings/vehicle-types`)}
                 />
 
@@ -195,12 +190,12 @@ export default function SettingsPage() {
                 />
                 <ItemRow
                   title="Emergencias"
-                  description="Configura contactos y numeros de emergencia por propiedad"
+                  description="Configura contactos y números de emergencia por propiedad"
                   onClick={() => navigate(`${basePath}/settings/emergency-contacts`)}
                 />
 
                 <p className="px-1 pt-2 text-[11px] font-extrabold uppercase tracking-widest text-slate-400">
-                  Operacion interna
+                  Operación interna
                 </p>
                 <ItemRow
                   title="Aseo"
@@ -210,7 +205,7 @@ export default function SettingsPage() {
                 {canSeeInventorySettings ? (
                   <ItemRow
                     title="Inventario"
-                    description="Gestiona inventarios y categorÃ­as de productos"
+                    description="Gestiona inventarios y categorías de productos"
                     onClick={() => navigate(`${basePath}/settings/inventory`)}
                   />
                 ) : null}
@@ -223,13 +218,13 @@ export default function SettingsPage() {
               <p className="text-xs font-extrabold uppercase tracking-widest text-slate-400">Rol restringido</p>
               <p className="mt-1 text-sm font-extrabold text-slate-900">Administrador de Propiedades</p>
               <p className="mt-1 text-xs font-semibold text-slate-500">
-                Acceso a parametrizacion y mantenimiento del sistema en propiedad activa.
+                Acceso a parametrización y mantenimiento del sistema en propiedad activa.
               </p>
 
               <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                <p className="text-xs font-extrabold text-slate-700">Recomendacion</p>
+                <p className="text-xs font-extrabold text-slate-700">Recomendación</p>
                 <p className="mt-1 text-xs font-semibold text-slate-500">
-                  Mantener la gestion por contexto tenant activo y evitar datos cruzados entre propiedades.
+                  Mantener la gestión por contexto tenant activo y evitar datos cruzados entre propiedades.
                 </p>
               </div>
             </Card>
@@ -237,7 +232,7 @@ export default function SettingsPage() {
             <Card>
               <p className="text-xs font-extrabold uppercase tracking-widest text-slate-400">Descargas</p>
               <p className="mt-1 text-xs font-semibold text-slate-500">
-                Genera minutas automaticas de la propiedad activa.
+                Genera minutas automáticas de la propiedad activa.
               </p>
 
               <div className="mt-4 space-y-2">

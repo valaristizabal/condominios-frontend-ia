@@ -170,7 +170,7 @@ function CondominiumForm({ initialValues, loading, onCancel, onSubmit }) {
       />
 
       <TextArea
-        label="Informacion de Contacto"
+        label="Información de Contacto"
         name="contact_info"
         placeholder="Telefonos de administracion, correos, etc."
         value={form.contact_info}

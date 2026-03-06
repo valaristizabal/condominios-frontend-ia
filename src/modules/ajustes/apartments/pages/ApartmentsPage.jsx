@@ -1,11 +1,10 @@
 import { useMemo, useState } from "react";
-import { useActiveCondominium } from "../../../../context/useActiveCondominium";
+import BackButton from "../../../../components/common/BackButton";
 import ApartmentFormModal from "../components/ApartmentFormModal";
 import ApartmentTable from "../components/ApartmentTable";
 import { useApartments } from "../hooks/useApartments";
 
 function ApartmentsPage() {
-  const { activeCondominiumId } = useActiveCondominium();
   const { apartments, loading, saving, error, hasTenantContext, createApartment, updateApartment, toggleApartment } =
     useApartments();
 
@@ -63,13 +62,12 @@ function ApartmentsPage() {
 
   return (
     <div className="mx-auto w-full max-w-6xl">
+      <div className="mb-3">
+        <BackButton variant="settings" />
+      </div>
       <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-extrabold text-slate-900">Apartamentos</h1>
-          <p className="mt-1 text-sm text-slate-500">
-            Gestion de apartamentos y su configuracion por torre y piso.
-            {activeCondominiumId ? ` Contexto: #${activeCondominiumId}` : ""}
-          </p>
         </div>
         <button
           type="button"
@@ -96,7 +94,7 @@ function ApartmentsPage() {
           label="Buscar"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Numero, torre o tipo"
+          placeholder="Número, torre o tipo"
         />
 
         <Select

@@ -1,11 +1,10 @@
 import { useMemo, useState } from "react";
-import { useActiveCondominium } from "../../../../context/useActiveCondominium";
+import BackButton from "../../../../components/common/BackButton";
 import EmergencyTypeFormModal from "../components/EmergencyTypeFormModal";
 import EmergencyTypeTable from "../components/EmergencyTypeTable";
 import { useEmergencyTypes } from "../hooks/useEmergencyTypes";
 
 function EmergencyTypesPage() {
-  const { activeCondominiumId } = useActiveCondominium();
   const {
     emergencyTypes,
     loading,
@@ -62,13 +61,12 @@ function EmergencyTypesPage() {
 
   return (
     <div className="mx-auto w-full max-w-6xl">
+      <div className="mb-3">
+        <BackButton variant="settings" />
+      </div>
       <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-extrabold text-slate-900">Tipos de Emergencia</h1>
-          <p className="mt-1 text-sm text-slate-500">
-            Gestion de tipos de emergencia de la propiedad.
-            {activeCondominiumId ? ` Contexto: #${activeCondominiumId}` : ""}
-          </p>
         </div>
         <button
           type="button"

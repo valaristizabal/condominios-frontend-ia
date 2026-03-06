@@ -1,14 +1,19 @@
 import { useMemo, useState } from "react";
 import { Ambulance, Building2, Flame, Phone, Shield, Siren } from "lucide-react";
+import BackButton from "../../../components/common/BackButton";
 import { useEmergencies } from "../hooks/useEmergencies";
 
 const inputBase =
-  "w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-200";
+  "h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-slate-900 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-200";
+
+const Card = ({ children, className = "" }) => (
+  <div className={["rounded-3xl border border-slate-200 bg-white p-6 shadow-sm", className].join(" ")}>{children}</div>
+);
 
 function SectionTitle({ icon, title }) {
   return (
     <div className="flex items-center gap-3">
-      <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-red-50 text-red-600">{icon}</div>
+      <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-red-50 text-red-600">{icon}</div>
       <h2 className="text-lg font-bold text-slate-900">{title}</h2>
     </div>
   );
@@ -16,18 +21,18 @@ function SectionTitle({ icon, title }) {
 
 function EmergencyContactCard({ icon, title, phoneNumber }) {
   return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md">
-      <div className="flex items-start gap-4">
-        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">{icon}</div>
-        <div className="flex-1">
-          <div className="text-xs font-bold uppercase tracking-widest text-slate-500">{title}</div>
-          <div className="text-base font-extrabold text-slate-900">{phoneNumber}</div>
+    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="flex items-start gap-3">
+        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">{icon}</div>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-xs font-bold uppercase tracking-widest text-slate-500">{title}</p>
+          <p className="truncate text-base font-extrabold text-slate-900">{phoneNumber}</p>
         </div>
       </div>
 
       <a
         href={`tel:${phoneNumber}`}
-        className="mt-4 inline-flex rounded-2xl border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-extrabold text-blue-700 transition hover:bg-blue-100"
+        className="mt-4 inline-flex rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-extrabold text-blue-700 transition hover:bg-blue-100"
       >
         Llamar
       </a>
@@ -47,7 +52,7 @@ function formatNow() {
     hour: "2-digit",
     minute: "2-digit",
   });
-  return `${date}, ${time} (Automatico)`;
+  return `${date}, ${time} (Automático)`;
 }
 
 function localDatetimeNow() {
@@ -64,8 +69,7 @@ export default function EmergenciesPage() {
     activeCondominiumId,
     createEmergency,
     clearFieldError,
-  } =
-    useEmergencies();
+  } = useEmergencies();
 
   const [form, setForm] = useState({
     emergency_type_id: "",
@@ -115,33 +119,22 @@ export default function EmergenciesPage() {
         event_date: localDatetimeNow(),
       }));
     } catch {
-      // Error is handled by hook state.
+      // Error state is handled by hook state.
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <div className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-3xl items-center gap-3 px-4 pb-3 pt-4">
-          <button
-            type="button"
-            className="flex h-10 w-10 items-center justify-center rounded-2xl hover:bg-slate-100"
-            onClick={() => window.history.back()}
-            aria-label="Volver"
-          >
-            <ArrowLeftIcon />
-          </button>
-
-          <h1 className="text-xl font-extrabold text-slate-900">Gestion de Emergencias y Salud</h1>
-        </div>
-      </div>
-
-      <div className="mx-auto max-w-3xl space-y-6 px-4 pb-[140px]">
-        <div className="mt-6 flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-red-700">
-          <AlertIcon />
-          <div className="text-sm font-medium">
-            Usa este formulario solo para reportar incidentes criticos que requieren atencion inmediata.
+    <div className="w-full">
+      <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-6 sm:px-6">
+        <header>
+          <div className="flex items-center gap-3">
+            <BackButton variant="dashboard" />
+            <h1 className="text-2xl font-extrabold text-slate-900">Emergencias</h1>
           </div>
+        </header>
+
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">
+          Usa este formulario solo para reportar incidentes críticos que requieren atención inmediata.
         </div>
 
         {!activeCondominiumId ? (
@@ -158,121 +151,112 @@ export default function EmergenciesPage() {
           <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700">{localError}</div>
         ) : null}
 
-        <form
-          id="emergencyForm"
-          onSubmit={handleSubmit}
-          className="space-y-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"
-        >
-          <SectionTitle icon={<Siren className="h-5 w-5" />} title="Reportar Incidente" />
+        <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
+          <Card>
+            <SectionTitle icon={<Siren className="h-5 w-5" />} title="Reportar incidente" />
 
-          <div className="space-y-2">
-            <label className="text-sm font-semibold text-slate-700">Tipo de Emergencia</label>
-            <select
-              className={inputBase}
-              value={form.emergency_type_id}
-              onChange={(event) => setField("emergency_type_id", event.target.value)}
-              disabled={!hasTypes}
-            >
-              <option value="">{hasTypes ? "Seleccione tipo..." : "Sin tipos activos"}</option>
-              {emergencyTypes.map((item) => (
-                <option key={item.id} value={String(item.id)}>
-                  {item.name}
-                </option>
-              ))}
-            </select>
-            <FieldError message={fieldErrors.emergency_type_id} />
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-semibold text-slate-700">Lugar del Evento</label>
-            <select
-              className={inputBase}
-              value={form.event_location}
-              onChange={(event) => setField("event_location", event.target.value)}
-            >
-              <option value="">Seleccione ubicacion...</option>
-              <option>Lobby</option>
-              <option>Parqueadero</option>
-              <option>Piscina</option>
-              <option>Gimnasio</option>
-              <option>Apartamento</option>
-              <option>Zona Comun</option>
-            </select>
-            <FieldError message={fieldErrors.event_location} />
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-semibold text-slate-700">Descripcion</label>
-            <textarea
-              className={`${inputBase} min-h-[120px]`}
-              placeholder="Detalles del incidente..."
-              value={form.description}
-              onChange={(event) => setField("description", event.target.value)}
-            />
-            <FieldError message={fieldErrors.description} />
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-semibold text-slate-700">Tipo de evento</label>
-            <input
-              className={inputBase}
-              value={form.event_type}
-              onChange={(event) => setField("event_type", event.target.value)}
-              placeholder="Ej: Convulsion"
-            />
-            <FieldError message={fieldErrors.event_type} />
-          </div>
-
-          <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-            <ClockIcon />
-            {formatDateLabel(form.event_date)}
-          </div>
-        </form>
-
-        <div className="space-y-4 pt-6">
-          <div className="text-sm font-extrabold uppercase tracking-widest text-slate-600">Contactos de Emergencia</div>
-
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            {emergencyContacts.length ? (
-              emergencyContacts.map((contact) => (
-                <EmergencyContactCard
-                  key={contact.id}
-                  icon={resolveEmergencyIcon(contact.icon)}
-                  title={contact.name || "Servicio"}
-                  phoneNumber={contact.phone_number || "-"}
-                />
-              ))
-            ) : (
-              <div className="col-span-full rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm font-semibold text-slate-600">
-                No hay contactos de emergencia configurados para esta propiedad.
+            <form id="emergencyForm" onSubmit={handleSubmit} className="mt-6 space-y-5">
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-slate-700">Tipo de emergencia</label>
+                <select
+                  className={inputBase}
+                  value={form.emergency_type_id}
+                  onChange={(event) => setField("emergency_type_id", event.target.value)}
+                  disabled={!hasTypes}
+                >
+                  <option value="">{hasTypes ? "Seleccione tipo..." : "Sin tipos activos"}</option>
+                  {emergencyTypes.map((item) => (
+                    <option key={item.id} value={String(item.id)}>
+                      {item.name}
+                    </option>
+                  ))}
+                </select>
+                <FieldError message={fieldErrors.emergency_type_id} />
               </div>
-            )}
-          </div>
-        </div>
-      </div>
 
-      <div className="pointer-events-none fixed bottom-6 left-0 right-0 z-50">
-        <div className="pointer-events-auto mx-auto max-w-3xl px-4">
-          <button
-            type="submit"
-            form="emergencyForm"
-            disabled={saving || !activeCondominiumId}
-            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 py-4 font-extrabold text-white shadow-xl transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
-          >
-            <AlertIcon />
-            {saving ? "Reportando..." : "Reportar Emergencia"}
-          </button>
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-slate-700">Lugar del evento</label>
+                <select
+                  className={inputBase}
+                  value={form.event_location}
+                  onChange={(event) => setField("event_location", event.target.value)}
+                >
+                  <option value="">Seleccione ubicación...</option>
+                  <option>Lobby</option>
+                  <option>Parqueadero</option>
+                  <option>Piscina</option>
+                  <option>Gimnasio</option>
+                  <option>Apartamento</option>
+                  <option>Zona común</option>
+                </select>
+                <FieldError message={fieldErrors.event_location} />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-slate-700">Descripción</label>
+                <textarea
+                  className={`${inputBase} min-h-[120px] py-3`}
+                  placeholder="Detalles del incidente..."
+                  value={form.description}
+                  onChange={(event) => setField("description", event.target.value)}
+                />
+                <FieldError message={fieldErrors.description} />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-slate-700">Tipo de evento</label>
+                <input
+                  className={inputBase}
+                  value={form.event_type}
+                  onChange={(event) => setField("event_type", event.target.value)}
+                  placeholder="Ej: Convulsión"
+                />
+                <FieldError message={fieldErrors.event_type} />
+              </div>
+
+              <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                <ClockIcon />
+                {formatDateLabel(form.event_date)}
+              </div>
+
+              <button
+                type="submit"
+                form="emergencyForm"
+                disabled={saving || !activeCondominiumId}
+                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 py-4 text-sm font-extrabold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                <AlertIcon />
+                {saving ? "Reportando..." : "Reportar emergencia"}
+              </button>
+            </form>
+          </Card>
+
+          <Card>
+            <div className="mb-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">DIRECTORIO</p>
+              <h2 className="mt-1 text-lg font-bold text-slate-900">Contactos de emergencia</h2>
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {emergencyContacts.length ? (
+                emergencyContacts.map((contact) => (
+                  <EmergencyContactCard
+                    key={contact.id}
+                    icon={resolveEmergencyIcon(contact.icon)}
+                    title={contact.name || "Servicio"}
+                    phoneNumber={contact.phone_number || "-"}
+                  />
+                ))
+              ) : (
+                <div className="col-span-full rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm font-semibold text-slate-600">
+                  No hay contactos de emergencia configurados para esta propiedad.
+                </div>
+              )}
+            </div>
+          </Card>
         </div>
       </div>
     </div>
-  );
-}
-
-function ArrowLeftIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-[18px] w-[18px] fill-current text-slate-600" aria-hidden="true">
-      <path d="m10.7 5.3-1.4 1.4L13.6 11H3v2h10.6l-4.3 4.3 1.4 1.4L17.4 12l-6.7-6.7Z" />
-    </svg>
   );
 }
 
@@ -302,7 +286,7 @@ function formatDateLabel(datetimeValue) {
     hour: "2-digit",
     minute: "2-digit",
   });
-  return `${datePart}, ${timePart} (Automatico)`;
+  return `${datePart}, ${timePart} (Automático)`;
 }
 
 function resolveEmergencyIcon(iconName) {

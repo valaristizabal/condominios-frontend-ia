@@ -1,9 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import BackButton from "../../components/common/BackButton";
 import { useCleaningRecords } from "./useCleaningRecords";
 
 const inputBase =
-  "w-full bg-white border border-gray-200 rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-400 transition";
+  "h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-slate-900 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-200";
+
+const Card = ({ children, className = "" }) => (
+  <div className={["rounded-3xl border border-slate-200 bg-white p-6 shadow-sm", className].join(" ")}>{children}</div>
+);
 
 function CleaningRecordsPage() {
   const {
@@ -59,7 +64,7 @@ function CleaningRecordsPage() {
     }
 
     setObservationText(selectedRecord?.observations || "");
-  }, [selectedRecordId]);
+  }, [selectedRecordId, selectedRecord]);
 
   const checklistQuery = useQuery({
     queryKey: ["cleaning", "checklist", tenantCacheKey, selectedRecordId],
@@ -114,7 +119,7 @@ function CleaningRecordsPage() {
   useEffect(() => {
     const queryError = initialDataQuery.error || checklistQuery.error;
     if (!queryError) return;
-    setError(normalizeApiError(queryError, "No fue posible cargar el modulo de aseo."));
+    setError(normalizeApiError(queryError, "No fue posible cargar el módulo de aseo."));
   }, [initialDataQuery.error, checklistQuery.error]);
 
   const createRecord = async () => {
@@ -154,201 +159,214 @@ function CleaningRecordsPage() {
   const saving = createRecordMutation.isPending || toggleTaskMutation.isPending || completeRecordMutation.isPending;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#F8FAFC] to-[#EEF2F7] p-8 max-w-6xl mx-auto space-y-12">
-      <div>
-        <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">Modulo de Aseo</h1>
-        <p className="text-gray-500 mt-2 text-lg">Control y seguimiento operativo de limpieza</p>
-      </div>
-
-      {!hasTenantContext ? (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700">
-          No hay propiedad activa para operar este modulo.
-        </div>
-      ) : null}
-
-      {error ? (
-        <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
-          {error}
-        </div>
-      ) : null}
-
-      <div className="bg-white p-8 rounded-3xl shadow-md border border-gray-100 space-y-6">
-        <h2 className="text-xl font-bold text-gray-800">Nueva Limpieza</h2>
-
-        <div className="grid md:grid-cols-2 gap-5">
-          <select
-            value={selectedAreaId}
-            onChange={(event) => setSelectedAreaId(event.target.value)}
-            className={inputBase}
-            disabled={!hasTenantContext || saving || loading}
-          >
-            <option value="">Seleccione area</option>
-            {areas.map((area) => (
-              <option key={area.id} value={area.id}>
-                {area.name}
-              </option>
-            ))}
-          </select>
-
-          <select
-            value={selectedOperativeId}
-            onChange={(event) => setSelectedOperativeId(event.target.value)}
-            className={inputBase}
-            disabled={!hasTenantContext || saving || loading}
-          >
-            <option value="">Seleccione operario</option>
-            {operatives.map((operative) => (
-              <option key={operative.id} value={operative.id}>
-                {operative.user?.full_name || "Operario"}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <button
-          onClick={createRecord}
-          disabled={!hasTenantContext || saving || loading}
-          className="bg-blue-600 hover:bg-blue-700 disabled:opacity-70 text-white px-8 py-3 rounded-2xl font-semibold transition shadow-sm"
-        >
-          {saving ? "Procesando..." : "Crear Limpieza"}
-        </button>
-      </div>
-
-      <div>
-        <h2 className="text-xl font-bold text-gray-800 mb-4">Historial de Limpiezas</h2>
-
-        {loading ? (
-          <div className="bg-white p-6 rounded-3xl border border-gray-100 text-sm text-gray-500">
-            Cargando registros...
+    <div className="w-full">
+      <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-6 sm:px-6">
+        <header>
+          <div className="flex items-center gap-3">
+            <BackButton variant="dashboard" />
+            <h1 className="text-2xl font-extrabold text-slate-900">Aseo</h1>
           </div>
-        ) : (
-          <div className="grid md:grid-cols-3 gap-6">
-            {records.map((record) => (
-              <div
-                key={record.id}
-                onClick={() => setSelectedRecordId(record.id)}
-                className={`cursor-pointer p-6 rounded-3xl border transition shadow-sm ${
-                  selectedRecord?.id === record.id
-                    ? "border-blue-500 bg-blue-50"
-                    : record.status === "completed"
-                      ? "border-green-200 bg-green-50"
-                      : "bg-white hover:border-blue-300"
-                }`}
+        </header>
+
+        {!hasTenantContext ? (
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700">
+            No hay propiedad activa para operar este módulo.
+          </div>
+        ) : null}
+
+        {error ? (
+          <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+            {error}
+          </div>
+        ) : null}
+
+        <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
+          <Card>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">REGISTRO</p>
+              <h2 className="mt-1 text-lg font-bold text-slate-900">Nueva limpieza</h2>
+            </div>
+
+            <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <select
+                value={selectedAreaId}
+                onChange={(event) => setSelectedAreaId(event.target.value)}
+                className={inputBase}
+                disabled={!hasTenantContext || saving || loading}
               >
-                <div className="flex justify-between items-center">
-                  <div className="flex flex-col">
-                    <span className="font-semibold text-gray-800">{record.cleaningArea?.name || "Area"}</span>
-                    <span className="text-xs text-gray-400 mt-1">
-                      {record.operative?.user?.full_name || "Operario"}
-                    </span>
-                  </div>
+                <option value="">Seleccione área</option>
+                {areas.map((area) => (
+                  <option key={area.id} value={area.id}>
+                    {area.name}
+                  </option>
+                ))}
+              </select>
 
-                  <span
-                    className={`text-xs font-bold px-3 py-1 rounded-full ${
-                      record.status === "completed"
-                        ? "bg-green-100 text-green-700"
-                        : "bg-yellow-100 text-yellow-700"
-                    }`}
-                  >
-                    {record.status === "completed" ? "COMPLETADO" : "PENDIENTE"}
-                  </span>
-                </div>
+              <select
+                value={selectedOperativeId}
+                onChange={(event) => setSelectedOperativeId(event.target.value)}
+                className={inputBase}
+                disabled={!hasTenantContext || saving || loading}
+              >
+                <option value="">Seleccione operario</option>
+                {operatives.map((operative) => (
+                  <option key={operative.id} value={operative.id}>
+                    {operative.user?.full_name || "Operario"}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <button
+              type="button"
+              onClick={createRecord}
+              disabled={!hasTenantContext || saving || loading}
+              className="mt-5 rounded-2xl bg-blue-600 px-6 py-3 text-sm font-extrabold text-white shadow-sm transition hover:bg-blue-700 disabled:opacity-70"
+            >
+              {saving ? "Procesando..." : "Crear limpieza"}
+            </button>
+          </Card>
+
+          <Card>
+            <div className="mb-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">SEGUIMIENTO</p>
+              <h2 className="mt-1 text-lg font-bold text-slate-900">Historial de limpiezas</h2>
+            </div>
+
+            {loading ? (
+              <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-500">
+                Cargando registros...
               </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {selectedRecord ? (
-        <div className="bg-white p-8 rounded-3xl shadow-xl border border-gray-100 space-y-8">
-          <div>
-            <h2 className="text-3xl font-bold text-gray-900 tracking-tight">
-              {selectedRecord.cleaningArea?.name || "Area de limpieza"}
-            </h2>
-            <p className="text-sm text-gray-500 mt-1">
-              {selectedRecord.operative?.user?.full_name || "Operario"} {" · "}
-              {selectedRecord.created_at
-                ? new Date(selectedRecord.created_at).toLocaleString("es-CO", {
-                    dateStyle: "medium",
-                    timeStyle: "short",
-                  })
-                : ""}
-            </p>
-          </div>
-
-          <div>
-            <div className="flex justify-between text-sm font-medium text-gray-600">
-              <span>Progreso</span>
-              <span>{percent}%</span>
-            </div>
-            <div className="mt-3 h-3 w-full bg-gray-200 rounded-full overflow-hidden">
-              <div
-                className={`h-full transition-all duration-500 ${
-                  percent === 100 ? "bg-green-600" : "bg-blue-500"
-                }`}
-                style={{ width: `${percent}%` }}
-              />
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            {checklistLoading ? (
-              <div className="rounded-2xl border border-dashed border-gray-300 bg-gray-50 p-4 text-sm text-gray-500">
-                Cargando checklist...
+            ) : records.length ? (
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {records.map((record) => (
+                  <button
+                    key={record.id}
+                    type="button"
+                    onClick={() => setSelectedRecordId(record.id)}
+                    className={[
+                      "rounded-2xl border p-4 text-left transition",
+                      selectedRecord?.id === record.id
+                        ? "border-blue-300 bg-blue-50"
+                        : record.status === "completed"
+                          ? "border-emerald-200 bg-emerald-50"
+                          : "border-slate-200 bg-white hover:border-blue-200",
+                    ].join(" ")}
+                  >
+                    <p className="truncate text-sm font-bold text-slate-900">{record.cleaningArea?.name || "Área"}</p>
+                    <p className="mt-1 truncate text-xs font-semibold text-slate-500">
+                      {record.operative?.user?.full_name || "Operario"}
+                    </p>
+                    <span
+                      className={[
+                        "mt-2 inline-flex rounded-full px-2.5 py-1 text-[10px] font-extrabold",
+                        record.status === "completed"
+                          ? "bg-emerald-100 text-emerald-700"
+                          : "bg-amber-100 text-amber-700",
+                      ].join(" ")}
+                    >
+                      {record.status === "completed" ? "COMPLETADO" : "PENDIENTE"}
+                    </span>
+                  </button>
+                ))}
               </div>
             ) : (
-              items.map((item) => (
-                <div key={item.id} className="flex justify-between items-center bg-gray-50 p-4 rounded-2xl">
-                  <span className={item.completed ? "line-through text-gray-400" : "text-gray-800"}>
-                    {item.item_name}
-                  </span>
-                  <input
-                    type="checkbox"
-                    checked={Boolean(item.completed)}
-                    disabled={selectedRecord.status === "completed" || saving}
-                    onChange={() => toggleTask(item)}
-                    className="w-5 h-5 accent-blue-600"
-                  />
-                </div>
-              ))
+              <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-500">
+                No hay registros de limpieza.
+              </div>
             )}
-          </div>
+          </Card>
+        </div>
 
-          {selectedRecord.status === "completed" ? (
+        {selectedRecord ? (
+          <Card>
             <div>
-              <h3 className="text-sm font-semibold text-gray-600 mb-2">Observacion Final</h3>
-              <div className="bg-gray-100 p-5 rounded-2xl text-gray-800">
-                {selectedRecord.observations || "Sin observacion."}
+              <h2 className="text-xl font-extrabold text-slate-900">
+                {selectedRecord.cleaningArea?.name || "Área de limpieza"}
+              </h2>
+              <p className="mt-1 text-sm text-slate-500">
+                {selectedRecord.operative?.user?.full_name || "Operario"} {" - "}
+                {selectedRecord.created_at
+                  ? new Date(selectedRecord.created_at).toLocaleString("es-CO", {
+                      dateStyle: "medium",
+                      timeStyle: "short",
+                    })
+                  : ""}
+              </p>
+            </div>
+
+            <div className="mt-6">
+              <div className="flex items-center justify-between text-sm font-semibold text-slate-600">
+                <span>Progreso</span>
+                <span>{percent}%</span>
+              </div>
+              <div className="mt-2 h-2.5 w-full overflow-hidden rounded-full bg-slate-200">
+                <div
+                  className={["h-full transition-all", percent === 100 ? "bg-emerald-600" : "bg-blue-600"].join(" ")}
+                  style={{ width: `${percent}%` }}
+                />
               </div>
             </div>
-          ) : (
-            <>
-              <div>
-                <h3 className="text-sm font-semibold text-gray-600 mb-2">Observacion Final</h3>
+
+            <div className="mt-6 space-y-3">
+              {checklistLoading ? (
+                <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-500">
+                  Cargando checklist...
+                </div>
+              ) : (
+                items.map((item) => (
+                  <div key={item.id} className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                    <span className={item.completed ? "line-through text-slate-400" : "text-slate-800"}>
+                      {item.item_name}
+                    </span>
+                    <input
+                      type="checkbox"
+                      checked={Boolean(item.completed)}
+                      disabled={selectedRecord.status === "completed" || saving}
+                      onChange={() => toggleTask(item)}
+                      className="h-5 w-5 accent-blue-600"
+                    />
+                  </div>
+                ))
+              )}
+            </div>
+
+            {selectedRecord.status === "completed" ? (
+              <div className="mt-6">
+                <h3 className="text-sm font-semibold text-slate-600">Observación final</h3>
+                <div className="mt-2 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-slate-700">
+                  {selectedRecord.observations || "Sin observación."}
+                </div>
+              </div>
+            ) : (
+              <div className="mt-6">
+                <h3 className="text-sm font-semibold text-slate-600">Observación final</h3>
                 <textarea
-                  className={`${inputBase} min-h-[140px]`}
+                  className={`${inputBase} mt-2 min-h-[140px] py-3`}
                   placeholder="Describe el resultado general de la limpieza..."
                   value={observationText}
                   onChange={(event) => setObservationText(event.target.value)}
                   disabled={saving}
                 />
-              </div>
 
-              <button
-                onClick={handleFinish}
-                disabled={percent !== 100 || !String(observationText || "").trim() || saving}
-                className={`w-full py-3 rounded-2xl font-bold transition ${
-                  percent === 100 && String(observationText || "").trim() && !saving
-                    ? "bg-green-600 text-white hover:bg-green-700"
-                    : "bg-gray-300 text-gray-600 cursor-not-allowed"
-                }`}
-              >
-                {saving ? "Procesando..." : "Finalizar Limpieza"}
-              </button>
-            </>
-          )}
-        </div>
-      ) : null}
+                <button
+                  type="button"
+                  onClick={handleFinish}
+                  disabled={percent !== 100 || !String(observationText || "").trim() || saving}
+                  className={[
+                    "mt-4 w-full rounded-2xl py-3 text-sm font-extrabold transition",
+                    percent === 100 && String(observationText || "").trim() && !saving
+                      ? "bg-emerald-600 text-white hover:bg-emerald-700"
+                      : "cursor-not-allowed bg-slate-200 text-slate-500",
+                  ].join(" ")}
+                >
+                  {saving ? "Procesando..." : "Finalizar limpieza"}
+                </button>
+              </div>
+            )}
+          </Card>
+        ) : null}
+      </div>
     </div>
   );
 }

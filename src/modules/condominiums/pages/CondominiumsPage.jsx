@@ -1,13 +1,11 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuthContext } from "../../../context/useAuthContext";
 import CondominiumCard from "../components/CondominiumCard";
 import CondominiumForm from "../components/CondominiumForm";
 import { useCondominiums } from "../hooks/useCondominiums";
 
 function CondominiumsPage() {
   const navigate = useNavigate();
-  const { user } = useAuthContext();
   const {
     condominiums,
     loading,
@@ -77,9 +75,6 @@ function CondominiumsPage() {
           <div>
             <p className="text-sm font-semibold text-slate-500">Gestión de Propiedades</p>
             <h1 className="text-2xl font-extrabold text-slate-900">Propiedades</h1>
-            <p className="mt-1 text-sm text-slate-500">
-              Sesion: <span className="font-semibold">{user?.full_name || user?.email}</span>
-            </p>
           </div>
         </header>
 
