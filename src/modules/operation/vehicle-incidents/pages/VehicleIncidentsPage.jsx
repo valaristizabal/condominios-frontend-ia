@@ -35,9 +35,9 @@ function VehicleIncidentsPage() {
 
   const incidentTypeMap = useMemo(
     () => ({
-      ROBO: "robo",
-      DANIO: "danio",
-      OTRO: "otro",
+      ROBO: "unauthorized",
+      DANIO: "damage",
+      OTRO: "other",
     }),
     []
   );
