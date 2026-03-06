@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
-import { Pencil, PlusCircle } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { PlusCircle } from "lucide-react";
 import BackButton from "../../../components/common/BackButton";
 import { useCleaningAreas } from "./useCleaningAreas";
 
 const inputBase =
-  "w-full bg-white border border-gray-200 rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-200";
+  "h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100";
 
 const FREQUENCY_OPTIONS = [
   { value: "daily", label: "Diaria" },
@@ -16,31 +16,23 @@ const FREQUENCY_OPTIONS = [
 const WEEK_DAYS = [
   { value: 1, label: "Lunes" },
   { value: 2, label: "Martes" },
-  { value: 3, label: "Miércoles" },
+  { value: 3, label: "Miercoles" },
   { value: 4, label: "Jueves" },
   { value: 5, label: "Viernes" },
-  { value: 6, label: "Sábado" },
+  { value: 6, label: "Sabado" },
   { value: 0, label: "Domingo" },
 ];
 
-const Label = ({ children }) => (
-  <label className="text-sm text-gray-700 font-medium">{children}</label>
-);
+const Label = ({ children }) => <label className="text-sm font-semibold text-slate-700">{children}</label>;
 
 const Badge = ({ active }) => (
   <span
-    className={`px-3 py-1 rounded-full text-xs font-black ${
-      active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"
+    className={`rounded-full px-2.5 py-1 text-xs font-bold ${
+      active ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-600"
     }`}
   >
-    {active ? "ACTIVO" : "INACTIVO"}
+    {active ? "Activo" : "Inactivo"}
   </span>
-);
-
-const IconCircle = ({ children }) => (
-  <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-700 flex items-center justify-center font-black">
-    {children}
-  </div>
 );
 
 const todayISO = () => {
@@ -87,6 +79,7 @@ function CleaningAreasPage() {
   const [taskScheduleByArea, setTaskScheduleByArea] = useState({});
   const [localError, setLocalError] = useState("");
   const [success, setSuccess] = useState("");
+  const newAreaInputRef = useRef(null);
 
   const checklist = useMemo(() => {
     if (!checklistAreaId) return [];
@@ -125,9 +118,9 @@ function CleaningAreasPage() {
     try {
       await createCleaningArea({ name: cleanName });
       setNewAreaName("");
-      setSuccess("Área creada correctamente.");
+      setSuccess("Area creada correctamente.");
     } catch (err) {
-      setLocalError(normalizeApiError(err, "No fue posible crear el área."));
+      setLocalError(normalizeApiError(err, "No fue posible crear el area."));
     }
   };
 
@@ -154,9 +147,9 @@ function CleaningAreasPage() {
         name: String(editingName).trim(),
       });
       cancelEdit();
-      setSuccess("Área actualizada correctamente.");
+      setSuccess("Area actualizada correctamente.");
     } catch (err) {
-      setLocalError(normalizeApiError(err, "No fue posible actualizar el área."));
+      setLocalError(normalizeApiError(err, "No fue posible actualizar el area."));
     }
   };
 
@@ -166,9 +159,9 @@ function CleaningAreasPage() {
 
     try {
       await toggleCleaningArea(area.id);
-      setSuccess(area.is_active ? "Área desactivada correctamente." : "Área activada correctamente.");
+      setSuccess(area.is_active ? "Area desactivada correctamente." : "Area activada correctamente.");
     } catch (err) {
-      setLocalError(normalizeApiError(err, "No fue posible cambiar estado del área."));
+      setLocalError(normalizeApiError(err, "No fue posible cambiar estado del area."));
     }
   };
 
@@ -221,7 +214,7 @@ function CleaningAreasPage() {
     }
 
     if (scheduleConfig.enabled && scheduleConfig.frequency_type === "weekly" && !scheduleConfig.days_of_week.length) {
-      setLocalError("Debes seleccionar al menos un día para frecuencia semanal.");
+      setLocalError("Debes seleccionar al menos un dia para frecuencia semanal.");
       return;
     }
 
@@ -274,52 +267,57 @@ function CleaningAreasPage() {
     []
   );
 
-  return (
-    <div className="min-h-screen bg-[#F7F9FC]">
-      <div className="bg-white border-b border-gray-100">
-        <div className="px-4 pt-4 pb-3 flex items-start gap-3 max-w-3xl mx-auto">
-          <BackButton variant="settings" />
+  const focusCreateInput = () => {
+    newAreaInputRef.current?.focus();
+  };
 
-          <div>
-            <h1 className="text-xl font-extrabold text-blue-700">Aseo</h1>
-          </div>
-        </div>
+  return (
+    <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6">
+      <div className="mb-3">
+        <BackButton variant="settings" />
       </div>
 
-      <div className="px-4 pb-10 max-w-3xl mx-auto">
-        <div className="pt-6" />
+      <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-extrabold text-slate-900">Aseo</h1>
+        </div>
+        <button
+          type="button"
+          onClick={focusCreateInput}
+          className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-indigo-700 disabled:opacity-70"
+          disabled={!hasTenantContext || saving}
+        >
+          + Nueva area
+        </button>
+      </header>
 
-        {!hasTenantContext ? (
-          <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700">
-            No hay propiedad activa para gestionar áreas de aseo.
-          </div>
-        ) : null}
+      {!hasTenantContext ? (
+        <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+          No hay propiedad activa para gestionar areas de aseo.
+        </p>
+      ) : null}
 
-        {error || localError ? (
-          <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
-            {localError || error}
-          </div>
-        ) : null}
+      {error || localError ? (
+        <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {localError || error}
+        </p>
+      ) : null}
 
-        {success ? (
-          <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
-            {success}
-          </div>
-        ) : null}
+      {success ? (
+        <p className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+          {success}
+        </p>
+      ) : null}
 
-        <div className="mt-6 bg-white rounded-3xl shadow-sm border border-gray-100 p-5">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-700 font-black">
-              <PlusCircle className="h-5 w-5" />
-            </div>
-            <div className="text-lg font-extrabold text-gray-900">Nueva área</div>
-          </div>
-
-          <div className="mt-4 space-y-2">
-            <Label>Nombre del área</Label>
+      <section className="mb-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+        <h2 className="text-base font-extrabold text-slate-900">Crear area</h2>
+        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+          <div className="space-y-1.5">
+            <Label>Nombre del area</Label>
             <input
+              ref={newAreaInputRef}
               className={inputBase}
-              placeholder="Ej: Lobby, Gimnasio, Piscina..."
+              placeholder="Ej: Lobby, Gimnasio, Piscina"
               value={newAreaName}
               onChange={(event) => setNewAreaName(event.target.value)}
               disabled={!hasTenantContext || saving}
@@ -330,29 +328,41 @@ function CleaningAreasPage() {
             type="button"
             onClick={onCreateArea}
             disabled={!hasTenantContext || saving}
-            className="mt-4 w-full bg-blue-600 text-white rounded-2xl py-4 font-extrabold shadow-lg hover:bg-blue-700 disabled:opacity-70"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-indigo-700 disabled:opacity-70 sm:w-auto"
           >
-            Guardar área
+            <PlusCircle className="h-4 w-4" />
+            Guardar
           </button>
         </div>
+      </section>
 
-        <div className="mt-8 space-y-4">
-          {loading ? (
-            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-5 text-sm font-semibold text-gray-500">
-              Cargando áreas...
-            </div>
-          ) : (
-            cleaningAreas.map((area) => {
+      <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-base font-extrabold text-slate-900">Areas registradas</h2>
+          <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-600">
+            {cleaningAreas.length} {cleaningAreas.length === 1 ? "area" : "areas"}
+          </span>
+        </div>
+
+        {loading ? (
+          <div className="rounded-lg border border-dashed border-slate-300 bg-white p-8 text-center text-slate-500">
+            Cargando areas...
+          </div>
+        ) : cleaningAreas.length === 0 ? (
+          <div className="rounded-lg border border-dashed border-slate-300 bg-white p-8 text-center text-slate-500">
+            Aun no hay areas registradas.
+          </div>
+        ) : (
+          <div className="divide-y divide-slate-100">
+            {cleaningAreas.map((area) => {
               const isEditing = editingAreaId === area.id;
               const currentTaskText = newTaskTextByArea[area.id] || "";
               const scheduleConfig = taskScheduleByArea[area.id] || defaultTaskSchedule;
 
               return (
-                <div key={area.id} className="bg-white rounded-3xl shadow-sm border border-gray-100 p-5">
-                  <div className="flex items-center gap-4">
-                    <IconCircle>{area.name?.[0]?.toUpperCase() || "A"}</IconCircle>
-
-                    <div className="flex-1">
+                <article key={area.id} className="py-4 first:pt-0 last:pb-0">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
                       {isEditing ? (
                         <div className="space-y-2">
                           <Label>Nombre</Label>
@@ -362,233 +372,219 @@ function CleaningAreasPage() {
                             onChange={(event) => setEditingName(event.target.value)}
                             disabled={saving}
                           />
-                          <div className="flex gap-2">
+                          <div className="flex flex-wrap gap-2">
                             <button
+                              type="button"
                               onClick={saveEdit}
                               disabled={saving}
-                              className="px-4 py-2 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 disabled:opacity-70"
+                              className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-bold text-white hover:bg-indigo-700 disabled:opacity-70"
                             >
                               Guardar
                             </button>
                             <button
+                              type="button"
                               onClick={cancelEdit}
                               disabled={saving}
-                              className="px-4 py-2 rounded-xl bg-gray-100 text-gray-700 font-bold hover:bg-gray-200 disabled:opacity-70"
+                              className="rounded-lg bg-slate-100 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-200 disabled:opacity-70"
                             >
                               Cancelar
                             </button>
                           </div>
                         </div>
                       ) : (
-                        <>
-                          <div className="flex items-center gap-3">
-                            <div className="text-lg font-extrabold text-gray-900">{area.name}</div>
-                            <Badge active={Boolean(area.is_active)} />
-                          </div>
-
-                          <div className="mt-2 flex items-center gap-2">
-                            <button
-                              onClick={() => onToggleActive(area)}
-                              disabled={saving}
-                              className="text-xs font-extrabold text-blue-700 hover:underline disabled:opacity-70"
-                            >
-                              {area.is_active ? "Desactivar" : "Activar"}
-                            </button>
-                          </div>
-                        </>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="text-sm font-extrabold text-slate-900">{area.name || "-"}</p>
+                          <Badge active={Boolean(area.is_active)} />
+                        </div>
                       )}
                     </div>
 
                     {!isEditing ? (
-                      <button
-                        onClick={() => startEdit(area)}
-                        disabled={saving}
-                        className="w-10 h-10 rounded-2xl hover:bg-gray-100 flex items-center justify-center disabled:opacity-70"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </button>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => openChecklist(area.id)}
+                          disabled={saving}
+                          className="rounded-lg bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 hover:bg-amber-100 disabled:opacity-60"
+                        >
+                          {checklistAreaId === area.id ? "Cerrar checklist" : "Checklist"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => startEdit(area)}
+                          disabled={saving}
+                          className="rounded-lg bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 disabled:opacity-60"
+                        >
+                          Editar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onToggleActive(area)}
+                          disabled={saving}
+                          className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200 disabled:opacity-60"
+                        >
+                          {area.is_active ? "Desactivar" : "Activar"}
+                        </button>
+                      </div>
                     ) : null}
                   </div>
 
-                  {!isEditing ? (
-                    <>
-                      <button
-                        onClick={() => openChecklist(area.id)}
-                        disabled={saving}
-                        className="mt-4 w-full rounded-2xl py-3 font-extrabold border border-blue-600 text-blue-700 hover:bg-blue-50 disabled:opacity-70"
-                      >
-                        Configurar Checklist
-                      </button>
+                  {!isEditing && checklistAreaId === area.id ? (
+                    <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3 sm:p-4">
+                      {!checklist.length ? (
+                        <p className="mb-3 text-sm text-slate-500">No hay tareas configuradas.</p>
+                      ) : null}
 
-                      {checklistAreaId === area.id ? (
-                        <div className="mt-4 bg-[#F7F9FC] p-4 rounded-2xl border border-gray-200">
-                          {!checklist.length ? (
-                            <div className="text-sm text-gray-500 mb-3">No hay tareas configuradas.</div>
-                          ) : null}
-
-                          {checklist.map((item) => {
-                            const linkedSchedule = linkedScheduleByChecklistItemId[item.id];
-                            return (
-                              <div
-                                key={item.id}
-                                className="bg-white p-3 rounded-xl mb-2 shadow-sm border border-gray-100"
+                      {checklist.map((item) => {
+                        const linkedSchedule = linkedScheduleByChecklistItemId[item.id];
+                        return (
+                          <div key={item.id} className="mb-2 rounded-lg border border-slate-200 bg-white p-3 last:mb-0">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <span className="text-sm text-slate-800">{item.item_name}</span>
+                              <button
+                                type="button"
+                                onClick={() => deleteTask(area.id, item.id)}
+                                disabled={checklistSaving || scheduleSaving}
+                                className="rounded-lg bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700 hover:bg-red-100 disabled:opacity-70"
                               >
-                                <div className="flex justify-between items-center gap-3">
-                                  <span>{item.item_name}</span>
-                                  <button
-                                    onClick={() => deleteTask(area.id, item.id)}
-                                    disabled={checklistSaving || scheduleSaving}
-                                    className="text-red-500 font-bold disabled:opacity-70"
-                                  >
-                                    Eliminar
-                                  </button>
-                                </div>
+                                Eliminar
+                              </button>
+                            </div>
 
-                                {linkedSchedule ? (
-                                  <div className="mt-2 text-xs text-gray-500">
-                              Programada:{" "}
-                                    {frequencyLabelByValue[linkedSchedule.frequency_type] || linkedSchedule.frequency_type}
-                                    {Number(linkedSchedule.repeat_interval || 1) > 1
-                                      ? ` (cada ${linkedSchedule.repeat_interval})`
-                                      : ""}
-                                    {" - "}
-                                    {linkedSchedule.start_date}
-                                    {linkedSchedule.end_date ? ` al ${linkedSchedule.end_date}` : ""}
-                                  </div>
-                                ) : (
-                                  <div className="mt-2 text-xs text-amber-600">
-                                    Sin programación (se ejecuta solo manual).
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })}
+                            {linkedSchedule ? (
+                              <p className="mt-2 text-xs text-slate-500">
+                                Programada:{" "}
+                                {frequencyLabelByValue[linkedSchedule.frequency_type] || linkedSchedule.frequency_type}
+                                {Number(linkedSchedule.repeat_interval || 1) > 1
+                                  ? ` (cada ${linkedSchedule.repeat_interval})`
+                                  : ""}
+                                {" - "}
+                                {linkedSchedule.start_date}
+                                {linkedSchedule.end_date ? ` al ${linkedSchedule.end_date}` : ""}
+                              </p>
+                            ) : (
+                              <p className="mt-2 text-xs text-amber-600">Sin programacion (solo manual).</p>
+                            )}
+                          </div>
+                        );
+                      })}
 
-                          <div className="mt-3 rounded-2xl border border-blue-100 bg-blue-50/40 p-3 space-y-3">
-                            <div className="text-sm font-extrabold text-blue-700">Nueva tarea + calendario</div>
+                      <div className="mt-3 space-y-3 rounded-xl border border-blue-100 bg-blue-50/40 p-3">
+                        <p className="text-sm font-extrabold text-blue-700">Nueva tarea + calendario</p>
 
-                            <input
-                              className={inputBase}
-                              value={currentTaskText}
-                              onChange={(event) =>
-                                setNewTaskTextByArea((prev) => ({
-                                  ...prev,
-                                  [area.id]: event.target.value,
-                                }))
-                              }
-                              placeholder="Nueva tarea..."
-                              disabled={checklistSaving || scheduleSaving}
-                            />
+                        <input
+                          className={inputBase}
+                          value={currentTaskText}
+                          onChange={(event) =>
+                            setNewTaskTextByArea((prev) => ({
+                              ...prev,
+                              [area.id]: event.target.value,
+                            }))
+                          }
+                          placeholder="Nueva tarea..."
+                          disabled={checklistSaving || scheduleSaving}
+                        />
 
-                            <label className="inline-flex items-center gap-2 text-sm font-semibold text-gray-700">
+                        <label className="inline-flex items-center gap-2 text-sm font-semibold text-slate-700">
+                          <input
+                            type="checkbox"
+                            checked={Boolean(scheduleConfig.enabled)}
+                            onChange={(event) => setTaskScheduleField(area.id, "enabled", event.target.checked)}
+                            className="h-4 w-4 accent-indigo-600"
+                            disabled={checklistSaving || scheduleSaving}
+                          />
+                          Programar con calendario
+                        </label>
+
+                        {scheduleConfig.enabled ? (
+                          <>
+                            <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                              <select
+                                className={inputBase}
+                                value={scheduleConfig.frequency_type}
+                                onChange={(event) => setTaskScheduleField(area.id, "frequency_type", event.target.value)}
+                                disabled={checklistSaving || scheduleSaving}
+                              >
+                                {FREQUENCY_OPTIONS.map((option) => (
+                                  <option key={option.value} value={option.value}>
+                                    {option.label}
+                                  </option>
+                                ))}
+                              </select>
+
                               <input
-                                type="checkbox"
-                                checked={Boolean(scheduleConfig.enabled)}
-                                onChange={(event) => setTaskScheduleField(area.id, "enabled", event.target.checked)}
-                                className="h-4 w-4 accent-blue-600"
+                                type="number"
+                                min="1"
+                                max="365"
+                                className={inputBase}
+                                value={scheduleConfig.repeat_interval}
+                                onChange={(event) => setTaskScheduleField(area.id, "repeat_interval", event.target.value)}
                                 disabled={checklistSaving || scheduleSaving}
                               />
-                              Programar con calendario
-                            </label>
+                            </div>
 
-                            {scheduleConfig.enabled ? (
-                              <>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                  <select
-                                    className={inputBase}
-                                    value={scheduleConfig.frequency_type}
-                                    onChange={(event) =>
-                                      setTaskScheduleField(area.id, "frequency_type", event.target.value)
-                                    }
-                                    disabled={checklistSaving || scheduleSaving}
-                                  >
-                                    {FREQUENCY_OPTIONS.map((option) => (
-                                      <option key={option.value} value={option.value}>
-                                        {option.label}
-                                      </option>
-                                    ))}
-                                  </select>
-
-                                  <input
-                                    type="number"
-                                    min="1"
-                                    max="365"
-                                    className={inputBase}
-                                    value={scheduleConfig.repeat_interval}
-                                    onChange={(event) =>
-                                      setTaskScheduleField(area.id, "repeat_interval", event.target.value)
-                                    }
-                                    disabled={checklistSaving || scheduleSaving}
-                                  />
-                                </div>
-
-                                {scheduleConfig.frequency_type === "weekly" ? (
-                                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                                    {WEEK_DAYS.map((day) => {
-                                      const checked = scheduleConfig.days_of_week.includes(day.value);
-                                      return (
-                                        <button
-                                          key={day.value}
-                                          type="button"
-                                          onClick={() => toggleTaskScheduleDay(area.id, day.value)}
-                                          className={[
-                                            "rounded-xl px-3 py-2 text-xs font-bold border transition",
-                                            checked
-                                              ? "bg-blue-600 text-white border-blue-600"
-                                              : "bg-white text-gray-700 border-gray-200 hover:border-blue-300",
-                                          ].join(" ")}
-                                          disabled={checklistSaving || scheduleSaving}
-                                        >
-                                          {day.label}
-                                        </button>
-                                      );
-                                    })}
-                                  </div>
-                                ) : null}
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                  <input
-                                    type="date"
-                                    className={inputBase}
-                                    value={scheduleConfig.start_date}
-                                    onChange={(event) =>
-                                      setTaskScheduleField(area.id, "start_date", event.target.value)
-                                    }
-                                    disabled={checklistSaving || scheduleSaving}
-                                  />
-
-                                  <input
-                                    type="date"
-                                    className={inputBase}
-                                    value={scheduleConfig.end_date}
-                                    onChange={(event) =>
-                                      setTaskScheduleField(area.id, "end_date", event.target.value)
-                                    }
-                                    disabled={checklistSaving || scheduleSaving}
-                                  />
-                                </div>
-                              </>
+                            {scheduleConfig.frequency_type === "weekly" ? (
+                              <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+                                {WEEK_DAYS.map((day) => {
+                                  const checked = scheduleConfig.days_of_week.includes(day.value);
+                                  return (
+                                    <button
+                                      key={day.value}
+                                      type="button"
+                                      onClick={() => toggleTaskScheduleDay(area.id, day.value)}
+                                      className={[
+                                        "rounded-lg px-3 py-2 text-xs font-bold transition",
+                                        checked
+                                          ? "border border-indigo-600 bg-indigo-600 text-white"
+                                          : "border border-slate-300 bg-white text-slate-700 hover:border-indigo-400",
+                                      ].join(" ")}
+                                      disabled={checklistSaving || scheduleSaving}
+                                    >
+                                      {day.label}
+                                    </button>
+                                  );
+                                })}
+                              </div>
                             ) : null}
 
-                            <button
-                              onClick={() => addTask(area.id)}
-                              disabled={checklistSaving || scheduleSaving}
-                              className="w-full bg-blue-600 text-white px-4 py-3 rounded-2xl font-bold disabled:opacity-70"
-                            >
-                              <PlusCircle className="mr-2 inline h-5 w-5" />
-                              Crear tarea
-                            </button>
-                          </div>
-                        </div>
-                      ) : null}
-                    </>
+                            <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                              <input
+                                type="date"
+                                className={inputBase}
+                                value={scheduleConfig.start_date}
+                                onChange={(event) => setTaskScheduleField(area.id, "start_date", event.target.value)}
+                                disabled={checklistSaving || scheduleSaving}
+                              />
+
+                              <input
+                                type="date"
+                                className={inputBase}
+                                value={scheduleConfig.end_date}
+                                onChange={(event) => setTaskScheduleField(area.id, "end_date", event.target.value)}
+                                disabled={checklistSaving || scheduleSaving}
+                              />
+                            </div>
+                          </>
+                        ) : null}
+
+                        <button
+                          type="button"
+                          onClick={() => addTask(area.id)}
+                          disabled={checklistSaving || scheduleSaving}
+                          className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-indigo-700 disabled:opacity-70 sm:w-auto"
+                        >
+                          <PlusCircle className="h-4 w-4" />
+                          Crear tarea
+                        </button>
+                      </div>
+                    </div>
                   ) : null}
-                </div>
+                </article>
               );
-            })
-          )}
-        </div>
-      </div>
+            })}
+          </div>
+        )}
+      </section>
     </div>
   );
 }
@@ -610,3 +606,4 @@ function normalizeApiError(err, fallbackMessage) {
 }
 
 export default CleaningAreasPage;
+
