@@ -45,6 +45,7 @@ function CondominiumCard({ condominium, onEnter, onEdit, onToggle }) {
         <div className="grid grid-cols-2 gap-3 text-sm">
           <InfoItem label="Torres/Bloques" value={condominium.tower || "-"} />
           <InfoItem label="Pisos" value={condominium.floors ?? "-"} />
+          <InfoItem label="Vence" value={formatDate(condominium.expiration_date)} />
         </div>
 
         <div className="flex items-center gap-2">
@@ -90,6 +91,19 @@ function BuildingIcon() {
       <path d="M3 21h18v-2h-2V3H5v16H3v2Zm4-2V5h10v14H7Zm2-10h2v2H9V9Zm4 0h2v2h-2V9Zm-4 4h2v2H9v-2Zm4 0h2v2h-2v-2Z" />
     </svg>
   );
+}
+
+function formatDate(value) {
+  if (!value) return "Sin fecha";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Sin fecha";
+
+  return new Intl.DateTimeFormat("es-CO", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
 }
 
 export default CondominiumCard;

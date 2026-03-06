@@ -9,6 +9,7 @@ const INITIAL_FORM = {
   common_areas: "",
   address: "",
   contact_info: "",
+  expiration_date: "",
   is_active: true,
 };
 
@@ -30,11 +31,13 @@ function toFormValues(initialValues) {
     common_areas: initialValues.common_areas || "",
     address: initialValues.address || "",
     contact_info: initialValues.contact_info || "",
+    expiration_date: initialValues.expiration_date ? String(initialValues.expiration_date).slice(0, 10) : "",
     is_active: Boolean(initialValues.is_active),
   };
 }
 
 function CondominiumForm({ initialValues, loading, onCancel, onSubmit }) {
+  const isEditing = Boolean(initialValues?.id);
   const [form, setForm] = useState(() => toFormValues(initialValues));
   const [logoFile, setLogoFile] = useState(null);
   const [logoPreview, setLogoPreview] = useState(() => resolveLogoPreview(initialValues));
@@ -42,10 +45,19 @@ function CondominiumForm({ initialValues, loading, onCancel, onSubmit }) {
 
   const handleChange = (event) => {
     const { name, type, value, checked } = event.target;
-    setForm((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
+    setForm((prev) => {
+      const nextValue = type === "checkbox" ? checked : value;
+      const next = {
+        ...prev,
+        [name]: nextValue,
+      };
+
+      if (name === "name" && !isEditing) {
+        next.tenant_code = toTenantCode(nextValue);
+      }
+
+      return next;
+    });
   };
 
   const handleLogoChange = (event) => {
@@ -66,12 +78,14 @@ function CondominiumForm({ initialValues, loading, onCancel, onSubmit }) {
 
     const payload = {
       ...form,
+      tenant_code: form.tenant_code || toTenantCode(form.name),
       floors: form.floors === "" ? null : Number(form.floors),
       type: form.type || null,
       tower: form.tower || null,
       common_areas: form.common_areas || null,
       address: form.address || null,
       contact_info: form.contact_info || null,
+      expiration_date: form.expiration_date || null,
     };
 
     if (logoFile) {
@@ -94,15 +108,6 @@ function CondominiumForm({ initialValues, loading, onCancel, onSubmit }) {
         name="name"
         placeholder="Ej. Residencial Las Palmeras"
         value={form.name}
-        onChange={handleChange}
-        required
-      />
-
-      <Field
-        label="Tenant Code"
-        name="tenant_code"
-        placeholder="ej-residencial-laspalmeras"
-        value={form.tenant_code}
         onChange={handleChange}
         required
       />
@@ -156,7 +161,7 @@ function CondominiumForm({ initialValues, loading, onCancel, onSubmit }) {
       <TextArea
         label="Areas Comunes"
         name="common_areas"
-        placeholder="Describe áreas comunes de la propiedad..."
+        placeholder="Describe areas comunes de la propiedad..."
         value={form.common_areas}
         onChange={handleChange}
       />
@@ -169,8 +174,16 @@ function CondominiumForm({ initialValues, loading, onCancel, onSubmit }) {
         onChange={handleChange}
       />
 
+      <Field
+        label="Fecha de vencimiento"
+        name="expiration_date"
+        type="date"
+        value={form.expiration_date}
+        onChange={handleChange}
+      />
+
       <TextArea
-        label="Información de Contacto"
+        label="Informacion de Contacto"
         name="contact_info"
         placeholder="Telefonos de administracion, correos, etc."
         value={form.contact_info}
@@ -245,6 +258,16 @@ function BuildingIcon() {
       <path d="M3 21h18v-2h-2V3H5v16H3v2Zm4-2V5h10v14H7Zm2-10h2v2H9V9Zm4 0h2v2h-2V9Zm-4 4h2v2H9v-2Zm4 0h2v2h-2v-2Z" />
     </svg>
   );
+}
+
+function toTenantCode(value) {
+  return String(value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 50);
 }
 
 export default CondominiumForm;
