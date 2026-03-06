@@ -143,7 +143,7 @@ function CondominiumForm({ initialValues, loading, onCancel, onSubmit }) {
         <Field
           label="Torres / Bloques"
           name="tower"
-          placeholder="Ej. Torre A, Torre B"
+          placeholder="Ej. 2, 3, 4"
           value={form.tower}
           onChange={handleChange}
         />
