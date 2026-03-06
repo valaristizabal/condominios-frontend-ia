@@ -46,3 +46,31 @@ export function canAccessInventorySettings(user) {
   return isTenantAdminRole(user?.role);
 }
 
+export const AVAILABLE_MODULES = [
+  "visits",
+  "vehicles",
+  "vehicle-incidents",
+  "employee-entries",
+  "correspondences",
+  "emergencies",
+  "cleaning",
+  "inventory",
+  "settings",
+];
+
+export function canManageUserPermissions(user) {
+  if (!user) return false;
+  if (user?.is_platform_admin === true) return true;
+  if (isSuperUser(user?.role)) return true;
+  return isTenantAdminRole(user?.role);
+}
+
+export function hasModuleAccess(user, module) {
+  if (!user || !module) return false;
+  if (user?.is_platform_admin === true) return true;
+  if (isSuperUser(user?.role) || isTenantAdminRole(user?.role)) return true;
+
+  const modulePermissions = user?.module_permissions || {};
+  return modulePermissions?.[module] === true;
+}
+

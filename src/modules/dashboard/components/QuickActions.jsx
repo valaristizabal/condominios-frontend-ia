@@ -1,8 +1,16 @@
 import { Link, useParams } from "react-router-dom";
+import { useAuthContext } from "../../../context/useAuthContext";
+import { hasModuleAccess } from "../../../utils/roles";
 
 function QuickActions() {
   const { id } = useParams();
+  const { user } = useAuthContext();
   const basePath = id ? `/condominio/${id}` : "";
+  const canSeeEmployeeEntries = hasModuleAccess(user, "employee-entries");
+
+  if (!canSeeEmployeeEntries) {
+    return null;
+  }
 
   return (
     <div className="max-w-sm">

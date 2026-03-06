@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useAuthContext } from "../../../context/useAuthContext";
 import { useActiveCondominium } from "../../../context/useActiveCondominium";
 import apiClient from "../../../services/apiClient";
-import { canAccessInventorySettings } from "../../../utils/roles";
+import { canAccessInventorySettings, canManageUserPermissions } from "../../../utils/roles";
 import {
   exportDailyMinutaWorkbook,
   exportMonthlyMinutaWorkbook,
@@ -62,6 +62,7 @@ export default function SettingsPage() {
   const { user } = useAuthContext();
   const basePath = id ? `/condominio/${id}` : "";
   const canSeeInventorySettings = canAccessInventorySettings(user);
+  const canSeeUsersPermissions = canManageUserPermissions(user);
   const [downloading, setDownloading] = useState("");
   const [downloadError, setDownloadError] = useState("");
 
@@ -143,16 +144,16 @@ export default function SettingsPage() {
   return (
     <div className="w-full">
       <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6">
-        <PageTitle eyebrow="Configuración" title="Ajustes" />
+        <PageTitle eyebrow="Configuracion" title="Ajustes" />
 
         <div className="mt-6 grid grid-cols-1 gap-5 lg:grid-cols-12">
           <div className="space-y-5 lg:col-span-8">
             <Card>
-              <p className="text-xs font-extrabold uppercase tracking-widest text-slate-400">1. Gestión del sistema</p>
+              <p className="text-xs font-extrabold uppercase tracking-widest text-slate-400">1. Gestion del sistema</p>
 
               <div className="mt-4 space-y-3">
                 <p className="px-1 text-[11px] font-extrabold uppercase tracking-widest text-slate-400">
-                  Configuración inicial
+                  Configuracion inicial
                 </p>
                 <ItemRow
                   title="Tipos de unidad"
@@ -166,17 +167,24 @@ export default function SettingsPage() {
                 />
                 <ItemRow
                   title="Residentes"
-                  description="Gestiona residentes, estados y relación con apartamentos"
+                  description="Gestiona residentes, estados y relacion con apartamentos"
                   onClick={() => navigate(`${basePath}/settings/residents`)}
                 />
                 <ItemRow
                   title="Operativos"
-                  description="Gestiona personal operativo y su configuración laboral"
+                  description="Gestiona personal operativo y su configuracion laboral"
                   onClick={() => navigate(`${basePath}/settings/operatives`)}
                 />
+                {canSeeUsersPermissions ? (
+                  <ItemRow
+                    title="Usuarios y permisos"
+                    description="Configura permisos por modulo para usuarios del condominio"
+                    onClick={() => navigate(`${basePath}/settings/users`)}
+                  />
+                ) : null}
                 <ItemRow
-                  title="Tipos de vehículos"
-                  description="Configura los tipos de vehículo permitidos en la propiedad"
+                  title="Tipos de vehiculos"
+                  description="Configura los tipos de vehiculo permitidos en la propiedad"
                   onClick={() => navigate(`${basePath}/settings/vehicle-types`)}
                 />
 
@@ -190,12 +198,12 @@ export default function SettingsPage() {
                 />
                 <ItemRow
                   title="Emergencias"
-                  description="Configura contactos y números de emergencia por propiedad"
+                  description="Configura contactos y numeros de emergencia por propiedad"
                   onClick={() => navigate(`${basePath}/settings/emergency-contacts`)}
                 />
 
                 <p className="px-1 pt-2 text-[11px] font-extrabold uppercase tracking-widest text-slate-400">
-                  Operación interna
+                  Operacion interna
                 </p>
                 <ItemRow
                   title="Aseo"
@@ -205,7 +213,7 @@ export default function SettingsPage() {
                 {canSeeInventorySettings ? (
                   <ItemRow
                     title="Inventario"
-                    description="Gestiona inventarios y categorías de productos"
+                    description="Gestiona inventarios y categorias de productos"
                     onClick={() => navigate(`${basePath}/settings/inventory`)}
                   />
                 ) : null}
@@ -218,13 +226,13 @@ export default function SettingsPage() {
               <p className="text-xs font-extrabold uppercase tracking-widest text-slate-400">Rol restringido</p>
               <p className="mt-1 text-sm font-extrabold text-slate-900">Administrador de Propiedades</p>
               <p className="mt-1 text-xs font-semibold text-slate-500">
-                Acceso a parametrización y mantenimiento del sistema en propiedad activa.
+                Acceso a parametrizacion y mantenimiento del sistema en propiedad activa.
               </p>
 
               <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                <p className="text-xs font-extrabold text-slate-700">Recomendación</p>
+                <p className="text-xs font-extrabold text-slate-700">Recomendacion</p>
                 <p className="mt-1 text-xs font-semibold text-slate-500">
-                  Mantener la gestión por contexto tenant activo y evitar datos cruzados entre propiedades.
+                  Mantener la gestion por contexto tenant activo y evitar datos cruzados entre propiedades.
                 </p>
               </div>
             </Card>
@@ -232,7 +240,7 @@ export default function SettingsPage() {
             <Card>
               <p className="text-xs font-extrabold uppercase tracking-widest text-slate-400">Descargas</p>
               <p className="mt-1 text-xs font-semibold text-slate-500">
-                Genera minutas automáticas de la propiedad activa.
+                Genera minutas automaticas de la propiedad activa.
               </p>
 
               <div className="mt-4 space-y-2">
@@ -309,4 +317,3 @@ function normalizeApiError(err, fallbackMessage) {
 
   return responseData?.message || err?.message || fallbackMessage;
 }
-

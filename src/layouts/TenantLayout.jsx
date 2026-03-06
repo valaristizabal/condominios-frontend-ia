@@ -19,30 +19,30 @@ import { useAuthContext } from "../context/useAuthContext";
 import PropertyLogo from "../components/common/PropertyLogo";
 import apiClient from "../services/apiClient";
 import { resolveCondominiumLogo } from "../utils/condominiumBrand";
-import { canAccessInventoryOperation, isSuperUser } from "../utils/roles";
+import { hasModuleAccess, isSuperUser } from "../utils/roles";
 
 const ORGANIZATION_BRAND_LOGO = "/docs/GEN%20VERDE%20(2).png";
 
-function getSidebarSections(basePath, canInventoryOperate) {
+function getSidebarSections(basePath, permissions) {
   const resolvePath = (path) => `${basePath}${path}`;
 
   return [
     {
-      title: "Operación",
+      title: "Operacion",
       items: [
-        { label: "Menú principal", to: resolvePath("/dashboard"), enabled: true },
-        { label: "Visitantes", to: resolvePath("/visits"), enabled: true },
-        { label: "Vehículos", to: resolvePath("/vehicles"), enabled: true },
-        { label: "Ingreso de personal", to: resolvePath("/employee-entries"), enabled: true },
-        { label: "Correspondencia", to: resolvePath("/correspondence"), enabled: true },
-        { label: "Emergencias", to: resolvePath("/emergencies"), enabled: true },
-        { label: "Aseo", to: resolvePath("/cleaning"), enabled: true },
-        { label: "Inventario", to: resolvePath("/inventory"), enabled: canInventoryOperate },
+        { label: "Menu principal", to: resolvePath("/dashboard"), enabled: true },
+        { label: "Visitantes", to: resolvePath("/visits"), enabled: permissions.visits },
+        { label: "Vehiculos", to: resolvePath("/vehicles"), enabled: permissions.vehicles },
+        { label: "Ingreso de personal", to: resolvePath("/employee-entries"), enabled: permissions.employeeEntries },
+        { label: "Correspondencia", to: resolvePath("/correspondence"), enabled: permissions.correspondences },
+        { label: "Emergencias", to: resolvePath("/emergencies"), enabled: permissions.emergencies },
+        { label: "Aseo", to: resolvePath("/cleaning"), enabled: permissions.cleaning },
+        { label: "Inventario", to: resolvePath("/inventory"), enabled: permissions.inventory },
       ],
     },
     {
-      title: "Configuración",
-      items: [{ label: "Ajustes", to: resolvePath("/settings"), enabled: true }],
+      title: "Configuracion",
+      items: [{ label: "Ajustes", to: resolvePath("/settings"), enabled: permissions.settings }],
     },
   ];
 }
@@ -77,11 +77,21 @@ function TenantLayout({ children }) {
   }, [id, isPlatformAdmin, user?.condominium_id]);
 
   const basePath = isPlatformAdmin && id ? `/condominio/${id}` : "";
-  const canInventoryOperate = canAccessInventoryOperation(user);
-  const sidebarSections = useMemo(
-    () => getSidebarSections(basePath, canInventoryOperate),
-    [basePath, canInventoryOperate]
-  );
+  const permissions = useMemo(() => {
+    return {
+      visits: hasModuleAccess(user, "visits"),
+      vehicles: hasModuleAccess(user, "vehicles"),
+      employeeEntries: hasModuleAccess(user, "employee-entries"),
+      correspondences: hasModuleAccess(user, "correspondences"),
+      emergencies: hasModuleAccess(user, "emergencies"),
+      cleaning: hasModuleAccess(user, "cleaning"),
+      inventory: hasModuleAccess(user, "inventory"),
+      settings: hasModuleAccess(user, "settings"),
+    };
+  }, [user]);
+
+  const sidebarSections = useMemo(() => getSidebarSections(basePath, permissions), [basePath, permissions]);
+
   const { data: activeCondominiumInfo } = useQuery({
     queryKey: ["active-condominium-info", activeContextValue.activeCondominiumId],
     enabled: Boolean(activeContextValue.activeCondominiumId),
@@ -121,7 +131,7 @@ function TenantLayout({ children }) {
               type="button"
               className="absolute inset-0 bg-black/40"
               onClick={() => setMobileOpen(false)}
-              aria-label="Cerrar menú"
+              aria-label="Cerrar menu"
             />
             <div className="absolute left-0 top-0 flex h-full w-[300px] flex-col border-r border-slate-200 bg-white shadow-xl">
               <SidebarContent
@@ -146,7 +156,7 @@ function TenantLayout({ children }) {
           type="button"
           className="fixed right-4 top-4 z-[998] flex h-12 w-12 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-800 shadow-md lg:hidden"
           onClick={() => setMobileOpen(true)}
-          aria-label="Abrir menú"
+          aria-label="Abrir menu"
         >
           <MenuIcon />
         </button>
@@ -197,7 +207,7 @@ function SidebarContent({
             <span className="text-slate-400 transition group-hover:text-slate-600">
               <ArrowLeft className="h-4 w-4" />
             </span>
-            <span className="truncate">Atrás a Propiedades</span>
+            <span className="truncate">Atras a Propiedades</span>
           </button>
         </div>
       ) : null}
@@ -219,20 +229,7 @@ function SidebarContent({
                       label={item.label}
                       onClick={onNavigate ? () => onNavigate() : undefined}
                     />
-                  ) : (
-                    <div
-                      key={`${section.title}-${item.label}`}
-                      className="flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-400"
-                    >
-                      <span className="flex items-center gap-3">
-                        {iconByLabel(item.label)}
-                        <span>{item.label}</span>
-                      </span>
-                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold uppercase">
-                        Prox.
-                      </span>
-                    </div>
-                  )
+                  ) : null
                 )}
               </div>
             </div>
@@ -244,11 +241,11 @@ function SidebarContent({
         <div className="flex flex-col items-center justify-center gap-1 text-center">
           <img
             src={ORGANIZATION_BRAND_LOGO}
-            alt="Organización Gen"
+            alt="Organizacion Gen"
             className="h-5 w-auto object-contain"
             loading="lazy"
           />
-          <span className="text-[11px] font-semibold text-slate-500">By Organización Gen</span>
+          <span className="text-[11px] font-semibold text-slate-500">By Organizacion Gen</span>
         </div>
       </div>
     </div>
@@ -290,9 +287,9 @@ function MenuIcon() {
 function iconByLabel(label) {
   const className = "h-4 w-4";
   const map = {
-    "Menú principal": <LayoutDashboard className={className} />,
+    "Menu principal": <LayoutDashboard className={className} />,
     Visitantes: <Users className={className} />,
-    Vehículos: <Car className={className} />,
+    Vehiculos: <Car className={className} />,
     "Ingreso de personal": <UserCheck className={className} />,
     Correspondencia: <ClipboardList className={className} />,
     Emergencias: <Bell className={className} />,

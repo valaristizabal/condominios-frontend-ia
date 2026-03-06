@@ -24,6 +24,7 @@ import InventoriesPage from "../modules/settings/inventories/pages/InventoriesPa
 import OperativesPage from "../modules/settings/operatives/pages/OperativesPage";
 import ResidentsPage from "../modules/settings/residents/pages/ResidentsPage";
 import SuppliersPage from "../modules/settings/suppliers/pages/SuppliersPage";
+import UsersPermissionsPage from "../modules/settings/users/pages/UsersPermissionsPage";
 import PlatformLayout from "../layouts/PlatformLayout";
 import TenantLayout from "../layouts/TenantLayout";
 import ProtectedRoute from "./ProtectedRoute";
@@ -274,6 +275,16 @@ function AppRoutes() {
                 <SuppliersPage />
               </TenantLayout>
             </InventorySettingsRoute>
+          </TenantRoute>
+        }
+      />
+      <Route
+        path="/settings/users"
+        element={
+          <TenantRoute>
+            <TenantLayout>
+              <UsersPermissionsPage />
+            </TenantLayout>
           </TenantRoute>
         }
       />
@@ -548,6 +559,18 @@ function AppRoutes() {
             <SuperAdminRoute>
               <TenantLayout>
                 <SuppliersPage />
+              </TenantLayout>
+            </SuperAdminRoute>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/condominio/:id/settings/users"
+        element={
+          <ProtectedRoute>
+            <SuperAdminRoute>
+              <TenantLayout>
+                <UsersPermissionsPage />
               </TenantLayout>
             </SuperAdminRoute>
           </ProtectedRoute>
