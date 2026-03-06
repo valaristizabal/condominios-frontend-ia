@@ -41,7 +41,7 @@ export function useCleaningAreas() {
       const response = await apiClient.get("/cleaning-areas", requestConfig);
       setAreas(Array.isArray(response.data) ? response.data : []);
     } catch (err) {
-      setError(normalizeApiError(err, "No fue posible cargar areas de aseo."));
+      setError(normalizeApiError(err, "No fue posible cargar áreas de aseo."));
     } finally {
       setLoading(false);
     }
@@ -77,7 +77,7 @@ export function useCleaningAreas() {
         await fetchCleaningAreas();
         return response.data;
       } catch (err) {
-        setError(normalizeApiError(err, "No fue posible crear el area de aseo."));
+        setError(normalizeApiError(err, "No fue posible crear el área de aseo."));
         throw err;
       } finally {
         setSaving(false);
@@ -96,7 +96,7 @@ export function useCleaningAreas() {
         await fetchCleaningAreas();
         return response.data;
       } catch (err) {
-        setError(normalizeApiError(err, "No fue posible actualizar el area de aseo."));
+        setError(normalizeApiError(err, "No fue posible actualizar el área de aseo."));
         throw err;
       } finally {
         setSaving(false);
@@ -115,7 +115,7 @@ export function useCleaningAreas() {
         await fetchCleaningAreas();
         return response.data;
       } catch (err) {
-        setError(normalizeApiError(err, "No fue posible cambiar el estado del area de aseo."));
+        setError(normalizeApiError(err, "No fue posible cambiar el estado del área de aseo."));
         throw err;
       } finally {
         setSaving(false);
@@ -138,7 +138,7 @@ export function useCleaningAreas() {
         }));
         return items;
       } catch (err) {
-        setError(normalizeApiError(err, "No fue posible cargar el checklist del area."));
+        setError(normalizeApiError(err, "No fue posible cargar el checklist del área."));
         throw err;
       } finally {
         setChecklistLoading(false);
@@ -202,7 +202,7 @@ export function useCleaningAreas() {
         await fetchCleaningSchedules();
         return response.data;
       } catch (err) {
-        setError(normalizeApiError(err, "No fue posible crear la programacion de aseo."));
+        setError(normalizeApiError(err, "No fue posible crear la programación de aseo."));
         throw err;
       } finally {
         setScheduleSaving(false);
@@ -221,7 +221,7 @@ export function useCleaningAreas() {
         await fetchCleaningSchedules();
         return response.data;
       } catch (err) {
-        setError(normalizeApiError(err, "No fue posible actualizar la programacion de aseo."));
+        setError(normalizeApiError(err, "No fue posible actualizar la programación de aseo."));
         throw err;
       } finally {
         setScheduleSaving(false);
@@ -240,7 +240,7 @@ export function useCleaningAreas() {
         await fetchCleaningSchedules();
         return response.data;
       } catch (err) {
-        setError(normalizeApiError(err, "No fue posible eliminar la programacion de aseo."));
+        setError(normalizeApiError(err, "No fue posible eliminar la programación de aseo."));
         throw err;
       } finally {
         setScheduleSaving(false);

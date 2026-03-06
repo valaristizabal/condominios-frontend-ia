@@ -341,7 +341,7 @@ function InventoryPage() {
 
     const inventoryId = Number(productForm.inventory_id || selectedInventoryId);
     if (!inventoryId) {
-      setError("Selecciona una ubicacion de inventario para guardar el producto.");
+      setError("Selecciona una ubicación de inventario para guardar el producto.");
       return;
     }
 
@@ -389,7 +389,7 @@ function InventoryPage() {
   };
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6">
+    <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 lg:px-8">
       <header className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-extrabold text-gray-900">Inventario</h1>
@@ -612,7 +612,7 @@ function InventoryPage() {
             <p className="mt-1 text-lg font-extrabold text-slate-800">{formatCurrency(calculatedTotalValue)}</p>
           </div>
 
-          <div className="mt-4 flex gap-2">
+          <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-center">
             <button
               type="button"
               onClick={handleSaveProduct}
@@ -641,22 +641,18 @@ function InventoryPage() {
           Cargando inventario...
         </div>
       ) : (
-        <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_320px] xl:grid-cols-[minmax(0,1fr)_340px]">
-          <div className="min-w-0 space-y-6">
-            <ProductTable products={products} onEdit={openEditProduct} saving={savingProduct} />
-            <MovementHistory rows={movements} />
-          </div>
-          <aside className="w-full space-y-6 lg:min-w-[320px] xl:min-w-[340px]">
-            <QuickMovementForm
-              products={products}
-              form={movementForm}
-              onChange={handleMovementChange}
-              onSubmit={handleRegisterMovement}
-              saving={savingMovement}
-              disabled={!resolvedCondominiumId || !selectedInventoryId}
-            />
-            <LowStockAlerts products={lowStockProducts} />
-          </aside>
+        <div className="mt-6 space-y-6">
+          <ProductTable products={products} onEdit={openEditProduct} saving={savingProduct} />
+          <QuickMovementForm
+            products={products}
+            form={movementForm}
+            onChange={handleMovementChange}
+            onSubmit={handleRegisterMovement}
+            saving={savingMovement}
+            disabled={!resolvedCondominiumId || !selectedInventoryId}
+          />
+          <MovementHistory rows={movements} />
+          <LowStockAlerts products={lowStockProducts} />
         </div>
       )}
     </div>

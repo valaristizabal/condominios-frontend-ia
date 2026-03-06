@@ -245,13 +245,13 @@ function VehicleIncidentFormModal({
         <FieldError message={fieldErrors.evidence} />
       </section>
 
-      <div>
+      <div className="flex flex-col items-center">
         <button
           type="submit"
           disabled={submitting}
-          className="w-full rounded-xl bg-blue-600 py-3 text-sm font-bold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
+          className="w-full rounded-xl bg-rose-600 py-3 text-sm font-bold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-70 sm:w-auto sm:px-6"
         >
-          {submitting ? "Reportando..." : "Reportar novedad"}
+          {submitting ? "Reportando..." : "Reportar Novedad con Vehículo"}
         </button>
         <p className="mt-2 text-center text-xs font-semibold text-slate-500">
           Completa los campos para registrar la novedad con evidencia.

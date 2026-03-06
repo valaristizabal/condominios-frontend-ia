@@ -69,7 +69,7 @@ function InventoriesPage() {
         <div>
           <h1 className="text-2xl font-extrabold text-slate-900">Inventarios</h1>
           <p className="mt-1 text-sm text-slate-500">
-            Configura las ubicaciones fisicas (bodegas o areas) donde se almacenan los productos del inventario.
+            Configura las ubicaciones físicas (bodegas o áreas) donde se almacenan los productos del inventario.
             {activeCondominiumId ? ` Contexto: #${activeCondominiumId}` : ""}
           </p>
         </div>
@@ -79,7 +79,7 @@ function InventoriesPage() {
           className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-indigo-700 disabled:opacity-70"
           disabled={!hasTenantContext || saving}
         >
-          + Crear ubicacion
+          + Crear ubicación
         </button>
       </header>
 

@@ -422,7 +422,7 @@ function VehiclesPage() {
 
   return (
     <div className="w-full">
-      <div className="mx-auto w-full max-w-6xl px-6 py-6">
+      <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 lg:px-8">
         <div className="mb-6">
           <div className="mt-1 flex items-center gap-3">
             <BackButton variant="dashboard" />
@@ -444,7 +444,7 @@ function VehiclesPage() {
           </div>
         ) : null}
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+        <div className="grid grid-cols-1 gap-6 items-start">
           <Card>
             <div className="flex items-start justify-between gap-4">
               <div>
@@ -601,7 +601,7 @@ function VehiclesPage() {
                 type="submit"
                 disabled={submitting || !activeCondominiumId}
                 className={[
-                  "w-full rounded-2xl py-4 text-sm font-extrabold shadow-sm transition",
+                  "w-full rounded-2xl py-4 text-sm font-extrabold shadow-sm transition sm:mx-auto sm:block sm:w-auto sm:px-6",
                   submitting || !activeCondominiumId
                     ? "bg-slate-200 text-slate-500 cursor-not-allowed"
                     : "bg-blue-600 text-white hover:bg-blue-700 active:scale-[0.99]",
@@ -617,9 +617,9 @@ function VehiclesPage() {
               <button
                 type="button"
                 onClick={() => navigate(id ? `/condominio/${id}/vehiculos/novedad` : "/vehiculos/novedad")}
-                className="w-full rounded-2xl border border-slate-200 bg-white py-3 text-xs font-extrabold text-slate-800 hover:bg-slate-50"
+                className="w-full rounded-2xl border border-rose-300 bg-rose-600 py-3 text-xs font-extrabold text-white transition hover:bg-rose-700 sm:mx-auto sm:block sm:w-auto sm:px-6"
               >
-                Reportar novedad
+                Reportar Novedad con Vehículo
               </button>
             </form>
           </Card>

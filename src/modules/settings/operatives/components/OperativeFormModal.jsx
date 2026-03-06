@@ -186,7 +186,7 @@ function OperativeFormModal({ open, initialValues, roles = [], loading, onCancel
                 </select>
               </label>
               <Field
-                label="Numero de cuenta"
+                label="Número de cuenta"
                 name="account_number"
                 value={form.account_number ?? ""}
                 onChange={handleChange}

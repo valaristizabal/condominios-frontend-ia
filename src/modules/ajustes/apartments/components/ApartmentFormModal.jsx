@@ -95,12 +95,12 @@ function ApartmentFormModal({ open, initialValues, loading, onCancel, onSubmit }
     const unitTypeId = Number(form.unit_type_id);
 
     if (!number) {
-      setError("El nÃºmero del inmueble es obligatorio.");
+      setError("El número del inmueble es obligatorio.");
       return;
     }
 
     if (number.length > 50) {
-      setError("El nÃºmero no puede superar 50 caracteres.");
+      setError("El número no puede superar 50 caracteres.");
       return;
     }
 
@@ -116,7 +116,7 @@ function ApartmentFormModal({ open, initialValues, loading, onCancel, onSubmit }
 
     const floorNumber = floorText === "" ? null : Number(floorText);
     if (floorNumber !== null && !Number.isInteger(floorNumber)) {
-      setError("El piso debe ser un nÃºmero entero.");
+      setError("El piso debe ser un número entero.");
       return;
     }
 
@@ -143,7 +143,7 @@ function ApartmentFormModal({ open, initialValues, loading, onCancel, onSubmit }
         <form className="mt-4 space-y-4" onSubmit={handleSubmit}>
           <div className="grid gap-3 sm:grid-cols-2">
             <Field
-              label="Numero"
+              label="Número"
               name="number"
               value={form.number}
               onChange={handleChange}

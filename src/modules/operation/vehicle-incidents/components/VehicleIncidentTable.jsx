@@ -43,7 +43,7 @@
           No hay novedades para este filtro.
         </div>
       ) : (
-        <div className="mt-4 overflow-hidden rounded-xl border border-slate-200">
+        <div className="mt-4 overflow-x-auto rounded-xl border border-slate-200">
           <table className="min-w-full text-sm">
             <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
               <tr>

@@ -19,7 +19,7 @@ function PlatformLayout({ children }) {
             </div>
             <div className="leading-tight">
               <h2 className="text-lg font-extrabold text-slate-900">GenAccess</h2>
-              <p className="text-xs font-bold tracking-widest text-slate-400">PLATFORM CONSOLE</p>
+              <p className="text-xs font-bold tracking-widest text-slate-400">CONSOLA DE PLATAFORMA</p>
             </div>
           </div>
         </div>

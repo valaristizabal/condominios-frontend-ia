@@ -2,7 +2,7 @@ function VehicleTypeTable({ rows, busy, onEdit, onToggle }) {
   if (!rows.length) {
     return (
       <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center">
-        <p className="font-semibold text-slate-700">No hay tipos de vehiculo registrados</p>
+        <p className="font-semibold text-slate-700">No hay tipos de vehículo registrados</p>
       </div>
     );
   }

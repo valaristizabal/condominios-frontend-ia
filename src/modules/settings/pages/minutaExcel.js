@@ -11,7 +11,7 @@ const MODULE_ORDER = [
 ];
 
 const MODULE_LABELS = {
-  visits: "Visitas del dÃ­a",
+  visits: "Visitas del día",
   employee_entries: "Ingresos de personal",
   vehicle_entries: "Ingresos vehiculares",
   correspondences: "Correspondencia recibida",
@@ -50,7 +50,7 @@ const MODULE_SHEETS = {
     name: "VEHICULOS",
     columns: [
       { header: "Fecha", value: (row) => formatDateTime(row?.check_in_at || row?.created_at) },
-      { header: "VehÃ­culo ID", value: (row) => row?.vehicle_id || "-" },
+      { header: "Vehículo ID", value: (row) => row?.vehicle_id || "-" },
       { header: "Hora ingreso", value: (row) => formatDateTime(row?.check_in_at) },
       { header: "Hora salida", value: (row) => formatDateTime(row?.check_out_at) },
       { header: "Estado", value: (row) => row?.status || "-" },
@@ -73,7 +73,7 @@ const MODULE_SHEETS = {
     name: "ASEO",
     columns: [
       { header: "Fecha", value: (row) => formatDate(row?.cleaning_date) },
-      { header: "Ãrea", value: (row) => row?.cleaning_area_id || "-" },
+      { header: "Área", value: (row) => row?.cleaning_area_id || "-" },
       { header: "Operario", value: (row) => row?.operative_id || "-" },
       { header: "Estado", value: (row) => row?.status || "-" },
       { header: "Observaciones", value: (row) => row?.observations || "-" },
@@ -97,8 +97,8 @@ const MODULE_SHEETS = {
       { header: "Fecha", value: (row) => formatDateTime(row?.event_date || row?.created_at) },
       { header: "Tipo de emergencia", value: (row) => row?.emergency_type_id || "-" },
       { header: "Nivel", value: (row) => row?.level || "-" },
-      { header: "UbicaciÃ³n", value: (row) => row?.event_location || "-" },
-      { header: "DescripciÃ³n", value: (row) => row?.description || "-" },
+      { header: "Ubicación", value: (row) => row?.event_location || "-" },
+      { header: "Descripción", value: (row) => row?.description || "-" },
       { header: "Estado", value: (row) => row?.status || "-" },
     ],
   },
@@ -259,7 +259,7 @@ function addSummarySheet(workbook, sheetName, title, counts) {
   sheet.getRow(1).height = 26;
   sheet.addRow([]);
 
-  const header = sheet.addRow(["MÃ³dulo", "Cantidad", "GrÃ¡fico de barras"]);
+  const header = sheet.addRow(["Módulo", "Cantidad", "Gráfico de barras"]);
   styleHeaderRow(header);
 
   const max = Math.max(...MODULE_ORDER.map((key) => Number(counts[key] || 0)), 1);

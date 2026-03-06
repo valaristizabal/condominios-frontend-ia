@@ -143,7 +143,7 @@ function UsersPermissionsPage() {
         <div>
           <h1 className="text-2xl font-extrabold text-slate-900">Usuarios y permisos</h1>
           <p className="mt-1 text-sm text-slate-500">
-            Configura modulos visibles por usuario en la propiedad activa.
+            Configura módulos visibles por usuario en la propiedad activa.
           </p>
         </div>
       </header>
@@ -156,7 +156,7 @@ function UsersPermissionsPage() {
 
       {!canManage ? (
         <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-          No tienes permisos para administrar permisos de modulos.
+          No tienes permisos para administrar permisos de módulos.
         </p>
       ) : null}
 
@@ -233,7 +233,7 @@ function UsersPermissionsPage() {
       {targetUser ? (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/45 p-4 sm:items-center">
           <div className="w-full max-w-xl rounded-2xl bg-white p-5 shadow-2xl">
-            <h3 className="text-lg font-extrabold text-slate-900">Permisos de modulos</h3>
+            <h3 className="text-lg font-extrabold text-slate-900">Permisos de módulos</h3>
             <p className="mt-1 text-sm text-slate-500">
               Usuario: <span className="font-semibold text-slate-700">{targetUser?.full_name || "-"}</span>
             </p>

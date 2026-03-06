@@ -39,7 +39,7 @@ function VehicleTypeFormModal({ open, initialValues, loading, onCancel, onSubmit
         is_active: isActive,
       });
     } catch (err) {
-      const message = normalizeApiError(err, "No fue posible guardar el tipo de vehiculo.");
+      const message = normalizeApiError(err, "No fue posible guardar el tipo de vehículo.");
       setError(message);
     }
   };
@@ -48,7 +48,7 @@ function VehicleTypeFormModal({ open, initialValues, loading, onCancel, onSubmit
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/45 p-4 sm:items-center">
       <div className="w-full max-w-lg rounded-2xl bg-white p-5 shadow-2xl">
         <h3 className="text-lg font-extrabold text-slate-900">
-          {isEditing ? "Editar tipo de vehiculo" : "Nuevo tipo de vehiculo"}
+          {isEditing ? "Editar tipo de vehículo" : "Nuevo tipo de vehículo"}
         </h3>
 
         <form className="mt-4 space-y-4" onSubmit={handleSubmit}>
@@ -60,7 +60,7 @@ function VehicleTypeFormModal({ open, initialValues, loading, onCancel, onSubmit
               onChange={(event) => setName(event.target.value)}
               maxLength={100}
               className="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
-              placeholder="Ej: Automovil"
+              placeholder="Ej: Automóvil"
               required
             />
           </label>

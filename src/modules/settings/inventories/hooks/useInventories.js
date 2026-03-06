@@ -64,7 +64,7 @@ export function useInventories() {
         await loadInventories();
         return response.data;
       } catch (err) {
-        setError(normalizeApiError(err, "No fue posible crear la ubicacion de inventario."));
+        setError(normalizeApiError(err, "No fue posible crear la ubicación de inventario."));
         throw err;
       } finally {
         setSaving(false);
@@ -88,7 +88,7 @@ export function useInventories() {
         await loadInventories();
         return response.data;
       } catch (err) {
-        setError(normalizeApiError(err, "No fue posible actualizar la ubicacion de inventario."));
+        setError(normalizeApiError(err, "No fue posible actualizar la ubicación de inventario."));
         throw err;
       } finally {
         setSaving(false);
@@ -112,7 +112,7 @@ export function useInventories() {
         await loadInventories();
         return response.data;
       } catch (err) {
-        setError(normalizeApiError(err, "No fue posible cambiar estado de la ubicacion de inventario."));
+        setError(normalizeApiError(err, "No fue posible cambiar estado de la ubicación de inventario."));
         throw err;
       } finally {
         setSaving(false);

@@ -32,7 +32,7 @@ function LoginPage() {
               alt="Organización Gen"
               className="h-6 w-auto opacity-80 sm:h-7"
             />
-            <span className="text-xs font-semibold text-slate-500">By Organización Gen</span>
+            <span className="text-xs font-semibold text-slate-500">Por Organización Gen</span>
           </div>
         </footer>
       </div>

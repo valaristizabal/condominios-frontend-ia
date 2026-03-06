@@ -1,4 +1,4 @@
-﻿import { useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { Ambulance, Building2, Flame, Phone, Shield, Siren } from "lucide-react";
 import BackButton from "../../../components/common/BackButton";
 import { useEmergencies } from "../hooks/useEmergencies";
@@ -47,12 +47,12 @@ function FieldError({ message }) {
 
 function formatNow() {
   const d = new Date();
-  const date = d.toLocaleDateString();
-  const time = d.toLocaleTimeString([], {
+  const date = d.toLocaleDateString("es-CO");
+  const time = d.toLocaleTimeString("es-CO", {
     hour: "2-digit",
     minute: "2-digit",
   });
-  return `${date}, ${time} (AutomÃ¡tico)`;
+  return `${date}, ${time} (Automático)`;
 }
 
 function localDatetimeNow() {
@@ -73,12 +73,12 @@ export default function EmergenciesPage() {
 
   const [form, setForm] = useState({
     emergency_type_id: "",
-    event_type: "",
     event_location: "",
     description: "",
     event_date: localDatetimeNow(),
   });
   const [localError, setLocalError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
 
   const hasTypes = useMemo(() => emergencyTypes.length > 0, [emergencyTypes]);
 
@@ -87,6 +87,12 @@ export default function EmergenciesPage() {
     clearFieldError?.(name);
     setLocalError("");
   };
+
+  useEffect(() => {
+    if (!successMessage) return undefined;
+    const timer = window.setTimeout(() => setSuccessMessage(""), 4000);
+    return () => window.clearTimeout(timer);
+  }, [successMessage]);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -97,27 +103,27 @@ export default function EmergenciesPage() {
       return;
     }
 
-    if (!form.emergency_type_id || !form.event_type.trim() || !form.event_date) {
-      setLocalError("Completa tipo de emergencia, evento y fecha.");
+    if (!form.emergency_type_id || !form.event_date) {
+      setLocalError("Completa tipo de emergencia y fecha.");
       return;
     }
 
     try {
       await createEmergency({
         emergency_type_id: Number(form.emergency_type_id),
-        event_type: form.event_type.trim(),
+        event_type: resolveEventType(form.emergency_type_id, emergencyTypes),
         event_location: form.event_location.trim(),
         description: form.description.trim(),
         event_date: form.event_date,
       });
 
-      setForm((prev) => ({
-        ...prev,
-        event_type: "",
+      setForm(() => ({
+        emergency_type_id: "",
         event_location: "",
         description: "",
         event_date: localDatetimeNow(),
       }));
+      setSuccessMessage("La emergencia quedó registrada en la minuta.");
     } catch {
       // Error state is handled by hook state.
     }
@@ -125,7 +131,7 @@ export default function EmergenciesPage() {
 
   return (
     <div className="w-full">
-      <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-6 sm:px-6">
+      <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
         <header>
           <div className="flex items-center gap-3">
             <BackButton variant="dashboard" />
@@ -134,7 +140,7 @@ export default function EmergenciesPage() {
         </header>
 
         <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">
-          Usa este formulario solo para reportar incidentes crÃ­ticos que requieren atenciÃ³n inmediata.
+          Usa este formulario solo para reportar incidentes críticos que requieren atención inmediata.
         </div>
 
         {!activeCondominiumId ? (
@@ -151,7 +157,7 @@ export default function EmergenciesPage() {
           <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700">{localError}</div>
         ) : null}
 
-        <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
+        <div className="grid grid-cols-1 items-start gap-6">
           <Card>
             <SectionTitle icon={<Siren className="h-5 w-5" />} title="Reportar incidente" />
 
@@ -181,19 +187,19 @@ export default function EmergenciesPage() {
                   value={form.event_location}
                   onChange={(event) => setField("event_location", event.target.value)}
                 >
-                  <option value="">Seleccione ubicaciÃ³n...</option>
+                  <option value="">Seleccione ubicación...</option>
                   <option>Lobby</option>
                   <option>Parqueadero</option>
                   <option>Piscina</option>
                   <option>Gimnasio</option>
                   <option>Inmueble</option>
-                  <option>Zona comÃºn</option>
+                  <option>Zona común</option>
                 </select>
                 <FieldError message={fieldErrors.event_location} />
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-semibold text-slate-700">DescripciÃ³n</label>
+                <label className="text-sm font-semibold text-slate-700">Descripción</label>
                 <textarea
                   className={`${inputBase} min-h-[120px] py-3`}
                   placeholder="Detalles del incidente..."
@@ -203,27 +209,21 @@ export default function EmergenciesPage() {
                 <FieldError message={fieldErrors.description} />
               </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-semibold text-slate-700">Tipo de evento</label>
-                <input
-                  className={inputBase}
-                  value={form.event_type}
-                  onChange={(event) => setField("event_type", event.target.value)}
-                  placeholder="Ej: ConvulsiÃ³n"
-                />
-                <FieldError message={fieldErrors.event_type} />
-              </div>
-
-              <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-                <ClockIcon />
-                {formatDateLabel(form.event_date)}
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                <div className="flex items-center gap-2">
+                  <ClockIcon />
+                  {formatDateLabel(form.event_date)}
+                </div>
+                <p className="mt-1 text-xs font-semibold text-slate-500">
+                  Hora de registro: {formatRegistrationHour(form.event_date)}
+                </p>
               </div>
 
               <button
                 type="submit"
                 form="emergencyForm"
                 disabled={saving || !activeCondominiumId}
-                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 py-4 text-sm font-extrabold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
+                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 py-4 text-sm font-extrabold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70 sm:mx-auto sm:w-auto sm:px-6"
               >
                 <AlertIcon />
                 {saving ? "Reportando..." : "Reportar emergencia"}
@@ -256,6 +256,12 @@ export default function EmergenciesPage() {
           </Card>
         </div>
       </div>
+
+      {successMessage ? (
+        <div className="fixed bottom-4 right-4 z-50 max-w-sm rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700 shadow-lg">
+          {successMessage}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -281,12 +287,30 @@ function formatDateLabel(datetimeValue) {
   const date = new Date(datetimeValue);
   if (Number.isNaN(date.getTime())) return formatNow();
 
-  const datePart = date.toLocaleDateString();
-  const timePart = date.toLocaleTimeString([], {
+  const datePart = date.toLocaleDateString("es-CO");
+  const timePart = date.toLocaleTimeString("es-CO", {
     hour: "2-digit",
     minute: "2-digit",
   });
-  return `${datePart}, ${timePart} (AutomÃ¡tico)`;
+  return `${datePart}, ${timePart} (Automático)`;
+}
+
+function formatRegistrationHour(datetimeValue) {
+  const date = datetimeValue ? new Date(datetimeValue) : new Date();
+  if (Number.isNaN(date.getTime())) {
+    return new Date().toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" });
+  }
+
+  return date.toLocaleTimeString("es-CO", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function resolveEventType(typeId, emergencyTypes = []) {
+  const selectedType = emergencyTypes.find((item) => String(item.id) === String(typeId));
+  const resolved = String(selectedType?.name || "").trim();
+  return resolved || "Emergencia general";
 }
 
 function resolveEmergencyIcon(iconName) {
@@ -301,4 +325,3 @@ function resolveEmergencyIcon(iconName) {
 
   return <Shield className={iconClass} />;
 }
-

@@ -43,7 +43,7 @@ const PrimaryButton = ({ children, disabled, ...props }) => (
     {...props}
     disabled={disabled}
     className={[
-      "w-full rounded-2xl py-4 text-sm font-extrabold shadow-xl transition",
+      "w-full rounded-2xl py-4 text-sm font-extrabold shadow-xl transition sm:w-auto sm:px-6",
       disabled
         ? "bg-slate-200 text-slate-500 cursor-not-allowed"
         : "bg-blue-600 text-white hover:bg-blue-700 active:scale-[0.99]",
@@ -540,9 +540,11 @@ export default function CorrespondenceFormModal({
           </div>
         </div>
 
-        <PrimaryButton type="submit" disabled={!canSubmit || submitting}>
-          {submitting ? "Registrando..." : <><CheckCircle className="mr-2 inline h-4 w-4" />Registrar Entrega</>}
-        </PrimaryButton>
+        <div className="flex justify-center">
+          <PrimaryButton type="submit" disabled={!canSubmit || submitting}>
+            {submitting ? "Registrando..." : <><CheckCircle className="mr-2 inline h-4 w-4" />Registrar Entrega</>}
+          </PrimaryButton>
+        </div>
 
         {!canSubmit && (
           <p className="text-center text-xs font-semibold text-slate-400">

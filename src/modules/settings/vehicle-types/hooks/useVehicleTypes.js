@@ -29,7 +29,7 @@ export function useVehicleTypes() {
       const response = await apiClient.get("/vehicle-types", requestConfig);
       setItems(Array.isArray(response.data) ? response.data : []);
     } catch (err) {
-      setError(normalizeApiError(err, "No fue posible cargar tipos de vehiculo."));
+      setError(normalizeApiError(err, "No fue posible cargar tipos de vehículo."));
     } finally {
       setLoading(false);
     }
@@ -45,7 +45,7 @@ export function useVehicleTypes() {
         await fetchVehicleTypes();
         return response.data;
       } catch (err) {
-        setError(normalizeApiError(err, "No fue posible crear el tipo de vehiculo."));
+        setError(normalizeApiError(err, "No fue posible crear el tipo de vehículo."));
         throw err;
       } finally {
         setSaving(false);
@@ -64,7 +64,7 @@ export function useVehicleTypes() {
         await fetchVehicleTypes();
         return response.data;
       } catch (err) {
-        setError(normalizeApiError(err, "No fue posible actualizar el tipo de vehiculo."));
+        setError(normalizeApiError(err, "No fue posible actualizar el tipo de vehículo."));
         throw err;
       } finally {
         setSaving(false);
@@ -83,7 +83,7 @@ export function useVehicleTypes() {
         await fetchVehicleTypes();
         return response.data;
       } catch (err) {
-        setError(normalizeApiError(err, "No fue posible cambiar el estado del tipo de vehiculo."));
+        setError(normalizeApiError(err, "No fue posible cambiar el estado del tipo de vehículo."));
         throw err;
       } finally {
         setSaving(false);

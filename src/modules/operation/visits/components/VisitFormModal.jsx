@@ -95,7 +95,7 @@ function SearchableSelect({
         <span className={selectedOption ? "text-slate-900" : "text-slate-500"}>
           {selectedOption?.label || placeholder}
         </span>
-        <span className="text-slate-400">{open ? "â–²" : "â–¼"}</span>
+        <span className="text-slate-400">{open ? "▲" : "▼"}</span>
       </button>
 
       {open ? (
@@ -212,7 +212,7 @@ export default function VisitFormModal({ apartments = [], onSubmit, loading }) {
     if (!file) return;
 
     if (!file.type?.startsWith("image/")) {
-      alert("Selecciona una imagen vÃ¡lida.");
+      alert("Selecciona una imagen válida.");
       event.target.value = "";
       return;
     }
@@ -277,7 +277,7 @@ export default function VisitFormModal({ apartments = [], onSubmit, loading }) {
         </div>
 
         <div className="mt-6">
-          <Label>Evidencia fotogrÃ¡fica</Label>
+          <Label>Evidencia fotográfica</Label>
 
           <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onFileChange} />
 
@@ -313,7 +313,7 @@ export default function VisitFormModal({ apartments = [], onSubmit, loading }) {
               <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl border border-slate-200 bg-white shadow-sm">
                 <CameraIcon className="h-5 w-5 text-slate-600" />
               </div>
-              <p className="text-sm font-extrabold text-slate-900">Tomar / Cargar fotografÃ­a</p>
+              <p className="text-sm font-extrabold text-slate-900">Tomar / Cargar fotografía</p>
               <p className="mt-1 text-xs font-semibold text-slate-500">
                 Para la demo puedes cargar una imagen desde tu computador
               </p>
@@ -330,7 +330,7 @@ export default function VisitFormModal({ apartments = [], onSubmit, loading }) {
               className={`${inputBase} ${
                 errors.fullName ? "border-red-400 focus:ring-red-200" : "border-slate-200 focus:ring-blue-200"
               }`}
-              placeholder="Ej. Ana MarÃ­a PÃ©rez"
+              placeholder="Ej. Ana María Pérez"
               value={fullName}
               onChange={(event) => setFullName(event.target.value)}
             />
@@ -399,7 +399,7 @@ export default function VisitFormModal({ apartments = [], onSubmit, loading }) {
             <Label>Objetos que trae</Label>
             <textarea
               className="w-full min-h-[110px] rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none focus:ring-2 focus:ring-blue-200"
-              placeholder="Ej. maleta, portÃ¡til, caja..."
+              placeholder="Ej. maleta, portátil, caja..."
               value={objects}
               onChange={(event) => setObjects(event.target.value)}
             />
@@ -408,19 +408,21 @@ export default function VisitFormModal({ apartments = [], onSubmit, loading }) {
         </div>
 
         <div className="mt-6">
-          <button
-            type="button"
-            onClick={() =>
-              window.open("https://antecedentes.policia.gov.co:7005/WebJudicial/", "_blank")
-            }
-            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-extrabold text-slate-700 transition hover:bg-slate-50"
-            disabled={loading}
-          >
-            <div className="flex items-center justify-center gap-2">
-              <ShieldCheckIcon className="h-[18px] w-[18px] text-emerald-600" />
-              Consultar antecedentes
-            </div>
-          </button>
+          <div className="flex justify-center">
+            <button
+              type="button"
+              onClick={() =>
+                window.open("https://antecedentes.policia.gov.co:7005/WebJudicial/", "_blank")
+              }
+              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-extrabold text-slate-700 transition hover:bg-slate-50 sm:w-auto sm:px-6"
+              disabled={loading}
+            >
+              <div className="flex items-center justify-center gap-2">
+                <ShieldCheckIcon className="h-[18px] w-[18px] text-emerald-600" />
+                Consultar antecedentes
+              </div>
+            </button>
+          </div>
 
           <div className="mt-4 flex items-center gap-3">
             <input
@@ -438,12 +440,12 @@ export default function VisitFormModal({ apartments = [], onSubmit, loading }) {
           {errors.antecedentes && <ErrorText>{errors.antecedentes}</ErrorText>}
         </div>
 
-        <div className="mt-6">
+        <div className="mt-6 flex flex-col items-center gap-3">
           <button
             type="button"
             onClick={handleSubmit}
             disabled={!canSubmit}
-            className={`w-full rounded-2xl py-4 text-sm font-extrabold shadow-sm transition ${
+            className={`w-full rounded-2xl py-4 text-sm font-extrabold shadow-sm transition sm:w-auto sm:px-6 ${
               canSubmit
                 ? "bg-blue-600 text-white hover:bg-blue-700 active:scale-[0.99]"
                 : "cursor-not-allowed bg-slate-200 text-slate-500"
@@ -452,7 +454,7 @@ export default function VisitFormModal({ apartments = [], onSubmit, loading }) {
             {loading ? "Guardando..." : "Registrar ingreso"}
           </button>
 
-          <p className="mt-3 text-xs font-semibold text-slate-500">
+          <p className="text-center text-xs font-semibold text-slate-500">
             Para habilitar el registro, completa los campos y confirma antecedentes.
           </p>
         </div>

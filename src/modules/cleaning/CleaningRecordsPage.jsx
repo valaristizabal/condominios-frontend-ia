@@ -160,7 +160,7 @@ function CleaningRecordsPage() {
 
   return (
     <div className="w-full">
-      <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-6 sm:px-6">
+      <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
         <header>
           <div className="flex items-center gap-3">
             <BackButton variant="dashboard" />
@@ -180,7 +180,7 @@ function CleaningRecordsPage() {
           </div>
         ) : null}
 
-        <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
+        <div className="grid grid-cols-1 items-start gap-6">
           <Card>
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">REGISTRO</p>
@@ -221,7 +221,7 @@ function CleaningRecordsPage() {
               type="button"
               onClick={createRecord}
               disabled={!hasTenantContext || saving || loading}
-              className="mt-5 rounded-2xl bg-blue-600 px-6 py-3 text-sm font-extrabold text-white shadow-sm transition hover:bg-blue-700 disabled:opacity-70"
+              className="mt-5 w-full rounded-2xl bg-blue-600 px-6 py-3 text-sm font-extrabold text-white shadow-sm transition hover:bg-blue-700 disabled:opacity-70 sm:mx-auto sm:block sm:w-auto"
             >
               {saving ? "Procesando..." : "Crear limpieza"}
             </button>
@@ -354,7 +354,7 @@ function CleaningRecordsPage() {
                   onClick={handleFinish}
                   disabled={percent !== 100 || !String(observationText || "").trim() || saving}
                   className={[
-                    "mt-4 w-full rounded-2xl py-3 text-sm font-extrabold transition",
+                    "mt-4 w-full rounded-2xl py-3 text-sm font-extrabold transition sm:mx-auto sm:block sm:w-auto sm:px-6",
                     percent === 100 && String(observationText || "").trim() && !saving
                       ? "bg-emerald-600 text-white hover:bg-emerald-700"
                       : "cursor-not-allowed bg-slate-200 text-slate-500",

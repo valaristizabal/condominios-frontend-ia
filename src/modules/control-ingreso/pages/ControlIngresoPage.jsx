@@ -226,7 +226,7 @@ export default function ControlIngresoPage() {
 
   return (
     <div className="w-full">
-      <div className="mx-auto w-full max-w-6xl px-6 py-8">
+      <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 lg:px-8">
         <div className="mb-6">
           <BackButton variant="dashboard" className="mb-3" />
           <SectionTitle title="Ingreso de personal" />
@@ -244,7 +244,7 @@ export default function ControlIngresoPage() {
           </div>
         ) : null}
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div className="flex flex-col gap-6">
           <div className="space-y-6">
             <Segmented value={segment} onChange={setSegment} />
 
@@ -330,7 +330,7 @@ export default function ControlIngresoPage() {
             <Card className="rounded-3xl p-4">
               <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Registro</p>
 
-              <div className="mt-4 flex flex-wrap items-center gap-3">
+              <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
                 <HybridAttendanceButton isPresent={isPresent} disabled={saving || !selectedOperative} onToggle={handleToggleAttendance} />
                 <button
                   type="button"

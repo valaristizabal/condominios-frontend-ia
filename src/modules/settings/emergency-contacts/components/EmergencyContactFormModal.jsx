@@ -81,7 +81,7 @@ function EmergencyContactFormModal({ open, initialValues, loading, onCancel, onS
           </label>
 
           <label className="block">
-            <span className="mb-1.5 block text-sm font-semibold text-slate-700">Numero telefonico</span>
+            <span className="mb-1.5 block text-sm font-semibold text-slate-700">Número telefónico</span>
             <input
               value={phoneNumber}
               onChange={(event) => setPhoneNumber(event.target.value)}

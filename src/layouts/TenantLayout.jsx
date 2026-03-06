@@ -28,11 +28,11 @@ function getSidebarSections(basePath, permissions) {
 
   return [
     {
-      title: "Operacion",
+      title: "Operación",
       items: [
-        { label: "Menu principal", to: resolvePath("/dashboard"), enabled: true },
+        { label: "Menú principal", to: resolvePath("/dashboard"), enabled: true },
         { label: "Visitantes", to: resolvePath("/visits"), enabled: permissions.visits },
-        { label: "Vehiculos", to: resolvePath("/vehicles"), enabled: permissions.vehicles },
+        { label: "Vehículos", to: resolvePath("/vehicles"), enabled: permissions.vehicles },
         { label: "Ingreso de personal", to: resolvePath("/employee-entries"), enabled: permissions.employeeEntries },
         { label: "Correspondencia", to: resolvePath("/correspondence"), enabled: permissions.correspondences },
         { label: "Emergencias", to: resolvePath("/emergencies"), enabled: permissions.emergencies },
@@ -41,7 +41,7 @@ function getSidebarSections(basePath, permissions) {
       ],
     },
     {
-      title: "Configuracion",
+      title: "Configuración",
       items: [{ label: "Ajustes", to: resolvePath("/settings"), enabled: permissions.settings }],
     },
   ];
@@ -131,7 +131,7 @@ function TenantLayout({ children }) {
               type="button"
               className="absolute inset-0 bg-black/40"
               onClick={() => setMobileOpen(false)}
-              aria-label="Cerrar menu"
+              aria-label="Cerrar menú"
             />
             <div className="absolute left-0 top-0 flex h-full w-[300px] flex-col border-r border-slate-200 bg-white shadow-xl">
               <SidebarContent
@@ -156,7 +156,7 @@ function TenantLayout({ children }) {
           type="button"
           className="fixed right-4 top-4 z-[998] flex h-12 w-12 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-800 shadow-md lg:hidden"
           onClick={() => setMobileOpen(true)}
-          aria-label="Abrir menu"
+          aria-label="Abrir menú"
         >
           <MenuIcon />
         </button>
@@ -192,7 +192,7 @@ function SidebarContent({
             <h2 className="line-clamp-1 text-lg font-extrabold text-slate-900">
               {condominiumName || "Propiedad"}
             </h2>
-            <p className="text-xs font-bold tracking-widest text-slate-400">GESTION INTEGRAL</p>
+            <p className="text-xs font-bold tracking-widest text-slate-400">GESTIÓN INTEGRAL</p>
           </div>
         </div>
       </div>
@@ -239,13 +239,13 @@ function SidebarContent({
 
       <div className="shrink-0 px-5 pb-5 pt-3">
         <div className="flex flex-col items-center justify-center gap-1 text-center">
-          <img
-            src={ORGANIZATION_BRAND_LOGO}
-            alt="Organizacion Gen"
-            className="h-5 w-auto object-contain"
-            loading="lazy"
-          />
-          <span className="text-[11px] font-semibold text-slate-500">By Organizacion Gen</span>
+            <img
+              src={ORGANIZATION_BRAND_LOGO}
+              alt="Organización Gen"
+              className="h-5 w-auto object-contain"
+              loading="lazy"
+            />
+          <span className="text-[11px] font-semibold text-slate-500">Por Organización Gen</span>
         </div>
       </div>
     </div>
@@ -287,9 +287,9 @@ function MenuIcon() {
 function iconByLabel(label) {
   const className = "h-4 w-4";
   const map = {
-    "Menu principal": <LayoutDashboard className={className} />,
+    "Menú principal": <LayoutDashboard className={className} />,
     Visitantes: <Users className={className} />,
-    Vehiculos: <Car className={className} />,
+    Vehículos: <Car className={className} />,
     "Ingreso de personal": <UserCheck className={className} />,
     Correspondencia: <ClipboardList className={className} />,
     Emergencias: <Bell className={className} />,

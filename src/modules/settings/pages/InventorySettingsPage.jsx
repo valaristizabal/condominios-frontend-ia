@@ -51,7 +51,7 @@ function InventorySettingsPage() {
         <div className="mt-4 space-y-3">
           <ItemRow
             title="Ubicaciones de inventario"
-            description="Configura las ubicaciones fisicas (bodegas o areas) donde se almacenan los productos del inventario."
+            description="Configura las ubicaciones físicas (bodegas o áreas) donde se almacenan los productos del inventario."
             onClick={() => navigate(`${basePath}/settings/inventories`)}
           />
           <ItemRow

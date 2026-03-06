@@ -57,7 +57,7 @@
                       disabled={busy}
                       className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200 disabled:opacity-60"
                     >
-                      Cambiar contraseÃ±a
+                      Cambiar contraseña
                     </button>
                   ) : null}
                   <button

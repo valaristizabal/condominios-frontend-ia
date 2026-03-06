@@ -3,7 +3,6 @@ import { useEffect, useMemo, useState } from "react";
 function EmergencyFormModal({ open, loading, emergencyTypes = [], fieldErrors = {}, onCancel, onSubmit, onFieldChange }) {
   const [form, setForm] = useState({
     emergency_type_id: "",
-    event_type: "",
     event_location: "",
     description: "",
     event_date: "",
@@ -20,7 +19,6 @@ function EmergencyFormModal({ open, loading, emergencyTypes = [], fieldErrors = 
 
     setForm({
       emergency_type_id: emergencyTypes[0]?.id ? String(emergencyTypes[0].id) : "",
-      event_type: "",
       event_location: "",
       description: "",
       event_date: nowLocal,
@@ -44,11 +42,6 @@ function EmergencyFormModal({ open, loading, emergencyTypes = [], fieldErrors = 
       return;
     }
 
-    if (!form.event_type.trim()) {
-      setError("El campo tipo de evento es obligatorio.");
-      return;
-    }
-
     if (!form.event_date) {
       setError("La fecha del evento es obligatoria.");
       return;
@@ -57,7 +50,7 @@ function EmergencyFormModal({ open, loading, emergencyTypes = [], fieldErrors = 
     try {
       await onSubmit({
         emergency_type_id: Number(form.emergency_type_id),
-        event_type: form.event_type.trim(),
+        event_type: resolveEventType(form.emergency_type_id, emergencyTypes),
         event_location: form.event_location.trim(),
         description: form.description.trim(),
         event_date: form.event_date,
@@ -105,19 +98,7 @@ function EmergencyFormModal({ open, loading, emergencyTypes = [], fieldErrors = 
           </div>
 
           <label className="block">
-            <span className="mb-1.5 block text-sm font-semibold text-slate-700">Tipo de evento</span>
-            <input
-              value={form.event_type}
-              onChange={(event) => setField("event_type", event.target.value)}
-              maxLength={100}
-              placeholder="Ej: Convulsion"
-              className="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
-            />
-            <FieldError message={fieldErrors.event_type} />
-          </label>
-
-          <label className="block">
-            <span className="mb-1.5 block text-sm font-semibold text-slate-700">Ubicacion</span>
+            <span className="mb-1.5 block text-sm font-semibold text-slate-700">Ubicación</span>
             <input
               value={form.event_location}
               onChange={(event) => setField("event_location", event.target.value)}
@@ -170,6 +151,12 @@ function EmergencyFormModal({ open, loading, emergencyTypes = [], fieldErrors = 
 function FieldError({ message }) {
   if (!message) return null;
   return <p className="mt-1 text-xs font-semibold text-red-600">{message}</p>;
+}
+
+function resolveEventType(typeId, emergencyTypes = []) {
+  const selectedType = emergencyTypes.find((item) => String(item.id) === String(typeId));
+  const resolved = String(selectedType?.name || "").trim();
+  return resolved || "Emergencia general";
 }
 
 export default EmergencyFormModal;

@@ -74,7 +74,7 @@ function QuickMovementForm({ products, form, onChange, onSubmit, saving, disable
           type="button"
           onClick={onSubmit}
           disabled={disabled || saving || consumableProducts.length === 0}
-          className="w-full rounded-2xl bg-blue-600 px-4 py-3 font-bold text-white transition hover:bg-blue-700 disabled:opacity-70"
+          className="w-full rounded-2xl bg-blue-600 px-4 py-3 font-bold text-white transition hover:bg-blue-700 disabled:opacity-70 sm:mx-auto sm:block sm:w-auto sm:px-6"
         >
           {form.type === "entry" ? (
             <ArrowUpCircle className="mr-2 inline h-5 w-5" />

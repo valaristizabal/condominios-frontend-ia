@@ -33,7 +33,7 @@ function CleaningAreaChecklistManager({
 
     const cleanName = String(itemName || "").trim();
     if (!cleanName) {
-      setError("El nombre del item es obligatorio.");
+      setError("El nombre del ítem es obligatorio.");
       return;
     }
 
@@ -41,7 +41,7 @@ function CleaningAreaChecklistManager({
       await onAddItem(area.id, { item_name: cleanName });
       setItemName("");
     } catch (err) {
-      setError(normalizeApiError(err, "No fue posible agregar el item."));
+      setError(normalizeApiError(err, "No fue posible agregar el ítem."));
     }
   };
 
@@ -51,7 +51,7 @@ function CleaningAreaChecklistManager({
     try {
       await onDeleteItem(area.id, itemId);
     } catch (err) {
-      setError(normalizeApiError(err, "No fue posible eliminar el item."));
+      setError(normalizeApiError(err, "No fue posible eliminar el ítem."));
     }
   };
 
@@ -60,7 +60,7 @@ function CleaningAreaChecklistManager({
       <aside className="h-full w-full max-w-lg overflow-y-auto bg-white p-5 shadow-2xl">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h3 className="text-lg font-extrabold text-slate-900">Checklist de area</h3>
+            <h3 className="text-lg font-extrabold text-slate-900">Checklist de área</h3>
             <p className="mt-1 text-sm text-slate-500">{area.name}</p>
           </div>
           <button
@@ -76,7 +76,7 @@ function CleaningAreaChecklistManager({
           <input
             value={itemName}
             onChange={(event) => setItemName(event.target.value)}
-            placeholder="Nuevo item de checklist"
+            placeholder="Nuevo ítem de checklist"
             maxLength={255}
             className="h-10 flex-1 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
           />
@@ -99,7 +99,7 @@ function CleaningAreaChecklistManager({
           {loading ? (
             <p className="p-4 text-sm text-slate-500">Cargando checklist...</p>
           ) : !items.length ? (
-            <p className="p-4 text-sm text-slate-500">No hay items para esta area.</p>
+            <p className="p-4 text-sm text-slate-500">No hay ítems para esta área.</p>
           ) : (
             <ul className="divide-y divide-slate-100">
               {items.map((item) => (

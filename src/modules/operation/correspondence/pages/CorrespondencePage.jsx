@@ -235,7 +235,7 @@ export default function CorrespondencePage() {
 
   return (
     <div className="w-full">
-      <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 py-6">
+      <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 lg:px-8">
         <div className="mb-6">
           <div className="mb-3">
             <BackButton variant="dashboard" />
@@ -266,7 +266,7 @@ export default function CorrespondencePage() {
           </div>
         ) : null}
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+        <div className="flex flex-col gap-6">
           <CorrespondenceFormModal
             unitTypes={unitTypeOptions}
             couriers={couriers}

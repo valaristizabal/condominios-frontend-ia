@@ -27,7 +27,7 @@ function CleaningAreaFormModal({ open, initialValues, loading, onCancel, onSubmi
 
     const cleanName = String(name || "").trim();
     if (!cleanName) {
-      setError("El nombre del area es obligatorio.");
+      setError("El nombre del área es obligatorio.");
       return;
     }
 
@@ -43,7 +43,7 @@ function CleaningAreaFormModal({ open, initialValues, loading, onCancel, onSubmi
         is_active: isActive,
       });
     } catch (err) {
-      setError(normalizeApiError(err, "No fue posible guardar el area de aseo."));
+      setError(normalizeApiError(err, "No fue posible guardar el área de aseo."));
     }
   };
 
@@ -51,7 +51,7 @@ function CleaningAreaFormModal({ open, initialValues, loading, onCancel, onSubmi
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/45 p-4 sm:items-center">
       <div className="w-full max-w-lg rounded-2xl bg-white p-5 shadow-2xl">
         <h3 className="text-lg font-extrabold text-slate-900">
-          {isEditing ? "Editar area de aseo" : "Nueva area de aseo"}
+          {isEditing ? "Editar área de aseo" : "Nueva área de aseo"}
         </h3>
 
         <form className="mt-4 space-y-4" onSubmit={handleSubmit}>

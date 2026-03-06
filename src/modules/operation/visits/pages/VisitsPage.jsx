@@ -30,13 +30,13 @@ export default function VisitsPage() {
 
   return (
     <div className="w-full">
-      <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-6 sm:px-6">
+      <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
         <div className="flex items-center gap-3">
           <BackButton variant="dashboard" />
           <h1 className="text-2xl font-extrabold text-slate-900">Visitantes</h1>
         </div>
 
-        <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
+        <div className="flex flex-col gap-6">
           <div>
             <div className="mb-6 flex items-center gap-3">
               <UserPlusIcon className="h-[18px] w-[18px] text-emerald-600" />

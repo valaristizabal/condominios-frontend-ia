@@ -148,7 +148,7 @@ function CondominiumForm({ initialValues, loading, onCancel, onSubmit }) {
           onChange={handleChange}
         />
         <Field
-          label="Numero de Pisos"
+          label="Número de Pisos"
           name="floors"
           type="number"
           min="1"
@@ -159,17 +159,17 @@ function CondominiumForm({ initialValues, loading, onCancel, onSubmit }) {
       </div>
 
       <TextArea
-        label="Areas Comunes"
+        label="Áreas Comunes"
         name="common_areas"
-        placeholder="Describe areas comunes de la propiedad..."
+        placeholder="Describe áreas comunes de la propiedad..."
         value={form.common_areas}
         onChange={handleChange}
       />
 
       <Field
-        label="Direccion Completa"
+        label="Dirección Completa"
         name="address"
-        placeholder="Calle, Numero, Ciudad, Estado"
+        placeholder="Calle, Número, Ciudad, Estado"
         value={form.address}
         onChange={handleChange}
       />
@@ -183,9 +183,9 @@ function CondominiumForm({ initialValues, loading, onCancel, onSubmit }) {
       />
 
       <TextArea
-        label="Informacion de Contacto"
+        label="Información de Contacto"
         name="contact_info"
-        placeholder="Telefonos de administracion, correos, etc."
+        placeholder="Teléfonos de administración, correos, etc."
         value={form.contact_info}
         onChange={handleChange}
       />

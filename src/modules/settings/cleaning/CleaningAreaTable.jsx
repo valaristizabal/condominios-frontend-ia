@@ -2,7 +2,7 @@ function CleaningAreaTable({ rows, busy, onEdit, onToggle, onOpenChecklist }) {
   if (!rows.length) {
     return (
       <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center">
-        <p className="font-semibold text-slate-700">No hay areas de aseo registradas</p>
+        <p className="font-semibold text-slate-700">No hay áreas de aseo registradas</p>
       </div>
     );
   }
@@ -25,7 +25,7 @@ function CleaningAreaTable({ rows, busy, onEdit, onToggle, onOpenChecklist }) {
                 {item.name || "-"}
               </td>
               <td className="px-4 py-3 text-slate-600">
-                {item.description || "Sin descripcion"}
+                {item.description || "Sin descripción"}
               </td>
               <td className="px-4 py-3">
                 <span
