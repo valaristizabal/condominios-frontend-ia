@@ -1,6 +1,7 @@
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { useAuthContext } from "../context/useAuthContext";
 import LoginPage from "../modules/auth/pages/LoginPage";
+import SplashScreenPage from "../modules/auth/pages/SplashScreenPage";
 import ApartmentsPage from "../modules/ajustes/apartments/pages/ApartmentsPage";
 import UnitTypesPage from "../modules/settings/unit-types/pages/UnitTypesPage";
 import VehicleTypesPage from "../modules/settings/vehicle-types/pages/VehicleTypesPage";
@@ -37,7 +38,8 @@ import { isSuperUser } from "../utils/roles";
 function AppRoutes() {
   return (
     <Routes>
-      <Route path="/login" element={<LoginPage />} />
+      <Route path="/" element={<SplashScreenPage />} />
+      <Route path="/login" element={<LoginEntryRoute />} />
       <Route
         path="/settings"
         element={
@@ -617,6 +619,29 @@ function AppRoutes() {
   );
 }
 
+function LoginEntryRoute() {
+  const location = useLocation();
+  const { user, authLoading } = useAuthContext();
+
+  if (authLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#000000]">
+        <p className="text-lg font-semibold text-white/70">Iniciando...</p>
+      </div>
+    );
+  }
+
+  if (user) {
+    return <Navigate to={isSuperUser(user?.role) ? "/condominiums" : "/dashboard"} replace />;
+  }
+
+  if (!location.state?.fromSplash) {
+    return <Navigate to="/" replace />;
+  }
+
+  return <LoginPage />;
+}
+
 function HomeRedirect() {
   const { user, authLoading } = useAuthContext();
 
@@ -629,7 +654,7 @@ function HomeRedirect() {
   }
 
   if (!user) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/" replace />;
   }
 
   return <Navigate to={isSuperUser(user?.role) ? "/condominiums" : "/settings"} replace />;

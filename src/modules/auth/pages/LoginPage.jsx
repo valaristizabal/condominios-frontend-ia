@@ -10,11 +10,11 @@ function LoginPage() {
             <div className="mb-6 flex w-full flex-col items-center text-center sm:mb-7">
             <img
               src="/image/isotipo1.png"
-              alt="GenAccess"
+              alt="genAccess"
               className="mb-3 block h-11 w-11 rounded-xl object-contain sm:mb-4 sm:h-12 sm:w-12"
             />
             <h1 className="text-[2rem] font-extrabold leading-none tracking-tight text-slate-900 sm:text-[2.2rem]">
-              GenAccess
+              genAccess
             </h1>
             <p className="mx-auto mt-2 max-w-[260px] text-[0.98rem] leading-snug text-slate-400 sm:text-[1.02rem]">
               Plataforma Inteligente de Gestión para Propiedad Horizontal

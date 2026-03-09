@@ -15,10 +15,10 @@ function PlatformLayout({ children }) {
         <div className="px-7 pb-5 pt-8">
           <div className="flex items-center gap-3">
             <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-white">
-              <img src="/image/isotipo1.png" alt="GenAccess" className="h-8 w-auto object-contain" />
+              <img src="/image/isotipo1.png" alt="genAccess" className="h-8 w-auto object-contain" />
             </div>
             <div className="leading-tight">
-              <h2 className="text-lg font-extrabold text-slate-900">GenAccess</h2>
+              <h2 className="text-lg font-extrabold text-slate-900">genAccess</h2>
               <p className="text-xs font-bold tracking-widest text-slate-400">CONSOLA DE PLATAFORMA</p>
             </div>
           </div>
