@@ -1,5 +1,9 @@
+import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import BackButton from "../../../components/common/BackButton";
+import { useActiveCondominium } from "../../../context/useActiveCondominium";
+import apiClient from "../../../services/apiClient";
+import { exportInventoryWorkbook } from "./inventoryExcel";
 
 function Card({ children, className = "" }) {
   return (
@@ -34,7 +38,55 @@ function ItemRow({ title, description, onClick }) {
 function InventorySettingsPage() {
   const navigate = useNavigate();
   const { id } = useParams();
+  const { activeCondominiumId } = useActiveCondominium();
   const basePath = id ? `/condominio/${id}` : "";
+  const [exporting, setExporting] = useState(false);
+  const [error, setError] = useState("");
+
+  const resolvedCondominiumId = useMemo(() => {
+    const contextId = Number(activeCondominiumId);
+    if (Number.isFinite(contextId) && contextId > 0) return contextId;
+    const routeId = Number(id);
+    if (Number.isFinite(routeId) && routeId > 0) return routeId;
+    return null;
+  }, [activeCondominiumId, id]);
+
+  const requestConfig = useMemo(
+    () =>
+      resolvedCondominiumId
+        ? {
+            headers: {
+              "X-Active-Condominium-Id": String(resolvedCondominiumId),
+            },
+          }
+        : undefined,
+    [resolvedCondominiumId]
+  );
+
+  const handleExportInventory = async () => {
+    if (!resolvedCondominiumId || exporting) return;
+    setExporting(true);
+    setError("");
+
+    try {
+      const response = await apiClient.get("/products", requestConfig);
+      const rows = Array.isArray(response.data?.data)
+        ? response.data.data
+        : Array.isArray(response.data)
+          ? response.data
+          : [];
+
+      await exportInventoryWorkbook({
+        products: rows,
+        fileName: `inventario-${new Date().toISOString().slice(0, 10)}.xlsx`,
+        condominiumLabel: `Propiedad #${resolvedCondominiumId}`,
+      });
+    } catch (err) {
+      setError(normalizeApiError(err, "No fue posible exportar el inventario."));
+    } finally {
+      setExporting(false);
+    }
+  };
 
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6">
@@ -42,21 +94,41 @@ function InventorySettingsPage() {
         <BackButton variant="settings" />
       </div>
       <div className="mb-6">
-        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Configuración</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Configuracion</p>
         <h1 className="mt-1 text-2xl font-extrabold text-slate-900">Inventario</h1>
       </div>
 
       <Card>
-        <p className="text-xs font-extrabold uppercase tracking-widest text-slate-400">Configuración de inventario</p>
+        <p className="text-xs font-extrabold uppercase tracking-widest text-slate-400">Configuracion de inventario</p>
+        <div className="mt-4">
+          <button
+            type="button"
+            onClick={handleExportInventory}
+            disabled={!resolvedCondominiumId || exporting}
+            className="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            {exporting ? "Exportando..." : "Exportar inventario"}
+          </button>
+        </div>
+        {error ? (
+          <p className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700">
+            {error}
+          </p>
+        ) : null}
         <div className="mt-4 space-y-3">
           <ItemRow
+            title="Productos"
+            description="Crea y edita productos del inventario. Solo administradores."
+            onClick={() => navigate(`${basePath}/settings/inventory/products`)}
+          />
+          <ItemRow
             title="Ubicaciones de inventario"
-            description="Configura las ubicaciones físicas (bodegas o áreas) donde se almacenan los productos del inventario."
+            description="Configura las ubicaciones fisicas (bodegas o areas) donde se almacenan los productos del inventario."
             onClick={() => navigate(`${basePath}/settings/inventories`)}
           />
           <ItemRow
-            title="Categorías de inventario"
-            description="Configura categorías de productos para inventario"
+            title="Categorias de inventario"
+            description="Configura categorias de productos para inventario"
             onClick={() => navigate(`${basePath}/settings/inventory-categories`)}
           />
           <ItemRow
@@ -78,5 +150,20 @@ function ChevronRightIcon() {
   );
 }
 
-export default InventorySettingsPage;
+function normalizeApiError(err, fallbackMessage) {
+  const responseData = err?.response?.data;
+  const errors = responseData?.errors;
 
+  if (errors && typeof errors === "object") {
+    const firstFieldErrors = Object.values(errors).find(
+      (fieldErrors) => Array.isArray(fieldErrors) && fieldErrors.length > 0
+    );
+    if (firstFieldErrors) {
+      return String(firstFieldErrors[0]);
+    }
+  }
+
+  return responseData?.message || err?.message || fallbackMessage;
+}
+
+export default InventorySettingsPage;

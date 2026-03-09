@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+﻿import { useEffect, useMemo, useRef, useState } from "react";
 import { PlusCircle } from "lucide-react";
 import BackButton from "../../../components/common/BackButton";
 import { useCleaningAreas } from "./useCleaningAreas";
@@ -16,10 +16,10 @@ const FREQUENCY_OPTIONS = [
 const WEEK_DAYS = [
   { value: 1, label: "Lunes" },
   { value: 2, label: "Martes" },
-  { value: 3, label: "Miércoles" },
+  { value: 3, label: "MiÃ©rcoles" },
   { value: 4, label: "Jueves" },
   { value: 5, label: "Viernes" },
-  { value: 6, label: "Sábado" },
+  { value: 6, label: "SÃ¡bado" },
   { value: 0, label: "Domingo" },
 ];
 
@@ -72,6 +72,7 @@ function CleaningAreasPage() {
   } = useCleaningAreas();
 
   const [newAreaName, setNewAreaName] = useState("");
+  const [showCreateAreaForm, setShowCreateAreaForm] = useState(false);
   const [editingAreaId, setEditingAreaId] = useState(null);
   const [editingName, setEditingName] = useState("");
   const [checklistAreaId, setChecklistAreaId] = useState(null);
@@ -118,9 +119,10 @@ function CleaningAreasPage() {
     try {
       await createCleaningArea({ name: cleanName });
       setNewAreaName("");
+      setShowCreateAreaForm(false);
       setSuccess("Área creada correctamente.");
     } catch (err) {
-      setLocalError(normalizeApiError(err, "No fue posible crear el área."));
+      setLocalError(normalizeApiError(err, "No fue posible crear el Área."));
     }
   };
 
@@ -147,9 +149,9 @@ function CleaningAreasPage() {
         name: String(editingName).trim(),
       });
       cancelEdit();
-      setSuccess("Área actualizada correctamente.");
+      setSuccess("Ãrea actualizada correctamente.");
     } catch (err) {
-      setLocalError(normalizeApiError(err, "No fue posible actualizar el área."));
+      setLocalError(normalizeApiError(err, "No fue posible actualizar el Área."));
     }
   };
 
@@ -161,7 +163,7 @@ function CleaningAreasPage() {
       await toggleCleaningArea(area.id);
       setSuccess(area.is_active ? "Área desactivada correctamente." : "Área activada correctamente.");
     } catch (err) {
-      setLocalError(normalizeApiError(err, "No fue posible cambiar estado del área."));
+      setLocalError(normalizeApiError(err, "No fue posible cambiar estado del Área."));
     }
   };
 
@@ -214,7 +216,7 @@ function CleaningAreasPage() {
     }
 
     if (scheduleConfig.enabled && scheduleConfig.frequency_type === "weekly" && !scheduleConfig.days_of_week.length) {
-      setLocalError("Debes seleccionar al menos un día para frecuencia semanal.");
+      setLocalError("Debes seleccionar al menos un dÍa para frecuencia semanal.");
       return;
     }
 
@@ -267,8 +269,9 @@ function CleaningAreasPage() {
     []
   );
 
-  const focusCreateInput = () => {
-    newAreaInputRef.current?.focus();
+  const handleShowCreateAreaForm = () => {
+    setShowCreateAreaForm(true);
+    window.setTimeout(() => newAreaInputRef.current?.focus(), 0);
   };
 
   return (
@@ -283,17 +286,17 @@ function CleaningAreasPage() {
         </div>
         <button
           type="button"
-          onClick={focusCreateInput}
+          onClick={handleShowCreateAreaForm}
           className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-indigo-700 disabled:opacity-70"
-          disabled={!hasTenantContext || saving}
+          disabled={!hasTenantContext || saving || showCreateAreaForm}
         >
-          + Nueva área
+          + Nueva Área
         </button>
       </header>
 
       {!hasTenantContext ? (
         <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-          No hay propiedad activa para gestionar áreas de aseo.
+          No hay propiedad activa para gestionar Áreas de aseo.
         </p>
       ) : null}
 
@@ -309,32 +312,44 @@ function CleaningAreasPage() {
         </p>
       ) : null}
 
-      <section className="mb-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-        <h2 className="text-base font-extrabold text-slate-900">Crear área</h2>
-        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
-          <div className="space-y-1.5">
-            <Label>Nombre del área</Label>
-            <input
-              ref={newAreaInputRef}
-              className={inputBase}
-              placeholder="Ej: Lobby, Gimnasio, Piscina"
-              value={newAreaName}
-              onChange={(event) => setNewAreaName(event.target.value)}
-              disabled={!hasTenantContext || saving}
-            />
-          </div>
+      {showCreateAreaForm ? (
+        <section className="mb-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+          <h2 className="text-base font-extrabold text-slate-900">Crear Área</h2>
+          <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-end">
+            <div className="space-y-1.5">
+              <Label>Nombre del Área</Label>
+              <input
+                ref={newAreaInputRef}
+                className={inputBase}
+                placeholder="Ej: Lobby, Gimnasio, Piscina"
+                value={newAreaName}
+                onChange={(event) => setNewAreaName(event.target.value)}
+                disabled={!hasTenantContext || saving}
+              />
+            </div>
 
-          <button
-            type="button"
-            onClick={onCreateArea}
-            disabled={!hasTenantContext || saving}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-indigo-700 disabled:opacity-70 sm:w-auto"
-          >
-            <PlusCircle className="h-4 w-4" />
-            Guardar
-          </button>
-        </div>
-      </section>
+            <button
+              type="button"
+              onClick={onCreateArea}
+              disabled={!hasTenantContext || saving}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-indigo-700 disabled:opacity-70 sm:w-auto"
+            >
+              <PlusCircle className="h-4 w-4" />
+              Guardar
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setShowCreateAreaForm(false);
+                setNewAreaName("");
+              }}
+              className="inline-flex w-full items-center justify-center rounded-xl bg-slate-100 px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-200 sm:w-auto"
+            >
+              Cancelar
+            </button>
+          </div>
+        </section>
+      ) : null}
 
       <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
@@ -346,11 +361,11 @@ function CleaningAreasPage() {
 
         {loading ? (
           <div className="rounded-lg border border-dashed border-slate-300 bg-white p-8 text-center text-slate-500">
-            Cargando áreas...
+            Cargando Áreas...
           </div>
         ) : cleaningAreas.length === 0 ? (
           <div className="rounded-lg border border-dashed border-slate-300 bg-white p-8 text-center text-slate-500">
-            Aún no hay áreas registradas.
+            Aún no hay Áreas registradas.
           </div>
         ) : (
           <div className="divide-y divide-slate-100">
@@ -606,3 +621,4 @@ function normalizeApiError(err, fallbackMessage) {
 }
 
 export default CleaningAreasPage;
+

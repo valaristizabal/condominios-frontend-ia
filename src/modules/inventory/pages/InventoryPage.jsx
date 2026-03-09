@@ -1,13 +1,15 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { PlusCircle } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useActiveCondominium } from "../../../context/useActiveCondominium";
+import { useAuthContext } from "../../../context/useAuthContext";
 import InventoryStats from "../components/InventoryStats";
 import ProductTable from "../components/ProductTable";
 import QuickMovementForm from "../components/QuickMovementForm";
 import MovementHistory from "../components/MovementHistory";
 import LowStockAlerts from "../components/LowStockAlerts";
+import { canAccessInventorySettings } from "../../../utils/roles";
 import {
   createProduct,
   getInventories,
@@ -37,8 +39,9 @@ function buildEmptyProductForm(inventoryId = "") {
   };
 }
 
-function InventoryPage() {
+function InventoryPage({ allowProductManagement = false, showOperationTools = true }) {
   const { activeCondominiumId } = useActiveCondominium();
+  const { user } = useAuthContext();
   const { id: routeCondominiumId } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -166,7 +169,7 @@ function InventoryPage() {
 
   const lowStockQuery = useQuery({
     queryKey: ["inventory", "low-stock", resolvedCondominiumId, selectedInventoryId],
-    enabled: canQuery && Boolean(selectedInventoryId),
+    enabled: showOperationTools && canQuery && Boolean(selectedInventoryId),
     queryFn: async () => {
       const response = await getLowStockProducts(requestConfig);
       return response.filter((product) => String(product.inventory_id) === String(selectedInventoryId));
@@ -182,16 +185,18 @@ function InventoryPage() {
   const loading =
     inventoriesAndCategoriesQuery.isLoading ||
     productsWithMovementsQuery.isLoading ||
-    lowStockQuery.isLoading;
+    (showOperationTools && lowStockQuery.isLoading);
 
   useEffect(() => {
     const queryError =
-      inventoriesAndCategoriesQuery.error || productsWithMovementsQuery.error || lowStockQuery.error;
+      inventoriesAndCategoriesQuery.error ||
+      productsWithMovementsQuery.error ||
+      (showOperationTools ? lowStockQuery.error : null);
 
     if (!queryError) return;
 
     setError(normalizeApiError(queryError, "No fue posible cargar inventario."));
-  }, [inventoriesAndCategoriesQuery.error, lowStockQuery.error, productsWithMovementsQuery.error]);
+  }, [inventoriesAndCategoriesQuery.error, lowStockQuery.error, productsWithMovementsQuery.error, showOperationTools]);
 
   const createProductMutation = useMutation({
     mutationFn: (payload) => createProduct(payload, requestConfig),
@@ -243,6 +248,7 @@ function InventoryPage() {
   const savingMovement = registerMovementMutation.isPending;
   const savingProduct = createProductMutation.isPending || updateProductMutation.isPending;
   const isEditing = Boolean(editingProductId);
+  const canManageProducts = allowProductManagement && canAccessInventorySettings(user);
 
   const stats = useMemo(() => {
     const consumables = products.filter((p) => p.type !== "asset").length;
@@ -341,7 +347,7 @@ function InventoryPage() {
 
     const inventoryId = Number(productForm.inventory_id || selectedInventoryId);
     if (!inventoryId) {
-      setError("Selecciona una ubicación de inventario para guardar el producto.");
+      setError("Selecciona una ubicaciÃ³n de inventario para guardar el producto.");
       return;
     }
 
@@ -394,15 +400,17 @@ function InventoryPage() {
         <div>
           <h1 className="text-2xl font-extrabold text-gray-900">Inventario</h1>
         </div>
-        <button
-          type="button"
-          onClick={openCreateProduct}
-          className="rounded-2xl bg-blue-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-blue-700"
-          disabled={!resolvedCondominiumId || !selectedInventoryId}
-        >
-          <PlusCircle className="mr-2 inline h-5 w-5" />
-          Añadir producto
-        </button>
+        {canManageProducts ? (
+          <button
+            type="button"
+            onClick={openCreateProduct}
+            className="rounded-2xl bg-blue-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-blue-700"
+            disabled={!resolvedCondominiumId || !selectedInventoryId}
+          >
+            <PlusCircle className="mr-2 inline h-5 w-5" />
+            Añadir producto
+          </button>
+        ) : null}
       </header>
 
       <section className="mt-6 rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
@@ -424,7 +432,7 @@ function InventoryPage() {
 
       {!resolvedCondominiumId ? (
         <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700">
-          No hay propiedad activa para operar este módulo.
+          No hay propiedad activa para operar este modulo.
         </div>
       ) : null}
 
@@ -444,7 +452,7 @@ function InventoryPage() {
         </div>
       ) : null}
 
-      {showAddProduct ? (
+      {showAddProduct && canManageProducts ? (
         <section className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
           <h2 className="text-xl font-bold text-gray-800">{isEditing ? "Editar producto" : "Nuevo producto"}</h2>
           <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -456,7 +464,7 @@ function InventoryPage() {
                 onChange={handleProductChange}
                 className="w-full rounded-2xl border border-gray-200 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-300"
               >
-                <option value="">Seleccione ubicación</option>
+                <option value="">Seleccione ubicaciÃ³n</option>
                 {inventories.map((inventory) => (
                   <option key={inventory.id} value={inventory.id}>
                     {inventory.name}
@@ -490,14 +498,14 @@ function InventoryPage() {
             </div>
 
             <div>
-              <label className="mb-1.5 block text-sm font-semibold text-gray-700">Categoría</label>
+              <label className="mb-1.5 block text-sm font-semibold text-gray-700">Categorí­a</label>
               <select
                 name="category_id"
                 value={productForm.category_id}
                 onChange={handleProductChange}
                 className="w-full rounded-2xl border border-gray-200 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-300"
               >
-                <option value="">Seleccione categoría</option>
+                <option value="">Seleccione categorí­a</option>
                 {categories.map((category) => (
                   <option key={category.id} value={category.id}>
                     {category.name}
@@ -538,7 +546,7 @@ function InventoryPage() {
 
             {productForm.type === "consumable" ? (
               <div>
-                <label className="mb-1.5 block text-sm font-semibold text-gray-700">Stock mínimo de alerta</label>
+                <label className="mb-1.5 block text-sm font-semibold text-gray-700">Stock mí­nimo de alerta</label>
                 <input
                   name="minimum_stock"
                   type="number"
@@ -546,7 +554,7 @@ function InventoryPage() {
                   value={productForm.minimum_stock}
                   onChange={handleProductChange}
                   className="w-full rounded-2xl border border-gray-200 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-300"
-                  placeholder="Stock mínimo de alerta"
+                  placeholder="Stock mí­nimo de alerta"
                 />
               </div>
             ) : null}
@@ -632,9 +640,11 @@ function InventoryPage() {
         </section>
       ) : null}
 
-      <div className="mt-6">
-        <InventoryStats stats={stats} />
-      </div>
+      {showOperationTools ? (
+        <div className="mt-6">
+          <InventoryStats stats={stats} />
+        </div>
+      ) : null}
 
       {loading ? (
         <div className="rounded-3xl border border-gray-100 bg-white p-6 text-sm font-semibold text-gray-500 shadow-sm">
@@ -642,17 +652,26 @@ function InventoryPage() {
         </div>
       ) : (
         <div className="mt-6 space-y-6">
-          <ProductTable products={products} onEdit={openEditProduct} saving={savingProduct} />
-          <QuickMovementForm
+          <ProductTable
             products={products}
-            form={movementForm}
-            onChange={handleMovementChange}
-            onSubmit={handleRegisterMovement}
-            saving={savingMovement}
-            disabled={!resolvedCondominiumId || !selectedInventoryId}
+            onEdit={openEditProduct}
+            saving={savingProduct}
+            canEdit={canManageProducts}
           />
-          <MovementHistory rows={movements} />
-          <LowStockAlerts products={lowStockProducts} />
+          {showOperationTools ? (
+            <>
+              <QuickMovementForm
+                products={products}
+                form={movementForm}
+                onChange={handleMovementChange}
+                onSubmit={handleRegisterMovement}
+                saving={savingMovement}
+                disabled={!resolvedCondominiumId || !selectedInventoryId}
+              />
+              <MovementHistory rows={movements} />
+              <LowStockAlerts products={lowStockProducts} />
+            </>
+          ) : null}
         </div>
       )}
     </div>
@@ -688,3 +707,6 @@ function formatCurrency(value) {
 }
 
 export default InventoryPage;
+
+
+
