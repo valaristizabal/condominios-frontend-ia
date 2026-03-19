@@ -2,15 +2,11 @@ import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import BackButton from "../../../components/common/BackButton";
 import { useActiveCondominium } from "../../../context/useActiveCondominium";
-import apiClient from "../../../services/apiClient";
+import { getAllProducts, getInventoryMovements } from "../../inventory/services/inventory.service";
 import { exportInventoryWorkbook } from "./inventoryExcel";
 
 function Card({ children, className = "" }) {
-  return (
-    <div className={["rounded-3xl border border-slate-200 bg-white p-5 shadow-sm", className].join(" ")}>
-      {children}
-    </div>
-  );
+  return <div className={["rounded-3xl border border-slate-200 bg-white p-5 shadow-sm", className].join(" ")}>{children}</div>;
 }
 
 function ItemRow({ title, description, onClick }) {
@@ -69,15 +65,14 @@ function InventorySettingsPage() {
     setError("");
 
     try {
-      const response = await apiClient.get("/products", requestConfig);
-      const rows = Array.isArray(response.data?.data)
-        ? response.data.data
-        : Array.isArray(response.data)
-          ? response.data
-          : [];
+      const [products, movements] = await Promise.all([
+        getAllProducts(requestConfig),
+        getInventoryMovements(requestConfig),
+      ]);
 
       await exportInventoryWorkbook({
-        products: rows,
+        products,
+        movements,
         fileName: `inventario-${new Date().toISOString().slice(0, 10)}.xlsx`,
         condominiumLabel: `Propiedad #${resolvedCondominiumId}`,
       });
@@ -111,9 +106,7 @@ function InventorySettingsPage() {
           </button>
         </div>
         {error ? (
-          <p className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700">
-            {error}
-          </p>
+          <p className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700">{error}</p>
         ) : null}
         <div className="mt-4 space-y-3">
           <ItemRow

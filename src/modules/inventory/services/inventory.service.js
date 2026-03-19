@@ -10,6 +10,33 @@ export async function getProducts(requestConfig, inventoryId) {
   return toRows(response.data);
 }
 
+export async function getAllProducts(requestConfig, inventoryId) {
+  const rows = [];
+  let page = 1;
+  let hasMore = true;
+
+  while (hasMore) {
+    const response = await apiClient.get("/products", {
+      ...(requestConfig || {}),
+      params: {
+        inventory_id: inventoryId,
+        per_page: 100,
+        page,
+      },
+    });
+
+    const chunk = toRows(response.data);
+    rows.push(...chunk);
+
+    const currentPage = Number(response.data?.current_page ?? page);
+    const lastPage = Number(response.data?.last_page ?? currentPage);
+    hasMore = currentPage < lastPage && chunk.length > 0;
+    page += 1;
+  }
+
+  return rows;
+}
+
 export async function getProductsWithMovements(requestConfig, inventoryId, perPage = 20) {
   const response = await apiClient.get("/inventory/products-with-movements", {
     ...(requestConfig || {}),
@@ -26,6 +53,7 @@ export async function getProductsWithMovements(requestConfig, inventoryId, perPa
         ? product.last_movements.map((movement) => ({
             ...movement,
             product_name: product.name,
+            inventory_name: product.inventory?.name || "-",
             product_unit_cost: product.unit_cost,
             movement_estimated_value:
               product.unit_cost === null || product.unit_cost === undefined
@@ -35,8 +63,8 @@ export async function getProductsWithMovements(requestConfig, inventoryId, perPa
         : []
     )
     .sort((a, b) => {
-      const aDate = new Date(a.movement_date || a.created_at || 0).getTime();
-      const bDate = new Date(b.movement_date || b.created_at || 0).getTime();
+      const aDate = new Date(a.fecha_salida || a.fecha_entrada || a.movement_date || a.created_at || 0).getTime();
+      const bDate = new Date(b.fecha_salida || b.fecha_entrada || b.movement_date || b.created_at || 0).getTime();
       return bDate - aDate;
     })
     .slice(0, 30);
@@ -89,8 +117,25 @@ export async function getLowStockProducts(requestConfig) {
   return toRows(response.data);
 }
 
+export async function getInventoryMovements(requestConfig, inventoryId) {
+  const response = await apiClient.get("/inventory/movements", {
+    ...(requestConfig || {}),
+    params: {
+      inventory_id: inventoryId,
+    },
+  });
+
+  return toRows(response.data);
+}
+
+export async function deactivateAsset(productId, requestConfig) {
+  const response = await apiClient.post(`/inventory/activos/${productId}/baja`, {}, requestConfig);
+  return response.data;
+}
+
 function toRows(payload) {
   if (Array.isArray(payload)) return payload;
   if (Array.isArray(payload?.data)) return payload.data;
   return [];
 }
+

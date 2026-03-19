@@ -9,6 +9,8 @@ function MovementHistory({ rows }) {
               <th className="px-4 py-3">ID</th>
               <th className="px-4 py-3">Fecha</th>
               <th className="px-4 py-3">Hora</th>
+              <th className="px-4 py-3">Fecha entrada</th>
+              <th className="px-4 py-3">Fecha salida</th>
               <th className="px-4 py-3">Producto</th>
               <th className="px-4 py-3">Tipo</th>
               <th className="px-4 py-3">Cantidad</th>
@@ -24,6 +26,8 @@ function MovementHistory({ rows }) {
                 <td className="px-4 py-3 text-gray-700">{row.id ?? "-"}</td>
                 <td className="px-4 py-3 text-gray-700">{formatDate(row.movement_date || row.created_at)}</td>
                 <td className="px-4 py-3 text-gray-700">{formatTime(row.created_at)}</td>
+                <td className="px-4 py-3 text-gray-700">{formatDateTime(row.fecha_entrada)}</td>
+                <td className="px-4 py-3 text-gray-700">{formatDateTime(row.fecha_salida)}</td>
                 <td className="px-4 py-3 font-semibold text-gray-800">{row.product_name || "-"}</td>
                 <td className="px-4 py-3">
                   <span
@@ -37,15 +41,13 @@ function MovementHistory({ rows }) {
                 <td className="px-4 py-3 font-semibold text-gray-800">{row.quantity}</td>
                 <td className="px-4 py-3 text-gray-700">{formatCurrency(row.product_unit_cost)}</td>
                 <td className="px-4 py-3 text-gray-700">{formatCurrency(row.movement_estimated_value)}</td>
-                <td className="px-4 py-3 text-gray-700">
-                  {resolveUserLabel(row)}
-                </td>
+                <td className="px-4 py-3 text-gray-700">{resolveUserLabel(row)}</td>
                 <td className="px-4 py-3 text-gray-700">{String(row.observations || "").trim() || "-"}</td>
               </tr>
             ))}
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={10} className="px-4 py-6 text-center text-sm font-semibold text-gray-500">
+                <td colSpan={12} className="px-4 py-6 text-center text-sm font-semibold text-gray-500">
                   Sin movimientos registrados.
                 </td>
               </tr>
@@ -69,6 +71,19 @@ function formatTime(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "-";
   return date.toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" });
+}
+
+function formatDateTime(value) {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  return date.toLocaleString("es-CO", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 function resolveUserLabel(row) {

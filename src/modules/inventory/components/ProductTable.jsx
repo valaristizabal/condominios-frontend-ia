@@ -1,6 +1,6 @@
 import { Pencil, Trash } from "lucide-react";
 
-function ProductTable({ products, onEdit, saving = false, canEdit = true }) {
+function ProductTable({ products, onEdit, onDeactivateAsset, saving = false, canEdit = true }) {
   return (
     <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
       <h2 className="text-xl font-bold text-gray-800">Listado de Productos</h2>
@@ -10,6 +10,7 @@ function ProductTable({ products, onEdit, saving = false, canEdit = true }) {
             <tr>
               <th className="px-4 py-3">Producto</th>
               <th className="px-4 py-3">Tipo</th>
+              <th className="px-4 py-3">Serial</th>
               <th className="px-4 py-3">Categoría</th>
               <th className="px-4 py-3">Ubicación</th>
               <th className="px-4 py-3">Proveedor</th>
@@ -31,6 +32,7 @@ function ProductTable({ products, onEdit, saving = false, canEdit = true }) {
                       {product.type === "asset" ? "Activo fijo" : "Consumible"}
                     </span>
                   </td>
+                  <td className="px-4 py-3 text-gray-700">{product.serial || "-"}</td>
                   <td className="px-4 py-3 text-gray-700">{product.category || "-"}</td>
                   <td className="px-4 py-3 text-gray-700">{product.location || "-"}</td>
                   <td className="px-4 py-3 text-gray-700">{product.supplier?.name || "-"}</td>
@@ -54,6 +56,16 @@ function ProductTable({ products, onEdit, saving = false, canEdit = true }) {
                         <button type="button" className="rounded-lg bg-gray-100 p-2" disabled>
                           <Trash className="h-4 w-4" />
                         </button>
+                        {product.type === "asset" ? (
+                          <button
+                            type="button"
+                            className="rounded-lg bg-amber-100 px-2 py-1 text-xs font-bold text-amber-800 disabled:opacity-60"
+                            disabled={saving || product.dado_de_baja || !onDeactivateAsset}
+                            onClick={() => onDeactivateAsset?.(product)}
+                          >
+                            {product.dado_de_baja ? "Inactivo" : "Dar de baja"}
+                          </button>
+                        ) : null}
                       </div>
                     </td>
                   ) : null}
@@ -69,7 +81,11 @@ function ProductTable({ products, onEdit, saving = false, canEdit = true }) {
 
 function resolveStockStatus(product) {
   if (product?.type === "asset") {
-    return { label: product?.is_active ? "Activo" : "Inactivo", className: "bg-slate-100 text-slate-700" };
+    if (product?.dado_de_baja || !product?.is_active) {
+      return { label: "INACTIVO", className: "bg-slate-200 text-slate-700" };
+    }
+
+    return { label: "Activo", className: "bg-sky-100 text-sky-700" };
   }
 
   const stock = Number(product?.stock_actual ?? product?.stock ?? 0);

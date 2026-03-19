@@ -39,7 +39,13 @@ export function useSuppliers() {
       setSaving(true);
       setError("");
       try {
-        const response = await apiClient.post("/suppliers", payload, requestConfig);
+        const response = await apiClient.post("/suppliers", payload, {
+          ...(requestConfig || {}),
+          headers: {
+            ...(requestConfig?.headers || {}),
+            "Content-Type": "multipart/form-data",
+          },
+        });
         await fetchSuppliers();
         return response.data;
       } catch (err) {
@@ -57,7 +63,13 @@ export function useSuppliers() {
       setSaving(true);
       setError("");
       try {
-        const response = await apiClient.put(`/suppliers/${id}`, payload, requestConfig);
+        const response = await apiClient.post(`/suppliers/${id}?_method=PUT`, payload, {
+          ...(requestConfig || {}),
+          headers: {
+            ...(requestConfig?.headers || {}),
+            "Content-Type": "multipart/form-data",
+          },
+        });
         await fetchSuppliers();
         return response.data;
       } catch (err) {

@@ -4,11 +4,14 @@ import { useSuppliers } from "../hooks/useSuppliers";
 
 const EMPTY_FORM = {
   name: "",
+  rut: "",
   contact_name: "",
   phone: "",
   email: "",
   address: "",
   is_active: true,
+  certificacion_bancaria_file: null,
+  documento_representante_legal_file: null,
 };
 
 function SuppliersPage() {
@@ -29,7 +32,8 @@ function SuppliersPage() {
       const matchQuery =
         !normalizedQuery ||
         String(item.name || "").toLowerCase().includes(normalizedQuery) ||
-        String(item.contact_name || "").toLowerCase().includes(normalizedQuery);
+        String(item.contact_name || "").toLowerCase().includes(normalizedQuery) ||
+        String(item.rut || "").toLowerCase().includes(normalizedQuery);
       const matchStatus = status === "all" || (status === "active" ? item.is_active : !item.is_active);
       return matchQuery && matchStatus;
     });
@@ -47,11 +51,14 @@ function SuppliersPage() {
     setLocalError("");
     setForm({
       name: item?.name || "",
+      rut: item?.rut || "",
       contact_name: item?.contact_name || "",
       phone: item?.phone || "",
       email: item?.email || "",
       address: item?.address || "",
       is_active: Boolean(item?.is_active),
+      certificacion_bancaria_file: null,
+      documento_representante_legal_file: null,
     });
     setModalOpen(true);
   };
@@ -71,14 +78,22 @@ function SuppliersPage() {
       return;
     }
 
-    const payload = {
-      name: cleanName,
-      contact_name: String(form.contact_name || "").trim() || null,
-      phone: String(form.phone || "").trim() || null,
-      email: String(form.email || "").trim() || null,
-      address: String(form.address || "").trim() || null,
-      is_active: Boolean(form.is_active),
-    };
+    const payload = new FormData();
+    payload.append("name", cleanName);
+    payload.append("rut", String(form.rut || "").trim());
+    payload.append("contact_name", String(form.contact_name || "").trim());
+    payload.append("phone", String(form.phone || "").trim());
+    payload.append("email", String(form.email || "").trim());
+    payload.append("address", String(form.address || "").trim());
+    payload.append("is_active", Boolean(form.is_active) ? "1" : "0");
+
+    if (form.certificacion_bancaria_file instanceof File) {
+      payload.append("certificacion_bancaria_file", form.certificacion_bancaria_file);
+    }
+
+    if (form.documento_representante_legal_file instanceof File) {
+      payload.append("documento_representante_legal_file", form.documento_representante_legal_file);
+    }
 
     try {
       if (editing) {
@@ -97,7 +112,10 @@ function SuppliersPage() {
       await deactivateSupplier(item.id);
       return;
     }
-    await updateSupplier(item.id, { is_active: true });
+
+    const payload = new FormData();
+    payload.append("is_active", "1");
+    await updateSupplier(item.id, payload);
   };
 
   return (
@@ -131,7 +149,7 @@ function SuppliersPage() {
       ) : null}
 
       <section className="mb-4 grid grid-cols-1 gap-3 rounded-xl border border-slate-200 bg-white p-4 sm:grid-cols-3">
-        <Field label="Buscar" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Nombre o contacto" />
+        <Field label="Buscar" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Nombre, contacto o RUT" />
         <Select
           label="Estado"
           value={status}
@@ -165,9 +183,11 @@ function SuppliersPage() {
             <thead className="bg-slate-50 text-left text-xs uppercase tracking-wider text-slate-500">
               <tr>
                 <th className="px-4 py-3">Nombre</th>
+                <th className="px-4 py-3">RUT</th>
                 <th className="px-4 py-3">Contacto</th>
                 <th className="px-4 py-3">Telefono</th>
                 <th className="px-4 py-3">Email</th>
+                <th className="px-4 py-3">Documentos</th>
                 <th className="px-4 py-3">Estado</th>
                 <th className="px-4 py-3 text-right">Acciones</th>
               </tr>
@@ -176,9 +196,16 @@ function SuppliersPage() {
               {filtered.map((item) => (
                 <tr key={item.id} className="border-t border-slate-100">
                   <td className="px-4 py-3 font-semibold text-slate-800">{item.name || "-"}</td>
+                  <td className="px-4 py-3 text-slate-700">{item.rut || "-"}</td>
                   <td className="px-4 py-3 text-slate-700">{item.contact_name || "-"}</td>
                   <td className="px-4 py-3 text-slate-700">{item.phone || "-"}</td>
                   <td className="px-4 py-3 text-slate-700">{item.email || "-"}</td>
+                  <td className="px-4 py-3 text-slate-700">
+                    <div className="flex flex-col gap-1">
+                      <DocumentLink label="Certificación bancaria" href={item.certificacion_bancaria_url} />
+                      <DocumentLink label="Documento representante legal" href={item.documento_representante_legal_url} />
+                    </div>
+                  </td>
                   <td className="px-4 py-3">
                     <span
                       className={`rounded-full px-2.5 py-1 text-xs font-bold ${
@@ -218,15 +245,19 @@ function SuppliersPage() {
       {modalOpen ? (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/45 p-4 sm:items-center">
           <div className="w-full max-w-xl rounded-2xl bg-white p-5 shadow-2xl">
-            <h3 className="text-lg font-extrabold text-slate-900">
-              {editing ? "Editar proveedor" : "Nuevo proveedor"}
-            </h3>
+            <h3 className="text-lg font-extrabold text-slate-900">{editing ? "Editar proveedor" : "Nuevo proveedor"}</h3>
             <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
               <Field
                 label="Nombre"
                 value={form.name}
                 onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
                 placeholder="Nombre del proveedor"
+              />
+              <Field
+                label="RUT"
+                value={form.rut}
+                onChange={(event) => setForm((prev) => ({ ...prev, rut: event.target.value }))}
+                placeholder="RUT"
               />
               <Field
                 label="Contacto"
@@ -255,6 +286,16 @@ function SuppliersPage() {
                   placeholder="Direccion"
                 />
               </div>
+              <FileField
+                label="Certificación bancaria"
+                currentHref={editing?.certificacion_bancaria_url}
+                onChange={(file) => setForm((prev) => ({ ...prev, certificacion_bancaria_file: file }))}
+              />
+              <FileField
+                label="Documento representante legal"
+                currentHref={editing?.documento_representante_legal_url}
+                onChange={(file) => setForm((prev) => ({ ...prev, documento_representante_legal_file: file }))}
+              />
               <label className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3 md:col-span-2">
                 <span className="text-sm font-semibold text-slate-700">Activo</span>
                 <input
@@ -267,9 +308,7 @@ function SuppliersPage() {
             </div>
 
             {localError ? (
-              <p className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-                {localError}
-              </p>
+              <p className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{localError}</p>
             ) : null}
 
             <div className="mt-4 flex gap-3">
@@ -328,4 +367,33 @@ function Select({ label, value, onChange, options }) {
   );
 }
 
+function FileField({ label, currentHref, onChange }) {
+  return (
+    <label className="block">
+      <span className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-500">{label}</span>
+      <input
+        type="file"
+        onChange={(event) => onChange(event.target.files?.[0] ?? null)}
+        className="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 file:mr-3 file:rounded-md file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-sm file:font-semibold"
+      />
+      {currentHref ? (
+        <a href={currentHref} target="_blank" rel="noreferrer" className="mt-2 inline-flex text-xs font-semibold text-indigo-700">
+          Ver documento actual
+        </a>
+      ) : null}
+    </label>
+  );
+}
+
+function DocumentLink({ label, href }) {
+  if (!href) return <span className="text-xs text-slate-400">{label}: -</span>;
+
+  return (
+    <a href={href} target="_blank" rel="noreferrer" className="text-xs font-semibold text-indigo-700 hover:text-indigo-900">
+      {label}
+    </a>
+  );
+}
+
 export default SuppliersPage;
+
