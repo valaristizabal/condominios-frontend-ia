@@ -7,13 +7,20 @@ export function useCleaningAreas() {
   const [areas, setAreas] = useState([]);
   const [schedules, setSchedules] = useState([]);
   const [checklistsByArea, setChecklistsByArea] = useState({});
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [schedulesLoading, setSchedulesLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [scheduleSaving, setScheduleSaving] = useState(false);
   const [checklistLoading, setChecklistLoading] = useState(false);
   const [checklistSaving, setChecklistSaving] = useState(false);
   const [error, setError] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    lastPage: 1,
+    perPage: 12,
+    total: 0,
+  });
 
   const requestConfig = useMemo(
     () =>
@@ -27,25 +34,67 @@ export function useCleaningAreas() {
     [activeCondominiumId]
   );
 
-  const fetchCleaningAreas = useCallback(async () => {
-    if (!activeCondominiumId) {
-      setAreas([]);
-      setLoading(false);
-      return;
-    }
+  const fetchCleaningAreas = useCallback(
+    async ({ page = 1 } = {}) => {
+      if (!activeCondominiumId) {
+        setAreas([]);
+        setLoading(false);
+        setCurrentPage(1);
+        setPagination({
+          currentPage: 1,
+          lastPage: 1,
+          perPage: 12,
+          total: 0,
+        });
+        return;
+      }
 
-    setLoading(true);
-    setError("");
+      setLoading(true);
+      setError("");
 
-    try {
-      const response = await apiClient.get("/cleaning-areas", requestConfig);
-      setAreas(Array.isArray(response.data) ? response.data : []);
-    } catch (err) {
-      setError(normalizeApiError(err, "No fue posible cargar áreas de aseo."));
-    } finally {
-      setLoading(false);
-    }
-  }, [activeCondominiumId, requestConfig]);
+      try {
+        const response = await apiClient.get("/cleaning-areas", {
+          ...(requestConfig || {}),
+          params: {
+            page,
+            per_page: 12,
+          },
+        });
+
+        const payload = response?.data || {};
+        const rows = Array.isArray(payload?.data) ? payload.data : [];
+        const nextCurrentPage = Number(payload?.current_page || page || 1);
+        const nextLastPage = Math.max(1, Number(payload?.last_page || 1));
+
+        if (nextCurrentPage > nextLastPage) {
+          await fetchCleaningAreas({ page: nextLastPage });
+          return;
+        }
+
+        setAreas(rows);
+        setPagination({
+          currentPage: nextCurrentPage,
+          lastPage: nextLastPage,
+          perPage: Number(payload?.per_page || 12),
+          total: Number(payload?.total || rows.length),
+        });
+        setCurrentPage(nextCurrentPage);
+      } catch (err) {
+        setError(normalizeApiError(err, "No fue posible cargar areas de aseo."));
+        setAreas([]);
+        setCurrentPage(1);
+        setPagination({
+          currentPage: 1,
+          lastPage: 1,
+          perPage: 12,
+          total: 0,
+        });
+      } finally {
+        setLoading(false);
+      }
+    },
+    [activeCondominiumId, requestConfig]
+  );
 
   const fetchCleaningSchedules = useCallback(async () => {
     if (!activeCondominiumId) {
@@ -74,16 +123,16 @@ export function useCleaningAreas() {
 
       try {
         const response = await apiClient.post("/cleaning-areas", payload, requestConfig);
-        await fetchCleaningAreas();
+        await fetchCleaningAreas({ page: currentPage });
         return response.data;
       } catch (err) {
-        setError(normalizeApiError(err, "No fue posible crear el área de aseo."));
+        setError(normalizeApiError(err, "No fue posible crear el area de aseo."));
         throw err;
       } finally {
         setSaving(false);
       }
     },
-    [fetchCleaningAreas, requestConfig]
+    [currentPage, fetchCleaningAreas, requestConfig]
   );
 
   const updateCleaningArea = useCallback(
@@ -93,16 +142,16 @@ export function useCleaningAreas() {
 
       try {
         const response = await apiClient.put(`/cleaning-areas/${id}`, payload, requestConfig);
-        await fetchCleaningAreas();
+        await fetchCleaningAreas({ page: currentPage });
         return response.data;
       } catch (err) {
-        setError(normalizeApiError(err, "No fue posible actualizar el área de aseo."));
+        setError(normalizeApiError(err, "No fue posible actualizar el area de aseo."));
         throw err;
       } finally {
         setSaving(false);
       }
     },
-    [fetchCleaningAreas, requestConfig]
+    [currentPage, fetchCleaningAreas, requestConfig]
   );
 
   const toggleCleaningArea = useCallback(
@@ -112,16 +161,16 @@ export function useCleaningAreas() {
 
       try {
         const response = await apiClient.patch(`/cleaning-areas/${id}/toggle`, {}, requestConfig);
-        await fetchCleaningAreas();
+        await fetchCleaningAreas({ page: currentPage });
         return response.data;
       } catch (err) {
-        setError(normalizeApiError(err, "No fue posible cambiar el estado del área de aseo."));
+        setError(normalizeApiError(err, "No fue posible cambiar el estado del area de aseo."));
         throw err;
       } finally {
         setSaving(false);
       }
     },
-    [fetchCleaningAreas, requestConfig]
+    [currentPage, fetchCleaningAreas, requestConfig]
   );
 
   const fetchChecklistByArea = useCallback(
@@ -138,7 +187,7 @@ export function useCleaningAreas() {
         }));
         return items;
       } catch (err) {
-        setError(normalizeApiError(err, "No fue posible cargar el checklist del área."));
+        setError(normalizeApiError(err, "No fue posible cargar el checklist del area."));
         throw err;
       } finally {
         setChecklistLoading(false);
@@ -153,11 +202,7 @@ export function useCleaningAreas() {
       setError("");
 
       try {
-        const response = await apiClient.post(
-          `/cleaning-areas/${areaId}/checklist`,
-          payload,
-          requestConfig
-        );
+        const response = await apiClient.post(`/cleaning-areas/${areaId}/checklist`, payload, requestConfig);
         await fetchChecklistByArea(areaId);
         return response.data;
       } catch (err) {
@@ -176,10 +221,7 @@ export function useCleaningAreas() {
       setError("");
 
       try {
-        const response = await apiClient.delete(
-          `/cleaning-areas/${areaId}/checklist/${itemId}`,
-          requestConfig
-        );
+        const response = await apiClient.delete(`/cleaning-areas/${areaId}/checklist/${itemId}`, requestConfig);
         await fetchChecklistByArea(areaId);
         return response.data;
       } catch (err) {
@@ -202,7 +244,7 @@ export function useCleaningAreas() {
         await fetchCleaningSchedules();
         return response.data;
       } catch (err) {
-        setError(normalizeApiError(err, "No fue posible crear la programación de aseo."));
+        setError(normalizeApiError(err, "No fue posible crear la programacion de aseo."));
         throw err;
       } finally {
         setScheduleSaving(false);
@@ -221,7 +263,7 @@ export function useCleaningAreas() {
         await fetchCleaningSchedules();
         return response.data;
       } catch (err) {
-        setError(normalizeApiError(err, "No fue posible actualizar la programación de aseo."));
+        setError(normalizeApiError(err, "No fue posible actualizar la programacion de aseo."));
         throw err;
       } finally {
         setScheduleSaving(false);
@@ -240,7 +282,7 @@ export function useCleaningAreas() {
         await fetchCleaningSchedules();
         return response.data;
       } catch (err) {
-        setError(normalizeApiError(err, "No fue posible eliminar la programación de aseo."));
+        setError(normalizeApiError(err, "No fue posible eliminar la programacion de aseo."));
         throw err;
       } finally {
         setScheduleSaving(false);
@@ -250,8 +292,8 @@ export function useCleaningAreas() {
   );
 
   useEffect(() => {
-    fetchCleaningAreas();
-  }, [fetchCleaningAreas]);
+    fetchCleaningAreas({ page: currentPage });
+  }, [currentPage, fetchCleaningAreas]);
 
   useEffect(() => {
     fetchCleaningSchedules();
@@ -270,8 +312,11 @@ export function useCleaningAreas() {
     checklistLoading,
     checklistSaving,
     error,
+    currentPage,
+    pagination,
     hasTenantContext,
     activeCondominiumId,
+    setCurrentPage,
     fetchCleaningAreas,
     createCleaningArea,
     updateCleaningArea,

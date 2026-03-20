@@ -60,7 +60,10 @@ function CleaningAreasPage() {
     scheduleSaving,
     checklistSaving,
     error,
+    currentPage,
+    pagination,
     hasTenantContext,
+    setCurrentPage,
     createCleaningArea,
     updateCleaningArea,
     toggleCleaningArea,
@@ -355,7 +358,7 @@ function CleaningAreasPage() {
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-base font-extrabold text-slate-900">Áreas registradas</h2>
           <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-600">
-            {cleaningAreas.length} {cleaningAreas.length === 1 ? "área" : "áreas"}
+            {pagination.total} {pagination.total === 1 ? "área" : "áreas"}
           </span>
         </div>
 
@@ -600,6 +603,32 @@ function CleaningAreasPage() {
           </div>
         )}
       </section>
+
+      {pagination.lastPage > 1 ? (
+        <div className="mt-4 flex flex-col items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 sm:flex-row">
+          <p className="text-xs font-semibold text-slate-500">
+            Pagina {pagination.currentPage} de {pagination.lastPage} ({pagination.total} registros)
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+              disabled={loading || pagination.currentPage <= 1}
+              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Anterior
+            </button>
+            <button
+              type="button"
+              onClick={() => setCurrentPage((prev) => Math.min(pagination.lastPage, prev + 1))}
+              disabled={loading || pagination.currentPage >= pagination.lastPage}
+              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Siguiente
+            </button>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

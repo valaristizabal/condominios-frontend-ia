@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useActiveCondominium } from "../../../../context/useActiveCondominium";
 import { useSuppliers } from "../hooks/useSuppliers";
 
@@ -13,8 +13,20 @@ const EMPTY_FORM = {
 
 function SuppliersPage() {
   const { activeCondominiumId } = useActiveCondominium();
-  const { suppliers, loading, saving, error, hasTenantContext, createSupplier, updateSupplier, deactivateSupplier } =
-    useSuppliers();
+  const {
+    suppliers,
+    loading,
+    saving,
+    error,
+    currentPage,
+    pagination,
+    hasTenantContext,
+    setCurrentPage,
+    fetchSuppliers,
+    createSupplier,
+    updateSupplier,
+    deactivateSupplier,
+  } = useSuppliers();
 
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("all");
@@ -23,17 +35,14 @@ function SuppliersPage() {
   const [localError, setLocalError] = useState("");
   const [form, setForm] = useState(EMPTY_FORM);
 
-  const filtered = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
-    return suppliers.filter((item) => {
-      const matchQuery =
-        !normalizedQuery ||
-        String(item.name || "").toLowerCase().includes(normalizedQuery) ||
-        String(item.contact_name || "").toLowerCase().includes(normalizedQuery);
-      const matchStatus = status === "all" || (status === "active" ? item.is_active : !item.is_active);
-      return matchQuery && matchStatus;
-    });
-  }, [query, status, suppliers]);
+  useEffect(() => {
+    if (!activeCondominiumId) return;
+    fetchSuppliers({ page: currentPage, query, status });
+  }, [activeCondominiumId, currentPage, fetchSuppliers, query, status]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [query, status, activeCondominiumId, setCurrentPage]);
 
   const openCreate = () => {
     setEditing(null);
@@ -81,10 +90,11 @@ function SuppliersPage() {
     };
 
     try {
+      const filters = { query, status };
       if (editing) {
-        await updateSupplier(editing.id, payload);
+        await updateSupplier(editing.id, payload, filters);
       } else {
-        await createSupplier(payload);
+        await createSupplier(payload, filters);
       }
       closeModal();
     } catch (err) {
@@ -93,11 +103,12 @@ function SuppliersPage() {
   };
 
   const handleToggle = async (item) => {
+    const filters = { query, status };
     if (item.is_active) {
-      await deactivateSupplier(item.id);
+      await deactivateSupplier(item.id, filters);
       return;
     }
-    await updateSupplier(item.id, { is_active: true });
+    await updateSupplier(item.id, { is_active: true }, filters);
   };
 
   return (
@@ -148,7 +159,7 @@ function SuppliersPage() {
         <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-slate-500">
           Cargando proveedores...
         </div>
-      ) : filtered.length === 0 ? (
+      ) : suppliers.length === 0 ? (
         <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center">
           <p className="font-semibold text-slate-700">No hay proveedores registrados para esta propiedad.</p>
           <button
@@ -173,7 +184,7 @@ function SuppliersPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((item) => (
+              {suppliers.map((item) => (
                 <tr key={item.id} className="border-t border-slate-100">
                   <td className="px-4 py-3 font-semibold text-slate-800">{item.name || "-"}</td>
                   <td className="px-4 py-3 text-slate-700">{item.contact_name || "-"}</td>
@@ -215,12 +226,36 @@ function SuppliersPage() {
         </div>
       )}
 
+      {pagination.lastPage > 1 ? (
+        <div className="mt-4 flex flex-col items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 sm:flex-row">
+          <p className="text-xs font-semibold text-slate-500">
+            Pagina {pagination.currentPage} de {pagination.lastPage} ({pagination.total} registros)
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+              disabled={loading || pagination.currentPage <= 1}
+              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Anterior
+            </button>
+            <button
+              type="button"
+              onClick={() => setCurrentPage((prev) => Math.min(pagination.lastPage, prev + 1))}
+              disabled={loading || pagination.currentPage >= pagination.lastPage}
+              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Siguiente
+            </button>
+          </div>
+        </div>
+      ) : null}
+
       {modalOpen ? (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/45 p-4 sm:items-center">
           <div className="w-full max-w-xl rounded-2xl bg-white p-5 shadow-2xl">
-            <h3 className="text-lg font-extrabold text-slate-900">
-              {editing ? "Editar proveedor" : "Nuevo proveedor"}
-            </h3>
+            <h3 className="text-lg font-extrabold text-slate-900">{editing ? "Editar proveedor" : "Nuevo proveedor"}</h3>
             <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
               <Field
                 label="Nombre"
@@ -267,9 +302,7 @@ function SuppliersPage() {
             </div>
 
             {localError ? (
-              <p className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-                {localError}
-              </p>
+              <p className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{localError}</p>
             ) : null}
 
             <div className="mt-4 flex gap-3">

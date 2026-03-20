@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import BackButton from "../../../../components/common/BackButton";
 import EmergencyTypeFormModal from "../components/EmergencyTypeFormModal";
 import EmergencyTypeTable from "../components/EmergencyTypeTable";
@@ -11,6 +11,10 @@ function EmergencyTypesPage() {
     saving,
     error,
     hasTenantContext,
+    currentPage,
+    pagination,
+    setCurrentPage,
+    fetchEmergencyTypes,
     createEmergencyType,
     updateEmergencyType,
     toggleEmergencyType,
@@ -21,14 +25,14 @@ function EmergencyTypesPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
 
-  const filtered = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
-    return emergencyTypes.filter((item) => {
-      const matchQuery = !normalizedQuery || String(item.name || "").toLowerCase().includes(normalizedQuery);
-      const matchStatus = status === "all" || (status === "active" ? item.is_active : !item.is_active);
-      return matchQuery && matchStatus;
-    });
-  }, [query, status, emergencyTypes]);
+  useEffect(() => {
+    if (!hasTenantContext) return;
+    fetchEmergencyTypes({ page: currentPage, query, status });
+  }, [currentPage, fetchEmergencyTypes, hasTenantContext, query, status]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [query, status, hasTenantContext, setCurrentPage]);
 
   const openCreate = () => {
     setEditing(null);
@@ -47,16 +51,17 @@ function EmergencyTypesPage() {
   };
 
   const handleSubmit = async (payload) => {
+    const filters = { query, status };
     if (editing) {
-      await updateEmergencyType(editing.id, payload);
+      await updateEmergencyType(editing.id, payload, filters);
     } else {
-      await createEmergencyType(payload);
+      await createEmergencyType(payload, filters);
     }
     closeModal();
   };
 
   const handleToggle = async (item) => {
-    await toggleEmergencyType(item.id);
+    await toggleEmergencyType(item.id, { query, status });
   };
 
   return (
@@ -89,12 +94,7 @@ function EmergencyTypesPage() {
       ) : null}
 
       <section className="mb-4 grid grid-cols-1 gap-3 rounded-xl border border-slate-200 bg-white p-4 sm:grid-cols-3">
-        <Field
-          label="Buscar"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Nombre"
-        />
+        <Field label="Buscar" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Nombre" />
 
         <Select
           label="Estado"
@@ -113,8 +113,34 @@ function EmergencyTypesPage() {
           Cargando tipos de emergencia...
         </div>
       ) : (
-        <EmergencyTypeTable rows={filtered} busy={saving} onEdit={openEdit} onToggle={handleToggle} />
+        <EmergencyTypeTable rows={emergencyTypes} busy={saving} onEdit={openEdit} onToggle={handleToggle} />
       )}
+
+      {pagination.lastPage > 1 ? (
+        <div className="mt-4 flex flex-col items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 sm:flex-row">
+          <p className="text-xs font-semibold text-slate-500">
+            Pagina {pagination.currentPage} de {pagination.lastPage} ({pagination.total} registros)
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+              disabled={loading || pagination.currentPage <= 1}
+              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Anterior
+            </button>
+            <button
+              type="button"
+              onClick={() => setCurrentPage((prev) => Math.min(pagination.lastPage, prev + 1))}
+              disabled={loading || pagination.currentPage >= pagination.lastPage}
+              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Siguiente
+            </button>
+          </div>
+        </div>
+      ) : null}
 
       {modalOpen ? (
         <EmergencyTypeFormModal

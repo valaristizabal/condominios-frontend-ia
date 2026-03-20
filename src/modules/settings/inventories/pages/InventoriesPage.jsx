@@ -1,16 +1,25 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import BackButton from "../../../../components/common/BackButton";
 import InventoryFormModal from "../components/InventoryFormModal";
 import InventoryTable from "../components/InventoryTable";
 import { useInventories } from "../hooks/useInventories";
-import { useActiveCondominium } from "../../../../context/useActiveCondominium";
 
 function InventoriesPage() {
-  const { activeCondominiumId: contextActiveCondominiumId } = useActiveCondominium();
-  const activeCondominium = contextActiveCondominiumId ? { id: contextActiveCondominiumId } : null;
-  const activeCondominiumId = activeCondominium?.id;
-
-  const { inventories, loading, saving, error, hasTenantContext, loadInventories, createInventory, updateInventory, toggleInventory } = useInventories();
+  const {
+    inventories,
+    loading,
+    saving,
+    error,
+    currentPage,
+    pagination,
+    hasTenantContext,
+    activeCondominiumId,
+    setCurrentPage,
+    loadInventories,
+    createInventory,
+    updateInventory,
+    toggleInventory,
+  } = useInventories();
 
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("all");
@@ -19,17 +28,12 @@ function InventoriesPage() {
 
   useEffect(() => {
     if (!activeCondominiumId) return;
-    loadInventories(activeCondominiumId);
-  }, [activeCondominiumId, loadInventories]);
+    loadInventories({ page: currentPage, query, status });
+  }, [activeCondominiumId, currentPage, loadInventories, query, status]);
 
-  const filtered = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
-    return inventories.filter((item) => {
-      const matchQuery = !normalizedQuery || String(item.name || "").toLowerCase().includes(normalizedQuery);
-      const matchStatus = status === "all" || (status === "active" ? item.is_active : !item.is_active);
-      return matchQuery && matchStatus;
-    });
-  }, [query, status, inventories]);
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [query, status, activeCondominiumId, setCurrentPage]);
 
   const openCreate = () => {
     setEditing(null);
@@ -48,28 +52,29 @@ function InventoriesPage() {
   };
 
   const handleSubmit = async (payload) => {
+    const filters = { query, status };
     if (editing) {
-      await updateInventory(editing.id, payload);
+      await updateInventory(editing.id, payload, filters);
     } else {
-      await createInventory(payload);
+      await createInventory(payload, filters);
     }
     closeModal();
   };
 
   const handleToggle = async (item) => {
-    await toggleInventory(item.id);
+    await toggleInventory(item.id, { query, status });
   };
 
   return (
     <div className="mx-auto w-full max-w-6xl">
       <div className="mb-3">
-        <BackButton variant="inventorySettings" label="Atrás a Inventario" />
+        <BackButton variant="inventorySettings" label="Atras a Inventario" />
       </div>
       <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-extrabold text-slate-900">Inventarios</h1>
           <p className="mt-1 text-sm text-slate-500">
-            Configura las ubicaciones físicas (bodegas o áreas) donde se almacenan los productos del inventario.
+            Configura las ubicaciones fisicas (bodegas o areas) donde se almacenan los productos del inventario.
             {activeCondominiumId ? ` Contexto: #${activeCondominiumId}` : ""}
           </p>
         </div>
@@ -79,7 +84,7 @@ function InventoriesPage() {
           className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-indigo-700 disabled:opacity-70"
           disabled={!hasTenantContext || saving}
         >
-          + Crear ubicación
+          + Crear ubicacion
         </button>
       </header>
 
@@ -94,12 +99,7 @@ function InventoriesPage() {
       ) : null}
 
       <section className="mb-4 grid grid-cols-1 gap-3 rounded-xl border border-slate-200 bg-white p-4 sm:grid-cols-3">
-        <Field
-          label="Buscar"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Nombre"
-        />
+        <Field label="Buscar" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Nombre" />
 
         <Select
           label="Estado"
@@ -118,8 +118,34 @@ function InventoriesPage() {
           Cargando inventarios...
         </div>
       ) : (
-        <InventoryTable rows={filtered} busy={saving} onEdit={openEdit} onToggle={handleToggle} />
+        <InventoryTable rows={inventories} busy={saving} onEdit={openEdit} onToggle={handleToggle} />
       )}
+
+      {pagination.lastPage > 1 ? (
+        <div className="mt-4 flex flex-col items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 sm:flex-row">
+          <p className="text-xs font-semibold text-slate-500">
+            Pagina {pagination.currentPage} de {pagination.lastPage} ({pagination.total} registros)
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+              disabled={loading || pagination.currentPage <= 1}
+              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Anterior
+            </button>
+            <button
+              type="button"
+              onClick={() => setCurrentPage((prev) => Math.min(pagination.lastPage, prev + 1))}
+              disabled={loading || pagination.currentPage >= pagination.lastPage}
+              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Siguiente
+            </button>
+          </div>
+        </div>
+      ) : null}
 
       {modalOpen ? (
         <InventoryFormModal
@@ -167,4 +193,3 @@ function Select({ label, value, onChange, options }) {
 }
 
 export default InventoriesPage;
-
