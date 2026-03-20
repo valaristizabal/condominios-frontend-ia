@@ -4,6 +4,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useActiveCondominium } from "../../../../context/useActiveCondominium";
 import apiClient from "../../../../services/apiClient";
 import BackButton from "../../../../components/common/BackButton";
+import ImageUploadPrompt from "../../../../components/common/ImageUploadPrompt";
+import { normalizeRoleName } from "../../../../utils/roles";
 
 const Card = ({ children, className = "" }) => (
   <div className={["rounded-3xl border border-slate-200 bg-white p-6 shadow-sm", className].join(" ")}>{children}</div>
@@ -186,12 +188,18 @@ function VehiclesPage() {
     queryFn: async () => {
       const bootstrapRes = await apiClient.get("/vehicles/bootstrap-data", requestConfig);
       const bootstrap = bootstrapRes?.data || {};
+      const vehicleTypesPayload =
+        bootstrap.vehicle_types ?? bootstrap.vehicleTypes ?? bootstrap.data?.vehicle_types ?? bootstrap.data?.vehicleTypes;
+      const unitTypesPayload =
+        bootstrap.units ?? bootstrap.unitTypes ?? bootstrap.data?.units ?? bootstrap.data?.unitTypes;
+      const apartmentsPayload = bootstrap.apartments ?? bootstrap.data?.apartments;
+      const operativesPayload = bootstrap.operatives ?? bootstrap.data?.operatives;
 
       return {
-        vehicleTypes: Array.isArray(bootstrap.vehicle_types) ? bootstrap.vehicle_types : [],
-        unitTypes: Array.isArray(bootstrap.units) ? bootstrap.units : [],
-        apartments: Array.isArray(bootstrap.apartments) ? bootstrap.apartments : [],
-        operatives: Array.isArray(bootstrap.operatives) ? bootstrap.operatives : [],
+        vehicleTypes: Array.isArray(vehicleTypesPayload) ? vehicleTypesPayload : [],
+        unitTypes: Array.isArray(unitTypesPayload) ? unitTypesPayload : [],
+        apartments: Array.isArray(apartmentsPayload) ? apartmentsPayload : [],
+        operatives: Array.isArray(operativesPayload) ? operativesPayload : [],
       };
     },
   });
@@ -203,7 +211,7 @@ function VehiclesPage() {
     const operatives = initialQuery.data?.operatives || [];
 
     return operatives
-      .filter((operative) => String(operative?.role?.name || "").toLowerCase().includes("seguridad"))
+      .filter((operative) => isSecurityOperative(operative))
       .map((operative) => operative?.user)
       .filter((securityUser) => securityUser?.id)
       .map((securityUser) => ({ id: securityUser.id, full_name: securityUser.full_name || "Sin nombre" }));
@@ -490,13 +498,10 @@ function VehiclesPage() {
 
                   {!evidencePreview ? (
                     <>
-                      <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-sm">
-                        <span className="text-blue-600">[ ]</span>
-                      </div>
-                      <p className="text-sm font-extrabold text-slate-900">Tomar / Cargar fotografía</p>
-                      <p className="mt-1 text-xs font-semibold text-slate-500">
-                        Para la demo puedes cargar una imagen desde tu computador
-                      </p>
+                      <ImageUploadPrompt
+                        title="Tomar / Cargar fotografía"
+                        description="Para la demo puedes cargar una imagen desde tu computador"
+                      />
 
                       <button
                         type="button"
@@ -508,25 +513,29 @@ function VehiclesPage() {
                     </>
                   ) : (
                     <>
-                      <div className="mx-auto w-full max-w-[320px] overflow-hidden rounded-2xl border border-slate-200 bg-white">
+                      <div className="mt-3 mx-auto w-full max-w-[320px] overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
                         <img src={evidencePreview} alt="Evidencia" className="h-40 w-full object-cover" />
-                      </div>
-
-                      <div className="mt-4 flex items-center justify-center gap-2">
-                        <button
-                          type="button"
-                          onClick={handlePickEvidence}
-                          className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-xs font-extrabold text-slate-800 hover:bg-slate-50"
-                        >
-                          Cambiar
-                        </button>
-                        <button
-                          type="button"
-                          onClick={removeEvidence}
-                          className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-extrabold text-rose-700 hover:bg-rose-100"
-                        >
-                          Quitar
-                        </button>
+                        <div className="flex items-center justify-between gap-3 p-3">
+                          <p className="truncate text-xs text-slate-600">
+                            {evidenceFile?.name || "Imagen seleccionada"}
+                          </p>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={handlePickEvidence}
+                              className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-xs font-extrabold text-slate-800 hover:bg-slate-50"
+                            >
+                              Cambiar
+                            </button>
+                            <button
+                              type="button"
+                              onClick={removeEvidence}
+                              className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-extrabold text-rose-700 hover:bg-rose-100"
+                            >
+                              Quitar
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     </>
                   )}
@@ -779,6 +788,19 @@ function normalizeApiError(err, fallbackMessage) {
   }
 
   return responseData?.message || err?.message || fallbackMessage;
+}
+
+function isSecurityOperative(operative) {
+  const roleName = normalizeRoleName(operative?.role?.name || "");
+  const positionName = normalizeRoleName(operative?.position || "");
+  const searchable = `${roleName} ${positionName}`.trim();
+
+  return (
+    searchable.includes("seguridad") ||
+    searchable.includes("vigilante") ||
+    searchable.includes("porteria") ||
+    searchable.includes("portería")
+  );
 }
 
 export default VehiclesPage;

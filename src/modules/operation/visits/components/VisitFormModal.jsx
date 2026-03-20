@@ -1,5 +1,7 @@
 ﻿import { useEffect, useMemo, useRef, useState } from "react";
 
+import ImageUploadPrompt from "../../../../components/common/ImageUploadPrompt";
+
 const Card = ({ children, className = "" }) => (
   <div className={`rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5 ${className}`}>
     {children}
@@ -14,17 +16,6 @@ const ErrorText = ({ children }) => <p className="mt-2 text-sm text-red-600">{ch
 
 const inputBase =
   "w-full h-14 rounded-2xl bg-white px-4 text-slate-900 outline-none focus:ring-2 border";
-
-function CameraIcon({ className = "" }) {
-  return (
-    <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
-      <path
-        fill="currentColor"
-        d="M9 4 7.17 6H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-3.17L15 4H9Zm3 14a4 4 0 1 1 0-8 4 4 0 0 1 0 8Z"
-      />
-    </svg>
-  );
-}
 
 function ShieldCheckIcon({ className = "" }) {
   return (
@@ -139,7 +130,7 @@ function SearchableSelect({
   );
 }
 
-export default function VisitFormModal({ apartments = [], onSubmit, loading }) {
+export default function VisitFormModal({ unitTypes = [], apartments = [], onSubmit, loading }) {
   const fileRef = useRef(null);
 
   const [fullName, setFullName] = useState("");
@@ -153,26 +144,20 @@ export default function VisitFormModal({ apartments = [], onSubmit, loading }) {
   const [evidenceName, setEvidenceName] = useState("");
   const [errors, setErrors] = useState({});
 
+  const unitTypeCatalog = useMemo(() => unitTypes || [], [unitTypes]);
   const apartmentsOptions = useMemo(() => apartments || [], [apartments]);
-  const unitTypeOptions = useMemo(() => {
-    const map = new Map();
-    for (const apartment of apartmentsOptions) {
-      const id = apartment?.unit_type_id;
-      const name = apartment?.unit_type?.name || apartment?.unitType?.name || "Sin tipo";
-      if (id && !map.has(String(id))) {
-        map.set(String(id), { id: String(id), name });
-      }
-    }
-    return Array.from(map.values());
-  }, [apartmentsOptions]);
 
   const filteredApartments = useMemo(() => {
     if (!unitTypeId) return [];
     return apartmentsOptions.filter((item) => String(item?.unit_type_id) === String(unitTypeId));
   }, [apartmentsOptions, unitTypeId]);
   const unitTypeSelectOptions = useMemo(
-    () => unitTypeOptions.map((unitType) => ({ value: unitType.id, label: unitType.name })),
-    [unitTypeOptions]
+    () =>
+      unitTypeCatalog.map((unitType) => ({
+        value: String(unitType.id),
+        label: unitType.name || `Tipo ${unitType.id}`,
+      })),
+    [unitTypeCatalog]
   );
   const apartmentSelectOptions = useMemo(
     () =>
@@ -195,7 +180,9 @@ export default function VisitFormModal({ apartments = [], onSubmit, loading }) {
     const next = {};
     if (!fullName.trim()) next.fullName = "Ingresa el nombre completo.";
     if (!document.trim()) next.document = "Ingresa el documento.";
+    else if (!/^\d+$/.test(document.trim())) next.document = "El documento solo puede contener números.";
     if (!phone.trim()) next.phone = "Ingresa el celular.";
+    else if (!/^\d+$/.test(phone.trim())) next.phone = "El celular solo puede contener números.";
     if (!unitTypeId) next.unitTypeId = "Selecciona el tipo de unidad.";
     if (!apartmentId) next.apartmentId = "Selecciona el inmueble destino.";
     if (!antecedentesConsultados) {
@@ -241,16 +228,24 @@ export default function VisitFormModal({ apartments = [], onSubmit, loading }) {
     const resolvedDestination =
       selectedApartment?.number ? `Inmueble ${selectedApartment.number}` : `Inmueble ${apartmentId}`;
 
-    await onSubmit?.({
-      apartment_id: Number(apartmentId),
-      full_name: fullName.trim(),
-      document_number: document.trim(),
-      phone: phone.trim(),
-      destination: resolvedDestination,
-      carried_items: objects.trim(),
-      background_check: antecedentesConsultados,
-      photo: fileRef.current?.files?.[0] || null,
-    });
+    try {
+      await onSubmit?.({
+        apartment_id: Number(apartmentId),
+        full_name: fullName.trim(),
+        document_number: document.trim(),
+        phone: phone.trim(),
+        destination: resolvedDestination,
+        carried_items: objects.trim(),
+        background_check: antecedentesConsultados,
+        photo: fileRef.current?.files?.[0] || null,
+      });
+    } catch (error) {
+      setErrors((prev) => ({
+        ...prev,
+        ...normalizeVisitFormErrors(error),
+      }));
+      return;
+    }
 
     setFullName("");
     setDocument("");
@@ -282,22 +277,22 @@ export default function VisitFormModal({ apartments = [], onSubmit, loading }) {
           <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onFileChange} />
 
           {evidenceUrl ? (
-            <div className="mt-3 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
-              <img src={evidenceUrl} alt="Evidencia" className="h-[220px] w-full object-cover" />
+            <div className="mt-3 mx-auto w-full max-w-[320px] overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
+              <img src={evidenceUrl} alt="Evidencia" className="h-40 w-full object-cover" />
               <div className="flex items-center justify-between gap-3 p-3">
                 <p className="truncate text-xs text-slate-600">{evidenceName}</p>
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={openPicker}
-                    className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50"
+                    className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-xs font-extrabold text-slate-800 hover:bg-slate-50"
                   >
                     Cambiar
                   </button>
                   <button
                     type="button"
                     onClick={clearEvidence}
-                    className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50"
+                    className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-extrabold text-rose-700 hover:bg-rose-100"
                   >
                     Quitar
                   </button>
@@ -310,13 +305,10 @@ export default function VisitFormModal({ apartments = [], onSubmit, loading }) {
               onClick={openPicker}
               className="mt-3 w-full rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center transition hover:bg-slate-100"
             >
-              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl border border-slate-200 bg-white shadow-sm">
-                <CameraIcon className="h-5 w-5 text-slate-600" />
-              </div>
-              <p className="text-sm font-extrabold text-slate-900">Tomar / Cargar fotografía</p>
-              <p className="mt-1 text-xs font-semibold text-slate-500">
-                Para la demo puedes cargar una imagen desde tu computador
-              </p>
+              <ImageUploadPrompt
+                title="Tomar / Cargar fotografía"
+                description="Para la demo puedes cargar una imagen desde tu computador"
+              />
             </button>
           )}
 
@@ -346,7 +338,11 @@ export default function VisitFormModal({ apartments = [], onSubmit, loading }) {
                 }`}
                 placeholder="Ej. 1094..."
                 value={document}
-                onChange={(event) => setDocument(event.target.value)}
+                inputMode="numeric"
+                onChange={(event) => {
+                  setDocument(event.target.value.replace(/\D+/g, ""));
+                  setErrors((prev) => ({ ...prev, document: "" }));
+                }}
               />
               {errors.document && <ErrorText>{errors.document}</ErrorText>}
             </div>
@@ -359,7 +355,11 @@ export default function VisitFormModal({ apartments = [], onSubmit, loading }) {
                 }`}
                 placeholder="Ej. 300..."
                 value={phone}
-                onChange={(event) => setPhone(event.target.value)}
+                inputMode="numeric"
+                onChange={(event) => {
+                  setPhone(event.target.value.replace(/\D+/g, ""));
+                  setErrors((prev) => ({ ...prev, phone: "" }));
+                }}
               />
               {errors.phone && <ErrorText>{errors.phone}</ErrorText>}
             </div>
@@ -461,5 +461,23 @@ export default function VisitFormModal({ apartments = [], onSubmit, loading }) {
       </Card>
     </div>
   );
+}
+
+function normalizeVisitFormErrors(error) {
+  const responseData = error?.response?.data;
+  const apiErrors = responseData?.errors;
+
+  if (apiErrors && typeof apiErrors === "object") {
+    return {
+      document: apiErrors.document_number?.[0] || "",
+      apartmentId: apiErrors.apartment_id?.[0] || "",
+      fullName: apiErrors.full_name?.[0] || "",
+      phone: apiErrors.phone?.[0] || "",
+      antecedentes: apiErrors.background_check?.[0] || "",
+    };
+  }
+
+  const message = responseData?.message || error?.message || "No fue posible registrar la visita.";
+  return { document: message };
 }
 

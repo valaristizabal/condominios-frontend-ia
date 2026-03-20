@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Camera, CheckCircle, FileText, Inbox, Package, Pencil } from "lucide-react";
+import { CheckCircle, FileText, Inbox, Package, Pencil } from "lucide-react";
+import ImageUploadPrompt from "../../../../components/common/ImageUploadPrompt";
 
 const Card = ({ children, className = "" }) => (
   <div
@@ -351,17 +352,10 @@ export default function CorrespondenceFormModal({
                 </p>
               </div>
             ) : (
-              <div className="space-y-2">
-                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-sm">
-                  <Camera className="h-5 w-5" />
-                </div>
-                <p className="text-sm font-extrabold text-slate-900">
-                  Tomar / Cargar fotografía
-                </p>
-                <p className="text-xs font-semibold text-slate-500">
-                  Toque aquí para activar cámara o cargar imagen
-                </p>
-              </div>
+              <ImageUploadPrompt
+                title="Tomar / Cargar fotografía"
+                description="Toque aquí para activar cámara o cargar imagen"
+              />
             )}
           </button>
 

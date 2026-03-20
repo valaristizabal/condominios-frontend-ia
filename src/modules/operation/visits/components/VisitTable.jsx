@@ -15,7 +15,7 @@ function EmptyState() {
   );
 }
 
-function Row({ visit, onCheckout }) {
+function Row({ visit, onCheckout, loading = false }) {
   const name = visit?.full_name || "Visitante";
   const doc = visit?.document_number || "";
   const aptObject = visit?.apartment;
@@ -29,7 +29,9 @@ function Row({ visit, onCheckout }) {
       : "");
 
   const time = visit?.check_in_at || visit?.created_at || "";
-  const ingresoLabel = formatIngreso(time);
+  const ingresoLabel = formatDateTime(time);
+  const salidaLabel = formatDateTime(visit?.check_out_at);
+  const permanenciaLabel = formatStay(visit?.stay_minutes, visit?.check_in_at, visit?.check_out_at);
   const isInside = visit?.status === "INSIDE";
 
   return (
@@ -51,11 +53,11 @@ function Row({ visit, onCheckout }) {
             {apt || "Destino no definido"}
           </p>
 
-          {ingresoLabel && (
-            <p className="mt-1 text-[11px] text-slate-400">
-              Ingreso: {ingresoLabel}
-            </p>
-          )}
+          <div className="mt-1 space-y-1 text-[11px] text-slate-400">
+            {ingresoLabel ? <p>Ingreso: {ingresoLabel}</p> : null}
+            {salidaLabel ? <p>Salida: {salidaLabel}</p> : null}
+            {permanenciaLabel ? <p>Permanencia: {permanenciaLabel}</p> : null}
+          </div>
         </div>
       </div>
 
@@ -64,9 +66,10 @@ function Row({ visit, onCheckout }) {
           <button
             type="button"
             onClick={() => onCheckout?.(visit.id)}
+            disabled={loading}
             className="w-full whitespace-nowrap rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-bold text-rose-700 transition hover:bg-rose-100 sm:w-auto"
           >
-            Registrar salida
+            {loading ? "Registrando..." : "Registrar salida"}
           </button>
         ) : (
           <span className="whitespace-nowrap rounded-xl border border-green-200 bg-green-100 px-3 py-2 text-xs font-bold text-green-700">
@@ -78,7 +81,7 @@ function Row({ visit, onCheckout }) {
   );
 }
 
-function formatIngreso(value) {
+function formatDateTime(value) {
   if (!value) return "";
 
   const parsed = new Date(value);
@@ -91,6 +94,30 @@ function formatIngreso(value) {
   });
 
   return `${datePart} ${timePart}`;
+}
+
+function formatStay(stayMinutes, checkInAt, checkOutAt) {
+  let totalMinutes = Number.isFinite(Number(stayMinutes)) ? Math.round(Number(stayMinutes)) : null;
+
+  if (totalMinutes === null && checkInAt && checkOutAt) {
+    const checkInDate = new Date(checkInAt);
+    const checkOutDate = new Date(checkOutAt);
+
+    if (!Number.isNaN(checkInDate.getTime()) && !Number.isNaN(checkOutDate.getTime())) {
+      totalMinutes = Math.max(0, Math.round((checkOutDate.getTime() - checkInDate.getTime()) / 60000));
+    }
+  }
+
+  if (totalMinutes === null) return "";
+
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+
+  if (hours > 0) {
+    return `${hours} h ${minutes} min`;
+  }
+
+  return `${minutes} min`;
 }
 
 export default function VisitTable({
@@ -126,7 +153,12 @@ export default function VisitTable({
           <EmptyState />
         ) : (
           visits.map((visit) => (
-            <Row key={visit.id || `${visit.document_number}-${visit.created_at}`} visit={visit} onCheckout={onCheckout} />
+            <Row
+              key={visit.id || `${visit.document_number}-${visit.created_at}`}
+              visit={visit}
+              onCheckout={onCheckout}
+              loading={loading}
+            />
           ))
         )}
       </div>

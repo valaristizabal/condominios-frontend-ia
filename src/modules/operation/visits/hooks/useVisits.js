@@ -4,6 +4,7 @@ import apiClient from "../../../../services/apiClient";
 
 export function useVisits() {
   const { activeCondominiumId } = useActiveCondominium();
+  const [unitTypes, setUnitTypes] = useState([]);
   const [apartments, setApartments] = useState([]);
   const [visits, setVisits] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -27,14 +28,18 @@ export function useVisits() {
     [activeCondominiumId]
   );
 
-  const loadApartments = useCallback(async () => {
+  const loadBootstrapData = useCallback(async () => {
     if (!activeCondominiumId) {
+      setUnitTypes([]);
       setApartments([]);
       return;
     }
 
-    const response = await apiClient.get("/apartments", requestConfig);
-    setApartments(Array.isArray(response.data) ? response.data : []);
+    const response = await apiClient.get("/visits/bootstrap-data", requestConfig);
+    const payload = response?.data || {};
+
+    setUnitTypes(Array.isArray(payload?.unit_types) ? payload.unit_types : []);
+    setApartments(Array.isArray(payload?.apartments) ? payload.apartments : []);
   }, [activeCondominiumId, requestConfig]);
 
   const loadVisits = useCallback(async (page = 1) => {
@@ -108,6 +113,8 @@ export function useVisits() {
         );
         setCurrentPage(1);
         await loadVisits(1);
+      } catch (error) {
+        throw error;
       } finally {
         setLoading(false);
       }
@@ -126,14 +133,15 @@ export function useVisits() {
   );
 
   useEffect(() => {
-    loadApartments();
-  }, [loadApartments]);
+    loadBootstrapData();
+  }, [loadBootstrapData]);
 
   useEffect(() => {
     loadVisits(currentPage);
   }, [currentPage, loadVisits]);
 
   return {
+    unitTypes,
     apartments,
     visits,
     loading,
