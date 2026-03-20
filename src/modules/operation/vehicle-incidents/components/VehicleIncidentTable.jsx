@@ -11,10 +11,14 @@
   totalItems = 0,
   onPageChange,
 }) {
+  const safeIncidents = Array.isArray(incidents) ? incidents : [];
+
   const visibleIncidents =
-    activeFilter === "all"
-      ? [...incidents].sort((a, b) => Number(Boolean(a?.resolved)) - Number(Boolean(b?.resolved)))
-      : incidents;
+    activeFilter === "pending"
+      ? safeIncidents.filter((incident) => !Boolean(incident?.resolved))
+      : activeFilter === "resolved"
+        ? safeIncidents.filter((incident) => Boolean(incident?.resolved))
+        : [...safeIncidents].sort((a, b) => Number(Boolean(a?.resolved)) - Number(Boolean(b?.resolved)));
 
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -42,7 +46,7 @@
         <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-500">
           Cargando novedades...
         </div>
-      ) : !incidents.length ? (
+      ) : !visibleIncidents.length ? (
         <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-500">
           No hay novedades para este filtro.
         </div>
