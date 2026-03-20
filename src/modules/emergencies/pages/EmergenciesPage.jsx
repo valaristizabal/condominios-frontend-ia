@@ -63,11 +63,14 @@ export default function EmergenciesPage() {
   const {
     emergencyTypes,
     emergencyContacts,
+    contactsPage,
+    contactsPagination,
     saving,
     error,
     fieldErrors,
     activeCondominiumId,
     createEmergency,
+    setContactsPage,
     clearFieldError,
   } = useEmergencies();
 
@@ -247,6 +250,32 @@ export default function EmergenciesPage() {
                 </div>
               )}
             </div>
+
+            {contactsPagination.lastPage > 1 ? (
+              <div className="mt-4 flex flex-col items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 sm:flex-row">
+                <p className="text-xs font-semibold text-slate-500">
+                  Pagina {contactsPagination.currentPage} de {contactsPagination.lastPage} ({contactsPagination.total} registros)
+                </p>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setContactsPage(Math.max(1, contactsPage - 1))}
+                    disabled={contactsPagination.currentPage <= 1}
+                    className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    Anterior
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setContactsPage(Math.min(contactsPagination.lastPage, contactsPage + 1))}
+                    disabled={contactsPagination.currentPage >= contactsPagination.lastPage}
+                    className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    Siguiente
+                  </button>
+                </div>
+              </div>
+            ) : null}
           </Card>
         </div>
       </div>

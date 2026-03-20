@@ -7,6 +7,13 @@ export function useEmergencies() {
   const [emergencies, setEmergencies] = useState([]);
   const [emergencyTypes, setEmergencyTypes] = useState([]);
   const [emergencyContacts, setEmergencyContacts] = useState([]);
+  const [contactsPage, setContactsPage] = useState(1);
+  const [contactsPagination, setContactsPagination] = useState({
+    currentPage: 1,
+    lastPage: 1,
+    perPage: 6,
+    total: 0,
+  });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [actingIds, setActingIds] = useState({});
@@ -41,21 +48,58 @@ export function useEmergencies() {
     }
   }, [activeCondominiumId, requestConfig]);
 
-  const fetchEmergencyContacts = useCallback(async () => {
+  const fetchEmergencyContacts = useCallback(async (page = contactsPage) => {
     if (!activeCondominiumId) {
       setEmergencyContacts([]);
+      setContactsPage(1);
+      setContactsPagination({
+        currentPage: 1,
+        lastPage: 1,
+        perPage: 6,
+        total: 0,
+      });
       return;
     }
 
     try {
-      const response = await apiClient.get("/emergency-contacts?active=1", requestConfig);
-      const rows = Array.isArray(response.data) ? response.data : [];
+      const response = await apiClient.get("/emergency-contacts", {
+        ...(requestConfig || {}),
+        params: {
+          status: "active",
+          page,
+          per_page: 6,
+        },
+      });
+      const payload = response?.data || {};
+      const rows = Array.isArray(payload?.data) ? payload.data : [];
+      const nextCurrentPage = Number(payload?.current_page || page || 1);
+      const nextLastPage = Math.max(1, Number(payload?.last_page || 1));
+
+      if (nextCurrentPage > nextLastPage) {
+        await fetchEmergencyContacts(nextLastPage);
+        return;
+      }
+
       setEmergencyContacts(rows.filter((item) => item?.is_active));
+      setContactsPagination({
+        currentPage: nextCurrentPage,
+        lastPage: nextLastPage,
+        perPage: Number(payload?.per_page || 6),
+        total: Number(payload?.total || rows.length),
+      });
+      setContactsPage(nextCurrentPage);
     } catch (err) {
       setError(normalizeApiError(err, "No fue posible cargar contactos de emergencia."));
       setEmergencyContacts([]);
+      setContactsPage(1);
+      setContactsPagination({
+        currentPage: 1,
+        lastPage: 1,
+        perPage: 6,
+        total: 0,
+      });
     }
-  }, [activeCondominiumId, requestConfig]);
+  }, [activeCondominiumId, contactsPage, requestConfig]);
 
   const fetchEmergencies = useCallback(async () => {
     if (!activeCondominiumId) {
@@ -148,14 +192,19 @@ export function useEmergencies() {
 
   useEffect(() => {
     fetchEmergencyTypes();
-    fetchEmergencyContacts();
     fetchEmergencies();
-  }, [fetchEmergencyTypes, fetchEmergencyContacts, fetchEmergencies]);
+  }, [fetchEmergencyTypes, fetchEmergencies]);
+
+  useEffect(() => {
+    fetchEmergencyContacts(contactsPage);
+  }, [contactsPage, fetchEmergencyContacts]);
 
   return {
     emergencies,
     emergencyTypes,
     emergencyContacts,
+    contactsPage,
+    contactsPagination,
     loading,
     saving,
     actingIds,
@@ -163,6 +212,7 @@ export function useEmergencies() {
     fieldErrors,
     activeCondominiumId,
     fetchEmergencies,
+    setContactsPage,
     createEmergency,
     markInProgress,
     closeEmergency,
