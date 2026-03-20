@@ -9,9 +9,17 @@ import { isSuperUser, isTenantAdminRole } from "../../../../utils/roles";
 
 function OperativesPage() {
   const { user } = useAuthContext();
+  const [query, setQuery] = useState("");
+  const [status, setStatus] = useState("all");
+  const [contractType, setContractType] = useState("all");
+  const filters = useMemo(() => ({ query, status, contractType }), [contractType, query, status]);
+
   const {
     operatives,
     operativeRoles,
+    currentPage,
+    pagination,
+    setCurrentPage,
     loading,
     saving,
     error,
@@ -19,31 +27,17 @@ function OperativesPage() {
     createOperative,
     updateOperative,
     changeUserPassword,
-  } = useOperatives();
+  } = useOperatives(filters);
 
-  const [query, setQuery] = useState("");
-  const [status, setStatus] = useState("all");
-  const [contractType, setContractType] = useState("all");
   const [success, setSuccess] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [passwordModalTarget, setPasswordModalTarget] = useState(null);
+
   const canChangePassword = useMemo(() => {
     if (user?.is_platform_admin === true) return true;
     return isSuperUser(user?.role) || isTenantAdminRole(user?.role);
   }, [user?.is_platform_admin, user?.role]);
-
-  const filtered = useMemo(() => {
-    return operatives.filter((item) => {
-      const name = (item.user?.full_name || item.full_name || "").toLowerCase();
-      const q = query.trim().toLowerCase();
-      const matchQuery = !q || name.includes(q);
-      const matchStatus =
-        status === "all" || (status === "active" ? item.is_active : !item.is_active);
-      const matchType = contractType === "all" || item.contract_type === contractType;
-      return matchQuery && matchStatus && matchType;
-    });
-  }, [contractType, operatives, query, status]);
 
   const openCreate = () => {
     setSuccess("");
@@ -92,7 +86,7 @@ function OperativesPage() {
     }
 
     await changeUserPassword(targetUserId, payload);
-    setSuccess("ContraseÃ±a actualizada correctamente.");
+    setSuccess("Contraseña actualizada correctamente.");
     closePasswordModal();
   };
 
@@ -170,10 +164,15 @@ function OperativesPage() {
         </div>
       ) : (
         <OperativeTable
-          rows={filtered}
+          rows={operatives}
           onEdit={openEdit}
           onChangePassword={openPasswordModal}
           canChangePassword={canChangePassword}
+          currentPage={pagination.currentPage || currentPage}
+          totalPages={pagination.lastPage || 1}
+          totalItems={pagination.total || 0}
+          loading={loading}
+          onPageChange={setCurrentPage}
         />
       )}
 
