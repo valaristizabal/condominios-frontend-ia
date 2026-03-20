@@ -13,6 +13,7 @@ function VehicleIncidentsPage() {
     loadingIncidents,
     submitting,
     resolvingIds,
+    incidentsPagination,
     error,
     fieldErrors,
     activeCondominiumId,
@@ -32,6 +33,7 @@ function VehicleIncidentsPage() {
     photoList: [],
   });
   const [activeFilter, setActiveFilter] = useState("pending");
+  const [currentPage, setCurrentPage] = useState(1);
 
   const incidentTypeMap = useMemo(
     () => ({
@@ -65,28 +67,35 @@ function VehicleIncidentsPage() {
     });
   };
 
-  const resolveFilter = async (filter) => {
+  const resolveFilter = async (filter, page = 1) => {
     if (filter === "pending") {
-      await loadIncidents({ pending: true });
+      await loadIncidents({ pending: true }, page);
       return;
     }
 
     if (filter === "resolved") {
-      await loadIncidents({ resolved: true });
+      await loadIncidents({ resolved: true }, page);
       return;
     }
 
-    await loadIncidents();
+    await loadIncidents({}, page);
   };
 
   const loadWithFilter = async (filter) => {
     setActiveFilter(filter);
-    await resolveFilter(filter);
+    setCurrentPage(1);
+    await resolveFilter(filter, 1);
   };
 
   const handleResolve = async (incidentId) => {
     await resolveIncident(incidentId);
-    await resolveFilter(activeFilter);
+    await resolveFilter(activeFilter, currentPage);
+  };
+
+  const handlePageChange = async (nextPage) => {
+    const safePage = Math.max(1, Number(nextPage || 1));
+    setCurrentPage(safePage);
+    await resolveFilter(activeFilter, safePage);
   };
 
   const handleSubmit = async (event) => {
@@ -107,6 +116,8 @@ function VehicleIncidentsPage() {
       });
 
       resetForm();
+      setCurrentPage(1);
+      await resolveFilter(activeFilter, 1);
     } catch {
       // Error state is handled by hook and field errors.
     }
@@ -158,7 +169,11 @@ function VehicleIncidentsPage() {
           onResolve={handleResolve}
           activeFilter={activeFilter}
           onFilterChange={loadWithFilter}
-          onRefresh={() => resolveFilter(activeFilter)}
+          onRefresh={() => resolveFilter(activeFilter, currentPage)}
+          currentPage={currentPage}
+          totalPages={incidentsPagination.lastPage}
+          totalItems={incidentsPagination.total}
+          onPageChange={handlePageChange}
         />
       </div>
     </div>

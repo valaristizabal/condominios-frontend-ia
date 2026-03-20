@@ -6,6 +6,10 @@
   activeFilter = "pending",
   onFilterChange,
   onRefresh,
+  currentPage = 1,
+  totalPages = 1,
+  totalItems = 0,
+  onPageChange,
 }) {
   const visibleIncidents =
     activeFilter === "all"
@@ -17,7 +21,7 @@
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">Control en tiempo real</p>
-          <h2 className="mt-1 text-lg font-bold text-slate-900">Novedades reportadas</h2>
+          <h2 className="mt-1 text-lg font-bold text-slate-900">Novedades reportadas ({totalItems || 0})</h2>
         </div>
         <button
           type="button"
@@ -107,6 +111,32 @@
           </table>
         </div>
       )}
+
+      {totalPages > 1 ? (
+        <div className="mt-4 flex flex-col items-center justify-between gap-3 border-t border-slate-100 pt-4 sm:flex-row">
+          <p className="text-xs font-semibold text-slate-500">
+            Página {currentPage} de {totalPages}
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => onPageChange?.(currentPage - 1)}
+              disabled={loading || currentPage <= 1}
+              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Anterior
+            </button>
+            <button
+              type="button"
+              onClick={() => onPageChange?.(currentPage + 1)}
+              disabled={loading || currentPage >= totalPages}
+              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Siguiente
+            </button>
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }

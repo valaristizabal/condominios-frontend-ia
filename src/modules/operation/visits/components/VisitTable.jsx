@@ -29,6 +29,7 @@ function Row({ visit, onCheckout }) {
       : "");
 
   const time = visit?.check_in_at || visit?.created_at || "";
+  const ingresoLabel = formatIngreso(time);
   const isInside = visit?.status === "INSIDE";
 
   return (
@@ -50,9 +51,9 @@ function Row({ visit, onCheckout }) {
             {apt || "Destino no definido"}
           </p>
 
-          {time && (
+          {ingresoLabel && (
             <p className="mt-1 text-[11px] text-slate-400">
-              {new Date(time).toLocaleDateString("es-CO")}
+              Ingreso: {ingresoLabel}
             </p>
           )}
         </div>
@@ -77,7 +78,33 @@ function Row({ visit, onCheckout }) {
   );
 }
 
-export default function VisitTable({ visits = [], onCheckout }) {
+function formatIngreso(value) {
+  if (!value) return "";
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "";
+
+  const datePart = parsed.toLocaleDateString("es-CO");
+  const timePart = parsed.toLocaleTimeString("es-CO", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+  return `${datePart} ${timePart}`;
+}
+
+export default function VisitTable({
+  visits = [],
+  onCheckout,
+  loading = false,
+  currentPage = 1,
+  totalPages = 1,
+  totalItems = 0,
+  onPageChange,
+}) {
+  const canGoPrev = currentPage > 1;
+  const canGoNext = currentPage < totalPages;
+
   return (
     <Card>
       <div className="flex items-start justify-between gap-4">
@@ -86,7 +113,7 @@ export default function VisitTable({ visits = [], onCheckout }) {
             Control en tiempo real
           </p>
           <h2 className="mt-1 text-lg font-bold text-slate-900">
-            Visitantes actuales ({visits?.length || 0})
+            Visitantes actuales ({totalItems || 0})
           </h2>
           <p className="mt-1 text-sm text-slate-500">
             Registra la salida para mantener el control del acceso.
@@ -103,6 +130,33 @@ export default function VisitTable({ visits = [], onCheckout }) {
           ))
         )}
       </div>
+
+      {totalPages > 1 ? (
+        <div className="mt-6 flex flex-col items-center justify-between gap-3 border-t border-slate-100 pt-4 sm:flex-row">
+          <p className="text-xs font-semibold text-slate-500">
+            Página {currentPage} de {totalPages}
+          </p>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => canGoPrev && onPageChange?.(currentPage - 1)}
+              disabled={!canGoPrev || loading}
+              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Anterior
+            </button>
+            <button
+              type="button"
+              onClick={() => canGoNext && onPageChange?.(currentPage + 1)}
+              disabled={!canGoNext || loading}
+              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Siguiente
+            </button>
+          </div>
+        </div>
+      ) : null}
     </Card>
   );
 }

@@ -13,6 +13,12 @@ export function useVehicleIncidents() {
   const [loadingIncidents, setLoadingIncidents] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [resolvingIds, setResolvingIds] = useState({});
+  const [incidentsPagination, setIncidentsPagination] = useState({
+    currentPage: 1,
+    lastPage: 1,
+    perPage: 10,
+    total: 0,
+  });
 
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
@@ -57,9 +63,15 @@ export function useVehicleIncidents() {
   }, [activeCondominiumId, requestConfig]);
 
   const loadIncidents = useCallback(
-    async (filters = {}) => {
+    async (filters = {}, page = 1) => {
       if (!activeCondominiumId) {
         setIncidents([]);
+        setIncidentsPagination({
+          currentPage: 1,
+          lastPage: 1,
+          perPage: 10,
+          total: 0,
+        });
         return;
       }
 
@@ -71,16 +83,40 @@ export function useVehicleIncidents() {
 
         if (filters.pending) query.set("pending", "1");
         if (filters.resolved) query.set("resolved", "1");
+        query.set("per_page", "10");
+        query.set("page", String(page));
 
         const endpoint = query.size
           ? `/vehicle-incidents?${query.toString()}`
           : "/vehicle-incidents";
 
         const response = await apiClient.get(endpoint, requestConfig);
-        setIncidents(Array.isArray(response.data) ? response.data : []);
+        const payload = response?.data || {};
+        const rows = Array.isArray(payload?.data) ? payload.data : [];
+        const nextCurrentPage = Number(payload?.current_page || page || 1);
+        const nextLastPage = Math.max(1, Number(payload?.last_page || 1));
+
+        if (nextCurrentPage > nextLastPage) {
+          await loadIncidents(filters, nextLastPage);
+          return;
+        }
+
+        setIncidents(rows);
+        setIncidentsPagination({
+          currentPage: nextCurrentPage,
+          lastPage: nextLastPage,
+          perPage: Number(payload?.per_page || 10),
+          total: Number(payload?.total || rows.length),
+        });
       } catch (err) {
         setError(normalizeApiError(err, "Error cargando novedades vehiculares."));
         setIncidents([]);
+        setIncidentsPagination({
+          currentPage: 1,
+          lastPage: 1,
+          perPage: 10,
+          total: 0,
+        });
       } finally {
         setLoadingIncidents(false);
       }
@@ -124,8 +160,6 @@ export function useVehicleIncidents() {
           },
         });
 
-        await loadIncidents({ pending: true });
-
         return response.data;
       } catch (err) {
         const nextFieldErrors = extractFieldErrors(err);
@@ -140,7 +174,7 @@ export function useVehicleIncidents() {
         setSubmitting(false);
       }
     },
-    [loadIncidents, requestConfig]
+    [requestConfig]
   );
 
   const resolveIncident = useCallback(
@@ -152,7 +186,6 @@ export function useVehicleIncidents() {
 
       try {
         await apiClient.patch(`/vehicle-incidents/${incidentId}/resolve`, {}, requestConfig);
-        await loadIncidents();
       } catch (err) {
         setError(normalizeApiError(err, "No fue posible resolver la novedad."));
         throw err;
@@ -160,7 +193,7 @@ export function useVehicleIncidents() {
         setResolvingIds((prev) => ({ ...prev, [incidentId]: false }));
       }
     },
-    [loadIncidents, requestConfig]
+    [requestConfig]
   );
 
   const clearFieldError = useCallback((fieldName) => {
@@ -186,6 +219,7 @@ export function useVehicleIncidents() {
     loadingIncidents,
     submitting,
     resolvingIds,
+    incidentsPagination,
     error,
     fieldErrors,
     activeCondominiumId,

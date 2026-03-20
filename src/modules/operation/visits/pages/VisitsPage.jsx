@@ -26,7 +26,8 @@ function ActivityIcon({ className = "" }) {
 }
 
 export default function VisitsPage() {
-  const { apartments, visits, loading, registerVisit, checkout } = useVisits();
+  const { apartments, visits, loading, registerVisit, checkout, currentPage, pagination, setCurrentPage } =
+    useVisits();
 
   return (
     <div className="w-full">
@@ -52,7 +53,15 @@ export default function VisitsPage() {
               <h2 className="text-lg font-semibold text-slate-800">Visitantes en tiempo real</h2>
             </div>
 
-            <VisitTable visits={visits} onCheckout={checkout} />
+            <VisitTable
+              visits={visits}
+              onCheckout={checkout}
+              loading={loading}
+              currentPage={currentPage}
+              totalPages={pagination.lastPage}
+              totalItems={pagination.total}
+              onPageChange={setCurrentPage}
+            />
           </div>
         </div>
       </div>

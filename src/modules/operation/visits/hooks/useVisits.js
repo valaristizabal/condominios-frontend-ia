@@ -7,6 +7,13 @@ export function useVisits() {
   const [apartments, setApartments] = useState([]);
   const [visits, setVisits] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    lastPage: 1,
+    perPage: 10,
+    total: 0,
+  });
 
   const requestConfig = useMemo(
     () =>
@@ -30,14 +37,43 @@ export function useVisits() {
     setApartments(Array.isArray(response.data) ? response.data : []);
   }, [activeCondominiumId, requestConfig]);
 
-  const loadVisits = useCallback(async () => {
+  const loadVisits = useCallback(async (page = 1) => {
     if (!activeCondominiumId) {
       setVisits([]);
+      setPagination({
+        currentPage: 1,
+        lastPage: 1,
+        perPage: 10,
+        total: 0,
+      });
       return;
     }
 
-    const response = await apiClient.get("/visits", requestConfig);
-    setVisits(Array.isArray(response.data) ? response.data : []);
+    const response = await apiClient.get("/visits", {
+      ...(requestConfig || {}),
+      params: {
+        page,
+        per_page: 10,
+      },
+    });
+
+    const payload = response?.data || {};
+    const rows = Array.isArray(payload?.data) ? payload.data : [];
+    const nextCurrentPage = Number(payload?.current_page || page || 1);
+    const nextLastPage = Number(payload?.last_page || 1);
+    const normalizedLastPage = nextLastPage > 0 ? nextLastPage : 1;
+
+    setVisits(rows);
+    setPagination({
+      currentPage: nextCurrentPage,
+      lastPage: normalizedLastPage,
+      perPage: Number(payload?.per_page || 10),
+      total: Number(payload?.total || rows.length),
+    });
+
+    if (nextCurrentPage > normalizedLastPage) {
+      setCurrentPage(normalizedLastPage);
+    }
   }, [activeCondominiumId, requestConfig]);
 
   const registerVisit = useCallback(
@@ -70,7 +106,8 @@ export function useVisits() {
             },
           }
         );
-        await loadVisits();
+        setCurrentPage(1);
+        await loadVisits(1);
       } finally {
         setLoading(false);
       }
@@ -83,20 +120,26 @@ export function useVisits() {
       if (!activeCondominiumId) return;
 
       await apiClient.patch(`/visits/${visitId}/checkout`, {}, requestConfig);
-      await loadVisits();
+      await loadVisits(currentPage);
     },
-    [activeCondominiumId, loadVisits, requestConfig]
+    [activeCondominiumId, currentPage, loadVisits, requestConfig]
   );
 
   useEffect(() => {
     loadApartments();
-    loadVisits();
-  }, [loadApartments, loadVisits]);
+  }, [loadApartments]);
+
+  useEffect(() => {
+    loadVisits(currentPage);
+  }, [currentPage, loadVisits]);
 
   return {
     apartments,
     visits,
     loading,
+    currentPage,
+    pagination,
+    setCurrentPage,
     registerVisit,
     checkout,
   };

@@ -154,6 +154,7 @@ function VehiclesPage() {
   const [evidenceFile, setEvidenceFile] = useState(null);
   const [evidencePreview, setEvidencePreview] = useState("");
   const [globalError, setGlobalError] = useState("");
+  const [activeEntriesPage, setActiveEntriesPage] = useState(1);
 
   const requestConfig = useMemo(
     () =>
@@ -209,26 +210,50 @@ function VehiclesPage() {
   }, [initialQuery.data?.operatives]);
 
   const activeEntriesQuery = useQuery({
-    queryKey: ["vehicles", "active-entries", activeCondominiumId],
+    queryKey: ["vehicles", "active-entries", activeCondominiumId, activeEntriesPage],
     enabled: canQuery,
     queryFn: async () => {
-      const entriesRes = await apiClient.get("/vehicle-entries?only_active=1&status=INSIDE", requestConfig);
-      const list = Array.isArray(entriesRes.data)
-        ? entriesRes.data
-        : Array.isArray(entriesRes.data?.data)
-          ? entriesRes.data.data
-          : [];
-      return list.filter((entry) => entry?.status === "INSIDE");
+      const entriesRes = await apiClient.get("/vehicle-entries", {
+        ...(requestConfig || {}),
+        params: {
+          only_active: 1,
+          status: "INSIDE",
+          per_page: 10,
+          page: activeEntriesPage,
+        },
+      });
+
+      const payload = entriesRes?.data || {};
+      const list = Array.isArray(payload?.data) ? payload.data : [];
+
+      return {
+        list: list.filter((entry) => entry?.status === "INSIDE"),
+        currentPage: Number(payload?.current_page || activeEntriesPage || 1),
+        lastPage: Math.max(1, Number(payload?.last_page || 1)),
+        total: Number(payload?.total || list.length),
+      };
     },
   });
 
-  const activeEntries = activeEntriesQuery.data || [];
+  const activeEntries = activeEntriesQuery.data?.list || [];
+  const activeEntriesPagination = useMemo(
+    () => ({
+      currentPage: Number(activeEntriesQuery.data?.currentPage || activeEntriesPage || 1),
+      lastPage: Number(activeEntriesQuery.data?.lastPage || 1),
+      total: Number(activeEntriesQuery.data?.total || 0),
+    }),
+    [activeEntriesPage, activeEntriesQuery.data]
+  );
   const queryError = initialQuery.error || activeEntriesQuery.error;
 
   useEffect(() => {
     if (!queryError) return;
     setGlobalError(normalizeApiError(queryError, "Error cargando datos del módulo."));
   }, [queryError]);
+
+  useEffect(() => {
+    setActiveEntriesPage(1);
+  }, [activeCondominiumId]);
 
   function handleChange(event) {
     const { name, value } = event.target;
@@ -346,6 +371,7 @@ function VehiclesPage() {
       );
     },
     onSuccess: async () => {
+      setActiveEntriesPage(1);
       await queryClient.invalidateQueries({ queryKey: ["vehicles", "active-entries", activeCondominiumId] });
     },
   });
@@ -630,7 +656,9 @@ function VehiclesPage() {
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">CONTROL EN TIEMPO REAL</p>
-                <h2 className="mt-1 text-lg font-bold text-slate-900">Vehículos actuales ({activeEntries.length})</h2>
+                <h2 className="mt-1 text-lg font-bold text-slate-900">
+                  Vehículos actuales ({activeEntriesPagination.total})
+                </h2>
                 <p className="mt-1 text-sm text-slate-500">Registra la salida para mantener el control del parqueadero.</p>
               </div>
 
@@ -694,6 +722,35 @@ function VehiclesPage() {
                 })
               )}
             </div>
+
+            {activeEntriesPagination.lastPage > 1 ? (
+              <div className="mt-6 flex flex-col items-center justify-between gap-3 border-t border-slate-100 pt-4 sm:flex-row">
+                <p className="text-xs font-semibold text-slate-500">
+                  Página {activeEntriesPagination.currentPage} de {activeEntriesPagination.lastPage}
+                </p>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setActiveEntriesPage((prev) => Math.max(1, prev - 1))}
+                    disabled={loadingActive || activeEntriesPagination.currentPage <= 1}
+                    className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    Anterior
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setActiveEntriesPage((prev) => Math.min(activeEntriesPagination.lastPage, prev + 1))
+                    }
+                    disabled={loadingActive || activeEntriesPagination.currentPage >= activeEntriesPagination.lastPage}
+                    className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    Siguiente
+                  </button>
+                </div>
+              </div>
+            ) : null}
           </Card>
         </div>
       </div>
