@@ -14,6 +14,8 @@ const EMPTY_FORM = {
   financial_institution: "",
   account_type: "ahorros",
   account_number: "",
+  eps: "",
+  arl: "",
   contract_start_date: "",
   is_active: true,
 };
@@ -193,6 +195,21 @@ function OperativeFormModal({ open, initialValues, roles = [], loading, onCancel
               />
             </div>
 
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field
+                label="EPS"
+                name="eps"
+                value={form.eps ?? ""}
+                onChange={handleChange}
+              />
+              <Field
+                label="ARL"
+                name="arl"
+                value={form.arl ?? ""}
+                onChange={handleChange}
+              />
+            </div>
+
             <Field
               label="Inicio de contrato"
               name="contract_start_date"
@@ -270,6 +287,8 @@ function buildInitialForm(initialValues) {
     financial_institution: initialValues.financial_institution ?? "",
     account_type: initialValues.account_type ?? "ahorros",
     account_number: initialValues.account_number ?? "",
+    eps: initialValues.eps ?? "",
+    arl: initialValues.arl ?? "",
     contract_start_date: initialValues.contract_start_date
       ? String(initialValues.contract_start_date).slice(0, 10)
       : "",

@@ -28,6 +28,8 @@ function OperativeTable({
             <th className="px-4 py-3">Nombre</th>
             <th className="px-4 py-3">Cargo</th>
             <th className="px-4 py-3">Tipo contrato</th>
+            <th className="px-4 py-3">EPS</th>
+            <th className="px-4 py-3">ARL</th>
             <th className="px-4 py-3">Estado</th>
             <th className="px-4 py-3 text-right">Acciones</th>
           </tr>
@@ -40,6 +42,8 @@ function OperativeTable({
               </td>
               <td className="px-4 py-3 text-slate-600">{item.role?.name || item.position || "-"}</td>
               <td className="px-4 py-3 text-slate-600">{item.contract_type || "-"}</td>
+              <td className="px-4 py-3 text-slate-600">{item.eps || "-"}</td>
+              <td className="px-4 py-3 text-slate-600">{item.arl || "-"}</td>
               <td className="px-4 py-3">
                 <span
                   className={`rounded-full px-2.5 py-1 text-xs font-bold ${
@@ -57,7 +61,7 @@ function OperativeTable({
                       onClick={() => onChangePassword?.(item)}
                       className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200"
                     >
-                      Cambiar contraseña
+                      Cambiar contraseÃ±a
                     </button>
                   ) : null}
                   <button
