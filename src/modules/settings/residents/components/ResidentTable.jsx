@@ -1,4 +1,18 @@
-﻿function ResidentTable({ rows, busy, onEdit, onChangePassword, canChangePassword = false }) {
+function ResidentTable({
+  rows,
+  busy,
+  onEdit,
+  onChangePassword,
+  canChangePassword = false,
+  currentPage = 1,
+  totalPages = 1,
+  totalItems = 0,
+  loading = false,
+  onPageChange,
+}) {
+  const canGoPrev = currentPage > 1;
+  const canGoNext = currentPage < totalPages;
+
   if (!rows.length) {
     return (
       <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center">
@@ -74,6 +88,32 @@
           ))}
         </tbody>
       </table>
+
+      {totalPages > 1 ? (
+        <div className="flex flex-col items-center justify-between gap-3 border-t border-slate-100 px-4 py-3 sm:flex-row">
+          <p className="text-xs font-semibold text-slate-500">
+            Pagina {currentPage} de {totalPages} ({totalItems} registros)
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => canGoPrev && onPageChange?.(currentPage - 1)}
+              disabled={!canGoPrev || loading}
+              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Anterior
+            </button>
+            <button
+              type="button"
+              onClick={() => canGoNext && onPageChange?.(currentPage + 1)}
+              disabled={!canGoNext || loading}
+              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Siguiente
+            </button>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -93,4 +133,3 @@ function formatResidentType(type) {
 }
 
 export default ResidentTable;
-

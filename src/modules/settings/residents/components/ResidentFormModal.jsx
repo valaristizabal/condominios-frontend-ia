@@ -45,18 +45,53 @@ function ResidentFormModal({ open, initialValues, loading, onCancel, onSubmit })
     if (!open) return;
     let cancelled = false;
 
+    const loadAllRows = async (path) => {
+      let page = 1;
+      let lastPage = 1;
+      const rows = [];
+
+      do {
+        const response = await apiClient.get(path, {
+          ...(requestConfig || {}),
+          params: {
+            page,
+            per_page: 10,
+          },
+        });
+
+        const payload = response?.data;
+        const pageRows = Array.isArray(payload)
+          ? payload
+          : Array.isArray(payload?.data)
+            ? payload.data
+            : [];
+
+        rows.push(...pageRows);
+
+        if (Array.isArray(payload)) {
+          lastPage = 1;
+        } else {
+          lastPage = Number(payload?.last_page || 1);
+        }
+
+        page += 1;
+      } while (page <= lastPage);
+
+      return rows;
+    };
+
     const loadCatalogs = async () => {
       setCatalogLoading(true);
       try {
-        const [unitTypesResponse, apartmentsResponse] = await Promise.all([
-          apiClient.get("/unit-types", requestConfig),
-          apiClient.get("/apartments", requestConfig),
+        const [unitTypesRows, apartmentsRows] = await Promise.all([
+          loadAllRows("/unit-types"),
+          loadAllRows("/apartments"),
         ]);
 
         if (cancelled) return;
 
-        setUnitTypes(Array.isArray(unitTypesResponse.data) ? unitTypesResponse.data : []);
-        setApartments(Array.isArray(apartmentsResponse.data) ? apartmentsResponse.data : []);
+        setUnitTypes(unitTypesRows);
+        setApartments(apartmentsRows);
       } catch (err) {
         if (!cancelled) {
           setUnitTypes([]);

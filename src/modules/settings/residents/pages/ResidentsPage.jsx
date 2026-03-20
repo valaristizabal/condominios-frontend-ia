@@ -9,13 +9,27 @@ import { isSuperUser, isTenantAdminRole } from "../../../../utils/roles";
 
 function ResidentsPage() {
   const { user } = useAuthContext();
-  const { residents, loading, saving, error, hasTenantContext, createResident, updateResident, changeUserPassword } =
-    useResidents();
-
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("all");
   const [residentType, setResidentType] = useState("all");
   const [propertyType, setPropertyType] = useState("all");
+  const filters = useMemo(
+    () => ({ query, status, residentType, propertyType }),
+    [propertyType, query, residentType, status]
+  );
+  const {
+    residents,
+    currentPage,
+    pagination,
+    setCurrentPage,
+    loading,
+    saving,
+    error,
+    hasTenantContext,
+    createResident,
+    updateResident,
+    changeUserPassword,
+  } = useResidents(filters);
   const [success, setSuccess] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -35,26 +49,6 @@ function ResidentsPage() {
     );
     return ["all", ...unique];
   }, [residents]);
-
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-
-    return residents.filter((item) => {
-      const apartmentNumber = String(item.apartment?.number || item.apartment_number || "").toLowerCase();
-      const tower = String(item.apartment?.tower || "").toLowerCase();
-      const floor = String(item.apartment?.floor ?? "").toLowerCase();
-      const unitType = String(resolveUnitTypeName(item)).toLowerCase();
-      const name = String(item.user?.full_name || item.full_name || "").toLowerCase();
-      const matchQuery = !q || `${name} ${apartmentNumber} ${tower} ${floor} ${unitType}`.includes(q);
-      const matchStatus =
-        status === "all" || (status === "active" ? item.is_active : !item.is_active);
-      const matchResidentType = residentType === "all" || item.type === residentType;
-      const matchPropertyType =
-        propertyType === "all" || resolveUnitTypeName(item) === propertyType;
-
-      return matchQuery && matchStatus && matchResidentType && matchPropertyType;
-    });
-  }, [propertyType, query, residentType, residents, status]);
 
   const clearFilters = () => {
     setQuery("");
@@ -194,7 +188,7 @@ function ResidentsPage() {
 
       <div className="mb-4 flex items-center justify-between gap-2">
         <p className="text-xs font-semibold text-slate-500">
-          Mostrando {filtered.length} de {residents.length} residentes
+          Mostrando {residents.length} de {pagination.total || residents.length} residentes
         </p>
         <button
           type="button"
@@ -211,11 +205,16 @@ function ResidentsPage() {
         </div>
       ) : (
         <ResidentTable
-          rows={filtered}
+          rows={residents}
           busy={saving}
           onEdit={openEdit}
           onChangePassword={openPasswordModal}
           canChangePassword={canChangePassword}
+          currentPage={pagination.currentPage || currentPage}
+          totalPages={pagination.lastPage || 1}
+          totalItems={pagination.total || 0}
+          loading={loading}
+          onPageChange={setCurrentPage}
         />
       )}
 

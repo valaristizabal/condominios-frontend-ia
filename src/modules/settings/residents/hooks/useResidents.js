@@ -2,9 +2,16 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import apiClient from "../../../../services/apiClient";
 import { useActiveCondominium } from "../../../../context/useActiveCondominium";
 
-export function useResidents() {
+export function useResidents(filters = {}) {
   const { activeCondominiumId } = useActiveCondominium();
   const [items, setItems] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    lastPage: 1,
+    perPage: 10,
+    total: 0,
+  });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -21,36 +28,86 @@ export function useResidents() {
     [activeCondominiumId]
   );
 
-  const loadResidents = useCallback(async () => {
+  const normalizedQuery = String(filters?.query || "").trim();
+  const normalizedStatus = String(filters?.status || "all");
+  const normalizedResidentType = String(filters?.residentType || "all");
+  const normalizedPropertyType = String(filters?.propertyType || "all");
+
+  const loadResidents = useCallback(async (page = 1) => {
     setLoading(true);
     setError("");
 
     try {
-      const response = await apiClient.get("/residents", requestConfig);
-      setItems(Array.isArray(response.data) ? response.data : []);
+      const params = {
+        page,
+        per_page: 10,
+      };
+
+      if (normalizedQuery) {
+        params.q = normalizedQuery;
+      }
+
+      if (normalizedStatus === "active") {
+        params.is_active = 1;
+      } else if (normalizedStatus === "inactive") {
+        params.is_active = 0;
+      }
+
+      if (normalizedResidentType !== "all") {
+        params.type = normalizedResidentType;
+      }
+
+      if (normalizedPropertyType !== "all") {
+        params.unit_type_name = normalizedPropertyType;
+      }
+
+      const response = await apiClient.get("/residents", {
+        ...(requestConfig || {}),
+        params,
+      });
+
+      const payload = response?.data || {};
+      const rows = Array.isArray(payload?.data) ? payload.data : [];
+      const nextCurrentPage = Number(payload?.current_page || page || 1);
+      const nextLastPage = Number(payload?.last_page || 1);
+      const normalizedLastPage = nextLastPage > 0 ? nextLastPage : 1;
+
+      setItems(rows);
+      setPagination({
+        currentPage: nextCurrentPage,
+        lastPage: normalizedLastPage,
+        perPage: Number(payload?.per_page || 10),
+        total: Number(payload?.total || rows.length),
+      });
+
+      if (nextCurrentPage > normalizedLastPage) {
+        setCurrentPage(normalizedLastPage);
+      }
     } catch (err) {
-      const message = normalizeApiError(
-        err,
-        "No fue posible cargar residentes."
-      );
+      const message = normalizeApiError(err, "No fue posible cargar residentes.");
       setError(message);
+      setItems([]);
+      setPagination({
+        currentPage: 1,
+        lastPage: 1,
+        perPage: 10,
+        total: 0,
+      });
     } finally {
       setLoading(false);
     }
-  }, [requestConfig]);
+  }, [normalizedPropertyType, normalizedQuery, normalizedResidentType, normalizedStatus, requestConfig]);
 
   const createResident = useCallback(async (payload) => {
     setSaving(true);
     setError("");
     try {
       const response = await apiClient.post("/residents", payload, requestConfig);
-      await loadResidents();
+      setCurrentPage(1);
+      await loadResidents(1);
       return response.data;
     } catch (err) {
-      const message = normalizeApiError(
-        err,
-        "No fue posible crear el residente."
-      );
+      const message = normalizeApiError(err, "No fue posible crear el residente.");
       setError(message);
       throw err;
     } finally {
@@ -63,19 +120,16 @@ export function useResidents() {
     setError("");
     try {
       const response = await apiClient.put(`/residents/${id}`, payload, requestConfig);
-      await loadResidents();
+      await loadResidents(currentPage);
       return response.data;
     } catch (err) {
-      const message = normalizeApiError(
-        err,
-        "No fue posible actualizar el residente."
-      );
+      const message = normalizeApiError(err, "No fue posible actualizar el residente.");
       setError(message);
       throw err;
     } finally {
       setSaving(false);
     }
-  }, [loadResidents, requestConfig]);
+  }, [currentPage, loadResidents, requestConfig]);
 
   const changeUserPassword = useCallback(async (userId, payload) => {
     setSaving(true);
@@ -84,10 +138,7 @@ export function useResidents() {
       const response = await apiClient.patch(`/users/${userId}/change-password`, payload, requestConfig);
       return response.data;
     } catch (err) {
-      const message = normalizeApiError(
-        err,
-        "No fue posible actualizar la contraseña."
-      );
+      const message = normalizeApiError(err, "No fue posible actualizar la contraseña.");
       setError(message);
       throw err;
     } finally {
@@ -96,13 +147,20 @@ export function useResidents() {
   }, [requestConfig]);
 
   useEffect(() => {
-    loadResidents();
-  }, [loadResidents]);
+    loadResidents(currentPage);
+  }, [currentPage, loadResidents]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeCondominiumId, normalizedQuery, normalizedStatus, normalizedResidentType, normalizedPropertyType]);
 
   const hasTenantContext = useMemo(() => Boolean(activeCondominiumId), [activeCondominiumId]);
 
   return {
     residents: items,
+    currentPage,
+    pagination,
+    setCurrentPage,
     loading,
     saving,
     error,
