@@ -1,3 +1,4 @@
+import SearchableSelect from "../../../components/common/SearchableSelect";
 import { ArrowDownCircle, ArrowUpCircle } from "lucide-react";
 
 const inputBase =
@@ -5,6 +6,14 @@ const inputBase =
 
 function QuickMovementForm({ products, form, onChange, onSubmit, saving, disabled }) {
   const consumableProducts = products.filter((product) => product?.type !== "asset");
+  const productOptions = consumableProducts.map((product) => ({
+    value: String(product.id),
+    label: product.name || `Producto #${product.id}`,
+  }));
+  const movementTypeOptions = [
+    { value: "entry", label: "Entrada" },
+    { value: "exit", label: "Salida" },
+  ];
 
   return (
     <div className="w-full rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
@@ -12,35 +21,26 @@ function QuickMovementForm({ products, form, onChange, onSubmit, saving, disable
       <div className="mt-5 space-y-4">
         <label className="block">
           <span className="mb-1.5 block text-sm font-semibold text-gray-700">Producto</span>
-          <select
-            name="product_id"
-            value={form.product_id}
-            onChange={onChange}
-            className={inputBase}
-            disabled={disabled || saving}
-          >
-            <option value="">Seleccione un producto</option>
-            {consumableProducts.map((product) => (
-              <option key={product.id} value={product.id}>
-                {product.name}
-              </option>
-            ))}
-          </select>
+          <SearchableSelect
+          value={form.product_id}
+          onChange={(value) => onChange({ target: { name: "product_id", value: String(value) } })}
+          options={productOptions}
+          placeholder="Selecciona producto"
+          searchPlaceholder="Buscar producto..."
+          disabled={disabled || saving}
+        />
         </label>
 
         <label className="block">
           <span className="mb-1.5 block text-sm font-semibold text-gray-700">Tipo de movimiento</span>
-          <select
-            name="type"
-            value={form.type}
-            onChange={onChange}
-            className={inputBase}
-            disabled={disabled || saving}
-          >
-            <option value="">Seleccione el tipo</option>
-            <option value="entry">Entrada</option>
-            <option value="exit">Salida</option>
-          </select>
+          <SearchableSelect
+          value={form.type}
+          onChange={(value) => onChange({ target: { name: "type", value: String(value) } })}
+          options={movementTypeOptions}
+          placeholder="Selecciona tipo"
+          searchPlaceholder="Buscar tipo..."
+          disabled={disabled || saving}
+        />
         </label>
 
         <label className="block">

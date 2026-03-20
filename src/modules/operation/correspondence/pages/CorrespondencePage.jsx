@@ -4,12 +4,7 @@ import CorrespondenceFormModal from "../components/CorrespondenceFormModal";
 import CorrespondenceTable from "../components/CorrespondenceTable";
 import DeliveryModal from "../components/DeliveryModal";
 import { useCorrespondence } from "../hooks/useCorrespondence";
-
-const Kicker = ({ children }) => (
-  <p className="text-xs font-extrabold tracking-widest text-slate-400 uppercase">
-    {children}
-  </p>
-);
+import { useNotification } from "../../../../hooks/useNotification";
 
 const Title = ({ children }) => (
   <h1 className="mt-2 text-2xl font-extrabold text-slate-900 leading-tight">
@@ -18,6 +13,7 @@ const Title = ({ children }) => (
 );
 
 export default function CorrespondencePage() {
+  const { success, error: notifyError } = useNotification();
   const {
     apartments,
     residents,
@@ -40,6 +36,7 @@ export default function CorrespondencePage() {
 
   const couriers = useMemo(
     () => [
+      "Otro",
       "Servientrega",
       "Inter Rapidísimo",
       "Coordinadora",
@@ -47,7 +44,6 @@ export default function CorrespondencePage() {
       "TCC",
       "Envía",
       "Deprisa",
-      "Otro",
     ],
     []
   );
@@ -111,8 +107,13 @@ export default function CorrespondencePage() {
           item?.resident_receiver?.user?.full_name ||
           item?.resident_receiver?.user?.name ||
           "-",
+        receiverDocument:
+          item?.resident_receiver?.user?.document_number ||
+          item?.resident_receiver?.document_number ||
+          "",
         delivered: (item.status || "") === "DELIVERED" || Boolean(item.delivered),
         date: formatDate(item.created_at),
+        deliveredAt: item.delivered_at ? formatTime(item.delivered_at) : "",
         signatureUrl: item.signature_url || null,
         raw: item,
       })),
@@ -204,30 +205,21 @@ export default function CorrespondencePage() {
       const resolvedCourierCompany =
         form.courier === "Otro" ? String(form.courierOther || "").trim() : form.courier;
 
-      const created = await createCorrespondence({
+      if (form.receiverType === "dueno" && !String(form.receiverName || "").trim()) {
+        setLocalErrors({
+          receiverName: "Escribe el nombre del destinatario.",
+        });
+        return;
+      }
+
+      await createCorrespondence({
         courier_company: resolvedCourierCompany,
         package_type: form.packageType,
         apartment_id: Number(form.unitId),
         evidence_photo: photoFile,
         digital_signature: form.receiverType === "dueno" ? signatureDataUrl || null : null,
+        deliver_immediately: form.receiverType === "dueno",
       });
-
-      if (form.receiverType === "dueno" && created?.id) {
-        const ownerResident = residents.find(
-          (resident) =>
-            String(resident?.apartment_id || "") === String(form.unitId) &&
-            String(resident?.type || "").toLowerCase() === "propietario"
-        );
-
-        if (ownerResident?.id) {
-          await deliverCorrespondence(created.id, ownerResident.id, signatureDataUrl);
-        } else {
-          setLocalErrors({
-            receiverType: "No se encontró un residente propietario para esta unidad.",
-          });
-          return;
-        }
-      }
 
       setForm({
         courier: "Servientrega",
@@ -242,8 +234,9 @@ export default function CorrespondencePage() {
       clearPhoto();
       setSignatureDataUrl("");
       setLocalErrors({});
-    } catch {
-      // Errors are handled by hook state.
+      success(form.receiverType === "dueno" ? "Correspondencia entregada correctamente." : "Correspondencia registrada correctamente.");
+    } catch (requestError) {
+      notifyError(normalizeCorrespondenceError(requestError, "No fue posible registrar la correspondencia."));
     }
   };
 
@@ -253,8 +246,9 @@ export default function CorrespondencePage() {
     try {
       await deliverCorrespondence(deliveryItem.id, residentReceiverId, digitalSignature);
       setDeliveryItem(null);
-    } catch {
-      // Errors are handled by hook state.
+      success("Entrega registrada correctamente.");
+    } catch (requestError) {
+      notifyError(normalizeCorrespondenceError(requestError, "No fue posible registrar la entrega."));
     }
   };
 
@@ -265,7 +259,6 @@ export default function CorrespondencePage() {
           <div className="mb-3">
             <BackButton variant="dashboard" />
           </div>
-          <Kicker>Gestión de accesos</Kicker>
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
               <Title>Correspondencia</Title>
@@ -344,6 +337,7 @@ export default function CorrespondencePage() {
               setSignatureDataUrl(nextValue || "");
               clearFieldError("digital_signature");
             }}
+            signatureValue={signatureDataUrl}
           />
 
           <CorrespondenceTable
@@ -397,4 +391,30 @@ function formatDate(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "-";
   return date.toLocaleDateString("es-CO");
+}
+
+function formatTime(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleTimeString("es-CO", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function normalizeCorrespondenceError(error, fallbackMessage) {
+  const responseData = error?.response?.data;
+  const fieldErrors = responseData?.errors;
+
+  if (fieldErrors && typeof fieldErrors === "object") {
+    const firstFieldErrors = Object.values(fieldErrors).find(
+      (messages) => Array.isArray(messages) && messages.length > 0
+    );
+    if (firstFieldErrors) {
+      return String(firstFieldErrors[0]);
+    }
+  }
+
+  return responseData?.message || error?.message || fallbackMessage;
 }

@@ -6,6 +6,7 @@ import apiClient from "../../../../services/apiClient";
 import BackButton from "../../../../components/common/BackButton";
 import ImageUploadPrompt from "../../../../components/common/ImageUploadPrompt";
 import { normalizeRoleName } from "../../../../utils/roles";
+import { useNotification } from "../../../../hooks/useNotification";
 
 const Card = ({ children, className = "" }) => (
   <div className={["rounded-3xl border border-slate-200 bg-white p-6 shadow-sm", className].join(" ")}>{children}</div>
@@ -139,6 +140,7 @@ function VehiclesPage() {
   const { id } = useParams();
   const { activeCondominiumId } = useActiveCondominium();
   const queryClient = useQueryClient();
+  const { success, error, warning } = useNotification();
 
   const [submitting, setSubmitting] = useState(false);
 
@@ -397,7 +399,7 @@ function VehiclesPage() {
 
     const plate = normalizePlate(form.placa);
     if (!form.tipoUsuario || !plate || !form.vehicleTypeId) {
-      alert("Completa los campos obligatorios: Tipo de usuario, Placa y Tipo de vehículo.");
+      warning("Completa los campos obligatorios: Tipo de usuario, Placa y Tipo de vehiculo.");
       return;
     }
 
@@ -407,11 +409,11 @@ function VehiclesPage() {
     try {
       await registerEntryMutation.mutateAsync({ ...form, placa: plate });
       resetForm();
-      alert("Ingreso registrado correctamente");
+      success("Ingreso registrado correctamente.");
     } catch (err) {
       const message = normalizeApiError(err, "Error registrando ingreso.");
       setGlobalError(message);
-      alert(message);
+      error(message);
     } finally {
       setSubmitting(false);
     }
@@ -420,15 +422,13 @@ function VehiclesPage() {
   async function onCheckoutEntry(entry) {
     if (!entry?.id || !activeCondominiumId) return;
 
-    const ok = confirm("¿Registrar salida de este vehículo?");
-    if (!ok) return;
-
     try {
       await checkoutMutation.mutateAsync(entry.id);
+      success("Salida registrada correctamente.");
     } catch (err) {
       const message = normalizeApiError(err, "Error registrando salida.");
       setGlobalError(message);
-      alert(message);
+      error(message);
     }
   }
 

@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import BackButton from "../../../../components/common/BackButton";
+import { useNotification } from "../../../../hooks/useNotification";
 import EmergencyTypeFormModal from "../components/EmergencyTypeFormModal";
 import EmergencyTypeTable from "../components/EmergencyTypeTable";
 import { useEmergencyTypes } from "../hooks/useEmergencyTypes";
 
 function EmergencyTypesPage() {
+  const { success } = useNotification();
   const {
     emergencyTypes,
     loading,
@@ -54,14 +56,17 @@ function EmergencyTypesPage() {
     const filters = { query, status };
     if (editing) {
       await updateEmergencyType(editing.id, payload, filters);
+      success("Tipo de emergencia actualizado correctamente.");
     } else {
       await createEmergencyType(payload, filters);
+      success("Tipo de emergencia creado correctamente.");
     }
     closeModal();
   };
 
   const handleToggle = async (item) => {
     await toggleEmergencyType(item.id, { query, status });
+    success(item.is_active ? "Tipo de emergencia desactivado correctamente." : "Tipo de emergencia activado correctamente.");
   };
 
   return (

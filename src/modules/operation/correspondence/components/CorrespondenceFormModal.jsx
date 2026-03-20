@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { CheckCircle, FileText, Inbox, Package, Pencil } from "lucide-react";
+import { CheckCircle, FileText, Package, Pencil } from "lucide-react";
 import ImageUploadPrompt from "../../../../components/common/ImageUploadPrompt";
 
 const Card = ({ children, className = "" }) => (
@@ -13,15 +13,10 @@ const Card = ({ children, className = "" }) => (
   </div>
 );
 
-const SectionTitle = ({ icon, title, desc }) => (
-  <div className="flex items-start gap-3">
-    <div className="h-10 w-10 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-600">
-      {icon}
-    </div>
-    <div className="min-w-0">
-      <p className="text-sm font-extrabold text-slate-900">{title}</p>
-      {desc ? <p className="mt-1 text-xs font-semibold text-slate-500">{desc}</p> : null}
-    </div>
+const SectionTitle = ({ title, desc }) => (
+  <div className="min-w-0">
+    <p className="text-sm font-extrabold text-slate-900">{title}</p>
+    {desc ? <p className="mt-1 text-xs font-semibold text-slate-500">{desc}</p> : null}
   </div>
 );
 
@@ -182,6 +177,7 @@ export default function CorrespondenceFormModal({
   onReceiverTypeChange,
   onSubmit,
   onSignatureChange,
+  signatureValue = "",
 }) {
   const signatureCanvasRef = useRef(null);
   const isDrawingRef = useRef(false);
@@ -206,6 +202,18 @@ export default function CorrespondenceFormModal({
     ctx.lineJoin = "round";
     ctx.strokeStyle = "#0f172a";
   }, []);
+
+  useEffect(() => {
+    if (signatureValue) return;
+    const canvas = signatureCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    isDrawingRef.current = false;
+    drawModeRef.current = null;
+    setHasSignature(false);
+  }, [signatureValue]);
 
   const getPoint = (event) => {
     const canvas = signatureCanvasRef.current;
@@ -315,14 +323,13 @@ export default function CorrespondenceFormModal({
   return (
     <Card>
       <SectionTitle
-        icon={<Inbox className="h-5 w-5" />}
         title="Nueva correspondencia"
         desc="Captura evidencia, selecciona destino y registra la entrega."
       />
 
       <form onSubmit={onSubmit} className="mt-6 space-y-6">
         <div>
-          <Label>Evidencia fotográfica</Label>
+          <Label>Evidencia fotografica</Label>
           <Hint>Para la demo puedes cargar una imagen desde tu computador.</Hint>
 
           <input
@@ -333,37 +340,44 @@ export default function CorrespondenceFormModal({
             onChange={(event) => onPickPhoto(event.target.files?.[0])}
           />
 
-          <button
-            type="button"
-            onClick={onPickPhotoClick}
-            className="mt-3 w-full rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center hover:bg-slate-100 transition"
-          >
-            {photoPreview ? (
-              <div className="space-y-3">
-                <div className="mx-auto w-full max-w-[420px] overflow-hidden rounded-2xl border border-slate-200 bg-white">
-                  <img
-                    src={photoPreview}
-                    alt="Evidencia"
-                    className="h-48 w-full object-cover"
-                  />
-                </div>
-                <p className="text-xs font-extrabold text-slate-700">
-                  Cambiar fotografía
+          {photoPreview ? (
+            <div className="mt-3 mx-auto w-full max-w-[320px] overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
+              <img src={photoPreview} alt="Evidencia" className="h-40 w-full object-cover" />
+              <div className="flex items-center justify-between gap-3 p-3">
+                <p className="truncate text-xs text-slate-600">
+                  {fileRef?.current?.files?.[0]?.name || "Imagen seleccionada"}
                 </p>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={onPickPhotoClick}
+                    className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-xs font-extrabold text-slate-800 hover:bg-slate-50"
+                  >
+                    Cambiar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={onClearPhoto}
+                    className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-extrabold text-rose-700 hover:bg-rose-100"
+                  >
+                    Quitar
+                  </button>
+                </div>
               </div>
-            ) : (
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={onPickPhotoClick}
+              className="mt-3 w-full rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center transition hover:bg-slate-100"
+            >
               <ImageUploadPrompt
                 title="Tomar / Cargar fotografía"
-                description="Toque aquí para activar cámara o cargar imagen"
+                description="Para la demo puedes cargar una imagen desde tu computador"
               />
-            )}
-          </button>
-
-          {photoPreview && (
-            <div className="mt-2 flex justify-end">
-              <GhostButton onClick={onClearPhoto}>Quitar foto</GhostButton>
-            </div>
+            </button>
           )}
+
           <FieldError message={fieldErrors.evidence_photo} />
         </div>
 

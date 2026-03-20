@@ -1,10 +1,12 @@
 import { useMemo, useState } from "react";
 import BackButton from "../../../../components/common/BackButton";
+import { useNotification } from "../../../../hooks/useNotification";
 import UnitTypeFormModal from "../components/UnitTypeFormModal";
 import UnitTypeTable from "../components/UnitTypeTable";
 import { useUnitTypes } from "../hooks/useUnitTypes";
 
 function UnitTypesPage() {
+  const { success } = useNotification();
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("all");
   const [modalOpen, setModalOpen] = useState(false);
@@ -45,14 +47,17 @@ function UnitTypesPage() {
   const handleSubmit = async (payload) => {
     if (editing) {
       await updateUnitType(editing.id, payload);
+      success("Tipo de unidad actualizado correctamente.");
     } else {
       await createUnitType(payload);
+      success("Tipo de unidad creado correctamente.");
     }
     closeModal();
   };
 
   const handleToggle = async (item) => {
     await toggleUnitType(item.id);
+    success(item.is_active ? "Tipo de unidad desactivado correctamente." : "Tipo de unidad activado correctamente.");
   };
 
   return (

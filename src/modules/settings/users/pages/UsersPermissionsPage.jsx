@@ -3,6 +3,7 @@ import BackButton from "../../../../components/common/BackButton";
 import { useActiveCondominium } from "../../../../context/useActiveCondominium";
 import { useAuthContext } from "../../../../context/useAuthContext";
 import apiClient from "../../../../services/apiClient";
+import { useNotification } from "../../../../hooks/useNotification";
 import {
   AVAILABLE_MODULES,
   canManageUserPermissions,
@@ -21,13 +22,13 @@ const MODULE_LABELS = {
 };
 
 function UsersPermissionsPage() {
+  const { success: notifySuccess } = useNotification();
   const { user } = useAuthContext();
   const { activeCondominiumId } = useActiveCondominium();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
   const [query, setQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState({
@@ -137,7 +138,6 @@ function UsersPermissionsPage() {
 
     setSaving(true);
     setError("");
-    setSuccess("");
     try {
       const payload = AVAILABLE_MODULES.map((module) => ({
         module,
@@ -145,7 +145,7 @@ function UsersPermissionsPage() {
       }));
 
       await apiClient.post(`/users/${targetUser.id}/module-permissions`, payload, requestConfig);
-      setSuccess("Permisos actualizados correctamente.");
+      notifySuccess("Permisos actualizados correctamente.");
       closePermissionsModal();
     } catch (err) {
       setError(normalizeApiError(err, "No fue posible guardar permisos."));
@@ -190,11 +190,6 @@ function UsersPermissionsPage() {
         </p>
       ) : null}
 
-      {success ? (
-        <p className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-          {success}
-        </p>
-      ) : null}
 
       {error ? (
         <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">

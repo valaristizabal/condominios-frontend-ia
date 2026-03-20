@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import { Ambulance, Building2, Flame, Phone, Shield, Siren } from "lucide-react";
 import BackButton from "../../../components/common/BackButton";
+import SearchableSelect from "../../../components/common/SearchableSelect";
+import { useNotification } from "../../../hooks/useNotification";
 import { useEmergencies } from "../hooks/useEmergencies";
 
 const inputBase =
@@ -60,8 +62,10 @@ function localDatetimeNow() {
 }
 
 export default function EmergenciesPage() {
+  const { success, error: notifyError, warning } = useNotification();
   const {
     emergencyTypes,
+    areas,
     emergencyContacts,
     contactsPage,
     contactsPagination,
@@ -81,9 +85,18 @@ export default function EmergenciesPage() {
     event_date: localDatetimeNow(),
   });
   const [localError, setLocalError] = useState("");
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const hasTypes = useMemo(() => emergencyTypes.length > 0, [emergencyTypes]);
+
+  const emergencyTypeOptions = useMemo(
+    () => emergencyTypes.map((item) => ({ value: String(item.id), label: item.name })),
+    [emergencyTypes]
+  );
+
+  const locationOptions = useMemo(
+    () => areas.map((area) => ({ value: area.name, label: area.name })),
+    [areas]
+  );
 
   const setField = (name, value) => {
     setForm((prev) => ({ ...prev, [name]: value }));
@@ -96,12 +109,16 @@ export default function EmergenciesPage() {
     setLocalError("");
 
     if (!activeCondominiumId) {
-      setLocalError("No hay propiedad activa para reportar emergencias.");
+      const message = "No hay propiedad activa para reportar emergencias.";
+      setLocalError(message);
+      warning(message);
       return;
     }
 
     if (!form.emergency_type_id || !form.event_date) {
-      setLocalError("Completa tipo de emergencia y fecha.");
+      const message = "Completa tipo de emergencia y fecha.";
+      setLocalError(message);
+      warning(message);
       return;
     }
 
@@ -120,9 +137,9 @@ export default function EmergenciesPage() {
         description: "",
         event_date: localDatetimeNow(),
       }));
-      setShowSuccessModal(true);
-    } catch {
-      // Error state is handled by hook state.
+      success("Emergencia registrada correctamente.");
+    } catch (requestError) {
+      notifyError(normalizeEmergencyError(requestError, "No fue posible registrar la emergencia."));
     }
   };
 
@@ -161,37 +178,27 @@ export default function EmergenciesPage() {
             <form id="emergencyForm" onSubmit={handleSubmit} className="mt-6 space-y-5">
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-slate-700">Tipo de emergencia</label>
-                <select
-                  className={inputBase}
+                <SearchableSelect
                   value={form.emergency_type_id}
-                  onChange={(event) => setField("emergency_type_id", event.target.value)}
+                  onChange={(value) => setField("emergency_type_id", String(value))}
+                  options={emergencyTypeOptions}
+                  placeholder={hasTypes ? "Seleccione tipo..." : "Sin tipos activos"}
+                  searchPlaceholder="Buscar tipo de emergencia..."
                   disabled={!hasTypes}
-                >
-                  <option value="">{hasTypes ? "Seleccione tipo..." : "Sin tipos activos"}</option>
-                  {emergencyTypes.map((item) => (
-                    <option key={item.id} value={String(item.id)}>
-                      {item.name}
-                    </option>
-                  ))}
-                </select>
+                />
                 <FieldError message={fieldErrors.emergency_type_id} />
               </div>
 
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-slate-700">Lugar del evento</label>
-                <select
-                  className={inputBase}
+                <SearchableSelect
                   value={form.event_location}
-                  onChange={(event) => setField("event_location", event.target.value)}
-                >
-                  <option value="">Seleccione ubicación...</option>
-                  <option>Lobby</option>
-                  <option>Parqueadero</option>
-                  <option>Piscina</option>
-                  <option>Gimnasio</option>
-                  <option>Inmueble</option>
-                  <option>Zona común</option>
-                </select>
+                  onChange={(value) => setField("event_location", String(value))}
+                  options={locationOptions}
+                  placeholder={locationOptions.length ? "Seleccione ubicacion..." : "Sin areas activas"}
+                  searchPlaceholder="Buscar ubicacion..."
+                  disabled={!locationOptions.length}
+                />
                 <FieldError message={fieldErrors.event_location} />
               </div>
 
@@ -280,25 +287,6 @@ export default function EmergenciesPage() {
         </div>
       </div>
 
-      {showSuccessModal ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4">
-          <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl">
-            <h3 className="text-lg font-extrabold text-slate-900">Registro exitoso</h3>
-            <p className="mt-3 text-sm font-semibold text-slate-600">
-              {"La emergencia fue registrada con \u00E9xito. Podr\u00E1 consultar la informaci\u00F3n al descargar la minuta."}
-            </p>
-            <div className="mt-6 flex justify-center">
-              <button
-                type="button"
-                onClick={() => setShowSuccessModal(false)}
-                className="inline-flex items-center justify-center rounded-2xl bg-blue-600 px-6 py-2.5 text-sm font-extrabold text-white transition hover:bg-blue-700"
-              >
-                Aceptar
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
     </div>
   );
 }
@@ -361,4 +349,20 @@ function resolveEmergencyIcon(iconName) {
   if (normalized === "phone") return <Phone className={iconClass} />;
 
   return <Shield className={iconClass} />;
+}
+
+function normalizeEmergencyError(error, fallbackMessage) {
+  const responseData = error?.response?.data;
+  const fieldErrors = responseData?.errors;
+
+  if (fieldErrors && typeof fieldErrors === "object") {
+    const firstFieldErrors = Object.values(fieldErrors).find(
+      (messages) => Array.isArray(messages) && messages.length > 0
+    );
+    if (firstFieldErrors) {
+      return String(firstFieldErrors[0]);
+    }
+  }
+
+  return responseData?.message || error?.message || fallbackMessage;
 }

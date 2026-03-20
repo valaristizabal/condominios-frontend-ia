@@ -113,11 +113,84 @@ function normalizeApiError(err, fallbackMessage) {
       (fieldErrors) => Array.isArray(fieldErrors) && fieldErrors.length > 0
     );
     if (firstFieldErrors) {
-      return String(firstFieldErrors[0]);
+      return translateValidationMessage(String(firstFieldErrors[0]));
     }
   }
 
-  return responseData?.message || err?.message || fallbackMessage;
+  const rawMessage = String(responseData?.message || err?.message || fallbackMessage || "");
+  const normalizedMessage = rawMessage.toLowerCase();
+
+  if (
+    normalizedMessage.includes("duplicate entry") ||
+    normalizedMessage.includes("integrity constraint violation") ||
+    normalizedMessage.includes("already exists")
+  ) {
+    const keyMatch = rawMessage.match(/for key ['"]?([^'"]+)['"]?/i);
+    const keyName = String(keyMatch?.[1] || "");
+    const normalizedKey = keyName.split(".").pop()?.replace(/_unique$/i, "") || "";
+    const fieldName = normalizedKey.split("_").filter(Boolean).pop() || "";
+    const fieldLabel = resolveFieldLabel(fieldName);
+
+    if (fieldLabel) {
+      return "Ya existe un registro con ese " + fieldLabel + ".";
+    }
+
+    return "Ya existe un registro con esos datos.";
+  }
+
+  return rawMessage || fallbackMessage;
+}
+
+function translateValidationMessage(message) {
+  const rawMessage = String(message || "");
+  const trimmedMessage = rawMessage.trim();
+  const lowerMessage = trimmedMessage.toLowerCase();
+
+  const takenMatch = trimmedMessage.match(/^the\s+(.+?)\s+has already been taken\.?$/i);
+  if (takenMatch) {
+    const fieldLabel = resolveFieldLabel(takenMatch[1]);
+    return fieldLabel
+      ? "Ya existe un registro con ese " + fieldLabel + "."
+      : "Ya existe un registro con esos datos.";
+  }
+
+  const requiredMatch = trimmedMessage.match(/^the\s+(.+?)\s+field is required\.?$/i);
+  if (requiredMatch) {
+    const fieldLabel = resolveFieldLabel(requiredMatch[1]);
+    return fieldLabel
+      ? "El campo " + fieldLabel + " es obligatorio."
+      : "Este campo es obligatorio.";
+  }
+
+  const emailMatch = trimmedMessage.match(/^the\s+(.+?)\s+must be a valid email address\.?$/i);
+  if (emailMatch) {
+    const fieldLabel = resolveFieldLabel(emailMatch[1]);
+    return fieldLabel
+      ? "El campo " + fieldLabel + " debe ser un correo valido."
+      : "Debes ingresar un correo valido.";
+  }
+
+  return rawMessage;
+}
+
+function resolveFieldLabel(fieldName) {
+  const normalizedField = String(fieldName || "").toLowerCase();
+
+  const labels = {
+    name: "nombre",
+    email: "correo",
+    phone: "telefono",
+    mobile: "telefono",
+    number: "numero",
+    code: "codigo",
+    asset_code: "codigo",
+    tower: "torre",
+    plate: "placa",
+    description: "descripcion",
+  };
+
+  const cleanField = normalizedField.replace(/_/g, " ").trim();
+  return labels[normalizedField] || cleanField;
 }
 
 export default UnitTypeFormModal;

@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import BackButton from "../../../../components/common/BackButton";
 import ChangeUserPasswordModal from "../../../../components/common/ChangeUserPasswordModal";
 import { useAuthContext } from "../../../../context/useAuthContext";
+import { useNotification } from "../../../../hooks/useNotification";
 import ResidentFormModal from "../components/ResidentFormModal";
 import ResidentTable from "../components/ResidentTable";
 import { useResidents } from "../hooks/useResidents";
@@ -9,6 +10,7 @@ import { isSuperUser, isTenantAdminRole } from "../../../../utils/roles";
 
 function ResidentsPage() {
   const { user } = useAuthContext();
+  const { success: notifySuccess } = useNotification();
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("all");
   const [residentType, setResidentType] = useState("all");
@@ -30,7 +32,6 @@ function ResidentsPage() {
     updateResident,
     changeUserPassword,
   } = useResidents(filters);
-  const [success, setSuccess] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [passwordModalTarget, setPasswordModalTarget] = useState(null);
@@ -58,20 +59,17 @@ function ResidentsPage() {
   };
 
   const openCreate = () => {
-    setSuccess("");
     setEditing(null);
     setModalOpen(true);
   };
 
   const openEdit = (item) => {
-    setSuccess("");
     setEditing(item);
     setModalOpen(true);
   };
 
   const openPasswordModal = (item) => {
     if (!canChangePassword) return;
-    setSuccess("");
     setPasswordModalTarget(item);
   };
 
@@ -89,10 +87,10 @@ function ResidentsPage() {
   const handleSubmit = async (payload) => {
     if (editing) {
       await updateResident(editing.id, payload);
-      setSuccess("Residente actualizado correctamente.");
+      notifySuccess("Residente actualizado correctamente.");
     } else {
       await createResident(payload);
-      setSuccess("Residente creado correctamente.");
+      notifySuccess("Residente creado correctamente.");
     }
     closeModal();
   };
@@ -104,7 +102,7 @@ function ResidentsPage() {
     }
 
     await changeUserPassword(targetUserId, payload);
-    setSuccess("Contraseña actualizada correctamente.");
+    notifySuccess("Contrase?a actualizada correctamente.");
     closePasswordModal();
   };
 
@@ -133,11 +131,6 @@ function ResidentsPage() {
         </p>
       ) : null}
 
-      {success ? (
-        <p className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-          {success}
-        </p>
-      ) : null}
 
       {error ? (
         <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">

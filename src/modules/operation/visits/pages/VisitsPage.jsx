@@ -2,6 +2,7 @@ import VisitFormModal from "../components/VisitFormModal";
 import VisitTable from "../components/VisitTable";
 import { useVisits } from "../hooks/useVisits";
 import BackButton from "../../../../components/common/BackButton";
+import { useNotification } from "../../../../hooks/useNotification";
 
 function ActivityIcon({ className = "" }) {
   return (
@@ -17,6 +18,29 @@ function ActivityIcon({ className = "" }) {
 export default function VisitsPage() {
   const { unitTypes, apartments, visits, loading, registerVisit, checkout, currentPage, pagination, setCurrentPage } =
     useVisits();
+  const { success, error } = useNotification();
+
+  const handleRegisterVisit = async (values) => {
+    try {
+      await registerVisit(values);
+      success("Visitante registrado correctamente.");
+    } catch (requestError) {
+      const message = normalizeVisitError(requestError, "No fue posible registrar el visitante.");
+      error(message);
+      throw requestError;
+    }
+  };
+
+  const handleCheckout = async (visitId) => {
+    try {
+      await checkout(visitId);
+      success("Salida registrada correctamente.");
+    } catch (requestError) {
+      const message = normalizeVisitError(requestError, "No fue posible registrar la salida.");
+      error(message);
+      throw requestError;
+    }
+  };
 
   return (
     <div className="w-full">
@@ -28,7 +52,12 @@ export default function VisitsPage() {
 
         <div className="flex flex-col gap-6">
           <div>
-            <VisitFormModal unitTypes={unitTypes} apartments={apartments} onSubmit={registerVisit} loading={loading} />
+            <VisitFormModal
+              unitTypes={unitTypes}
+              apartments={apartments}
+              onSubmit={handleRegisterVisit}
+              loading={loading}
+            />
           </div>
 
           <div>
@@ -39,7 +68,7 @@ export default function VisitsPage() {
 
             <VisitTable
               visits={visits}
-              onCheckout={checkout}
+              onCheckout={handleCheckout}
               loading={loading}
               currentPage={currentPage}
               totalPages={pagination.lastPage}
@@ -51,4 +80,20 @@ export default function VisitsPage() {
       </div>
     </div>
   );
+}
+
+function normalizeVisitError(error, fallbackMessage) {
+  const responseData = error?.response?.data;
+  const fieldErrors = responseData?.errors;
+
+  if (fieldErrors && typeof fieldErrors === "object") {
+    const firstFieldErrors = Object.values(fieldErrors).find(
+      (messages) => Array.isArray(messages) && messages.length > 0
+    );
+    if (firstFieldErrors) {
+      return String(firstFieldErrors[0]);
+    }
+  }
+
+  return responseData?.message || error?.message || fallbackMessage;
 }

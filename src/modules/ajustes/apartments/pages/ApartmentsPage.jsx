@@ -1,10 +1,12 @@
 import { useMemo, useState } from "react";
 import BackButton from "../../../../components/common/BackButton";
+import { useNotification } from "../../../../hooks/useNotification";
 import ApartmentFormModal from "../components/ApartmentFormModal";
 import ApartmentTable from "../components/ApartmentTable";
 import { useApartments } from "../hooks/useApartments";
 
 function ApartmentsPage() {
+  const { success } = useNotification();
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("all");
   const [tower, setTower] = useState("all");
@@ -50,14 +52,17 @@ function ApartmentsPage() {
   const handleSubmit = async (payload) => {
     if (editing) {
       await updateApartment(editing.id, payload);
+      success("Inmueble actualizado correctamente.");
     } else {
       await createApartment(payload);
+      success("Inmueble creado correctamente.");
     }
     closeModal();
   };
 
   const handleToggle = async (item) => {
     await toggleApartment(item.id);
+    success(item.is_active ? "Inmueble desactivado correctamente." : "Inmueble activado correctamente.");
   };
 
   return (

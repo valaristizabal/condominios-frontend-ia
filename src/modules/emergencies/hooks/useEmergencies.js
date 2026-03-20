@@ -6,6 +6,7 @@ export function useEmergencies() {
   const { activeCondominiumId } = useActiveCondominium();
   const [emergencies, setEmergencies] = useState([]);
   const [emergencyTypes, setEmergencyTypes] = useState([]);
+  const [areas, setAreas] = useState([]);
   const [emergencyContacts, setEmergencyContacts] = useState([]);
   const [contactsPage, setContactsPage] = useState(1);
   const [contactsPagination, setContactsPagination] = useState({
@@ -45,6 +46,22 @@ export function useEmergencies() {
     } catch (err) {
       setError(normalizeApiError(err, "No fue posible cargar tipos de emergencia."));
       setEmergencyTypes([]);
+    }
+  }, [activeCondominiumId, requestConfig]);
+
+  const fetchAreas = useCallback(async () => {
+    if (!activeCondominiumId) {
+      setAreas([]);
+      return;
+    }
+
+    try {
+      const response = await apiClient.get("/areas", requestConfig);
+      const rows = Array.isArray(response.data) ? response.data : [];
+      setAreas(rows);
+    } catch (err) {
+      setError(normalizeApiError(err, "No fue posible cargar las areas."));
+      setAreas([]);
     }
   }, [activeCondominiumId, requestConfig]);
 
@@ -192,8 +209,9 @@ export function useEmergencies() {
 
   useEffect(() => {
     fetchEmergencyTypes();
+    fetchAreas();
     fetchEmergencies();
-  }, [fetchEmergencyTypes, fetchEmergencies]);
+  }, [fetchEmergencyTypes, fetchAreas, fetchEmergencies]);
 
   useEffect(() => {
     fetchEmergencyContacts(contactsPage);
@@ -202,6 +220,7 @@ export function useEmergencies() {
   return {
     emergencies,
     emergencyTypes,
+    areas,
     emergencyContacts,
     contactsPage,
     contactsPagination,

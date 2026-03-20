@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import BackButton from "../../../../components/common/BackButton";
+import { useNotification } from "../../../../hooks/useNotification";
 import EmergencyContactFormModal from "../components/EmergencyContactFormModal";
 import EmergencyContactTable from "../components/EmergencyContactTable";
 import { useEmergencyContacts } from "../hooks/useEmergencyContacts";
 
 function EmergencyContactsPage() {
+  const { success } = useNotification();
   const {
     emergencyContacts,
     loading,
@@ -55,14 +57,17 @@ function EmergencyContactsPage() {
     const filters = { query, status };
     if (editing) {
       await updateEmergencyContact(editing.id, payload, filters);
+      success("Contacto de emergencia actualizado correctamente.");
     } else {
       await createEmergencyContact(payload, filters);
+      success("Contacto de emergencia creado correctamente.");
     }
     closeModal();
   };
 
   const handleToggle = async (item) => {
     await toggleEmergencyContact(item.id, { query, status });
+    success(item.is_active ? "Contacto de emergencia desactivado correctamente." : "Contacto de emergencia activado correctamente.");
   };
 
   return (

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import SearchableSelect from "../../../components/common/SearchableSelect";
 
 function EmergencyFormModal({ open, loading, emergencyTypes = [], fieldErrors = {}, onCancel, onSubmit, onFieldChange }) {
   const [form, setForm] = useState({
@@ -10,6 +11,11 @@ function EmergencyFormModal({ open, loading, emergencyTypes = [], fieldErrors = 
   const [error, setError] = useState("");
 
   const hasTypes = useMemo(() => emergencyTypes.length > 0, [emergencyTypes]);
+
+  const emergencyTypeOptions = useMemo(
+    () => emergencyTypes.map((item) => ({ value: String(item.id), label: `${item.name} (${item.level})` })),
+    [emergencyTypes]
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -69,19 +75,14 @@ function EmergencyFormModal({ open, loading, emergencyTypes = [], fieldErrors = 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <label className="block">
               <span className="mb-1.5 block text-sm font-semibold text-slate-700">Tipo de emergencia</span>
-              <select
+              <SearchableSelect
                 value={form.emergency_type_id}
-                onChange={(event) => setField("emergency_type_id", event.target.value)}
-                className="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                onChange={(value) => setField("emergency_type_id", String(value))}
+                options={emergencyTypeOptions}
+                placeholder={hasTypes ? "Seleccione tipo..." : "Sin tipos activos"}
+                searchPlaceholder="Buscar tipo de emergencia..."
                 disabled={!hasTypes}
-              >
-                {!hasTypes ? <option value="">Sin tipos activos</option> : null}
-                {emergencyTypes.map((item) => (
-                  <option key={item.id} value={String(item.id)}>
-                    {item.name} ({item.level})
-                  </option>
-                ))}
-              </select>
+              />
               <FieldError message={fieldErrors.emergency_type_id} />
             </label>
 

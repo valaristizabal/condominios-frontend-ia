@@ -47,11 +47,16 @@ function Row({ item, onRequestDeliver }) {
     >
       <div className="min-w-0">
         <p className="truncate text-sm font-extrabold text-slate-900">
-          {item?.courier || "Mensajeria"} • {item?.unit || "Unidad"}
+          {item?.courier || "Mensajeria"} - {item?.unit || "Unidad"}
         </p>
         <p className="truncate text-[11px] font-semibold text-slate-500">
-          {item?.type || "Documento"} • Recibe: {item?.receiver || "-"}
+          Recibe: {item?.receiver || "-"}
         </p>
+        {item?.receiverDocument ? (
+          <p className="truncate text-[11px] font-semibold text-slate-500">
+            Documento: {item.receiverDocument}
+          </p>
+        ) : null}
         {isDelivered && item?.signatureUrl ? (
           <div className="mt-2">
             <img
@@ -62,25 +67,34 @@ function Row({ item, onRequestDeliver }) {
           </div>
         ) : null}
       </div>
-      <span className="rounded-xl bg-slate-100 px-3 py-1 text-xs font-extrabold text-slate-700">
-        {item?.date || "-"}
-      </span>
-
-      {isReceived ? (
-        <button
-          type="button"
-          onClick={() => onRequestDeliver?.(item)}
-          className="rounded-xl border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-extrabold text-blue-700 hover:bg-blue-100"
-        >
-          Entregar
-        </button>
-      ) : null}
-
-      {isDelivered ? (
-        <span className="rounded-xl bg-emerald-100 px-3 py-1.5 text-xs font-extrabold text-emerald-700">
-          Entregado
+      <div className="flex shrink-0 flex-col items-end gap-2 self-center">
+        <span className="rounded-xl bg-slate-100 px-3 py-1 text-xs font-extrabold text-slate-700">
+          {item?.date || "-"}
         </span>
-      ) : null}
+
+        {isReceived ? (
+          <button
+            type="button"
+            onClick={() => onRequestDeliver?.(item)}
+            className="rounded-xl border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-extrabold text-blue-700 hover:bg-blue-100"
+          >
+            Entregar
+          </button>
+        ) : null}
+
+        {isDelivered ? (
+          <div className="flex flex-col items-end gap-1">
+            <span className="rounded-xl bg-emerald-100 px-3 py-1.5 text-xs font-extrabold text-emerald-700">
+              Entregado
+            </span>
+            {item?.deliveredAt ? (
+              <span className="text-[11px] font-semibold text-slate-500">
+                Hora: {item.deliveredAt}
+              </span>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }

@@ -4,6 +4,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useActiveCondominium } from "../../../context/useActiveCondominium";
 import apiClient from "../../../services/apiClient";
 import BackButton from "../../../components/common/BackButton";
+import SearchableSelect from "../../../components/common/SearchableSelect";
+import { useNotification } from "../../../hooks/useNotification";
 import HybridAttendanceButton from "../components/HybridAttendanceButton";
 import {
   cancelEmployeeEntry,
@@ -62,9 +64,7 @@ function RowItem({ name, role, place, time, status = "active" }) {
         </div>
         <div>
           <p className="text-sm font-extrabold text-slate-900">{name}</p>
-          <p className="text-[11px] font-semibold text-slate-500">
-            {role} - {place}
-          </p>
+          <p className="text-[11px] font-semibold text-slate-500">{formatRowMeta(role, place)}</p>
         </div>
       </div>
       <span
@@ -98,9 +98,48 @@ function extractErrorMessage(error, fallback) {
   return error?.response?.data?.message || fallback;
 }
 
+function resolveEntryName(entry) {
+  return (
+    entry?.operative?.user?.full_name ||
+    entry?.operative?.full_name ||
+    entry?.user?.full_name ||
+    entry?.full_name ||
+    "Operario"
+  );
+}
+
+function resolveEntryRole(entry) {
+  return (
+    entry?.operative?.position ||
+    entry?.position ||
+    entry?.role ||
+    entry?.operative?.role ||
+    "-"
+  );
+}
+
+function resolveEntryPlace(entry) {
+  return (
+    entry?.operative?.contract_type ||
+    entry?.contract_type ||
+    entry?.place ||
+    entry?.operative?.place ||
+    ""
+  );
+}
+
+function formatRowMeta(role, place) {
+  const parts = [role, place]
+    .map((value) => String(value || "").trim())
+    .filter((value) => value && value !== "-");
+
+  return parts.length ? parts.join(" - ") : "Sin detalle adicional";
+}
+
 export default function ControlIngresoPage() {
   const { activeCondominiumId } = useActiveCondominium();
   const queryClient = useQueryClient();
+  const { success, error: notifyError, warning } = useNotification();
 
   const [selectedId, setSelectedId] = useState("");
   const [observations, setObservations] = useState("");
@@ -128,9 +167,9 @@ export default function ControlIngresoPage() {
     queryKey: ["control-ingreso", "operatives", activeCondominiumId],
     enabled: canQuery,
     queryFn: async () => {
-      const response = await apiClient.get("/operatives", requestConfig);
-      const all = Array.isArray(response.data) ? response.data : [];
-      return all.filter((item) => item?.is_active);
+      const response = await apiClient.get("/employee-entries/bootstrap-data", requestConfig);
+      const payload = response?.data || {};
+      return Array.isArray(payload.operatives) ? payload.operatives : [];
     },
   });
 
@@ -178,6 +217,15 @@ export default function ControlIngresoPage() {
     [filteredOperatives, selectedId]
   );
 
+  const operativeOptions = useMemo(
+    () =>
+      filteredOperatives.map((operative) => ({
+        value: String(operative.id),
+        label: operative.user?.full_name || "Operario",
+      })),
+    [filteredOperatives]
+  );
+
   const activeEntryForSelected = useMemo(
     () => activeEntries.find((entry) => String(entry?.operative_id) === String(selectedId)),
     [activeEntries, selectedId]
@@ -223,26 +271,45 @@ export default function ControlIngresoPage() {
   }, [activeCondominiumId]);
 
   const handleToggleAttendance = async () => {
-    if (!selectedOperative?.id || saving || !activeCondominiumId) return;
+    if (saving || !activeCondominiumId) return;
+    if (!selectedOperative?.id) {
+      warning("Selecciona un empleado para registrar la accion.");
+      return;
+    }
 
     setError("");
 
-    if (isPresent && activeEntryForSelected?.id) {
-      await checkoutMutation.mutateAsync(activeEntryForSelected.id);
-    } else {
-      await createEntryMutation.mutateAsync({
-        operative_id: selectedOperative.id,
-        observations: observations.trim() || null,
-      });
-      setObservations("");
+    try {
+      if (isPresent && activeEntryForSelected?.id) {
+        await checkoutMutation.mutateAsync(activeEntryForSelected.id);
+        success("Salida registrada correctamente.");
+      } else {
+        await createEntryMutation.mutateAsync({
+          operative_id: selectedOperative.id,
+          observations: observations.trim() || null,
+        });
+        setObservations("");
+        success("Ingreso registrado correctamente.");
+      }
+    } catch (requestError) {
+      notifyError(extractErrorMessage(requestError, "No fue posible procesar el registro."));
     }
   };
 
   const handleCancelEntry = async () => {
-    if (!isPresent || !activeEntryForSelected?.id || saving || !activeCondominiumId) return;
+    if (saving || !activeCondominiumId) return;
+    if (!isPresent || !activeEntryForSelected?.id) {
+      warning("No hay un ingreso activo para cancelar.");
+      return;
+    }
 
     setError("");
-    await cancelMutation.mutateAsync(activeEntryForSelected.id);
+    try {
+      await cancelMutation.mutateAsync(activeEntryForSelected.id);
+      success("Ingreso cancelado correctamente.");
+    } catch (requestError) {
+      notifyError(extractErrorMessage(requestError, "No fue posible procesar el registro."));
+    }
   };
 
   const loading = operativesQuery.isLoading || entriesQuery.isLoading;
@@ -275,25 +342,19 @@ export default function ControlIngresoPage() {
               <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-500">Seleccionar empleado</p>
 
               <Card className="p-3">
-                <div className="flex items-center gap-3">
-                  <select
-                    className="w-full appearance-none bg-transparent text-sm font-bold text-slate-900 outline-none"
-                    value={selectedId}
-                    onChange={(event) => setSelectedId(event.target.value)}
-                    disabled={!filteredOperatives.length || loading}
-                  >
-                    <option value="">{filteredOperatives.length ? "Seleccione empleado" : "Sin operarios activos"}</option>
-                    {filteredOperatives.map((operative) => (
-                      <option key={operative.id} value={operative.id}>
-                        {operative.user?.full_name || "Operario"}
-                      </option>
-                    ))}
-                  </select>
-                  <div className="text-slate-400">â–¼</div>
-                </div>
-                <p className="mt-1 text-xs text-slate-500">
-                  {selectedOperative?.position || "-"} - {selectedOperative?.contract_type || "-"}
-                </p>
+                <SearchableSelect
+                  value={selectedId}
+                  onChange={(value) => setSelectedId(String(value))}
+                  options={operativeOptions}
+                  placeholder={filteredOperatives.length ? "Seleccione empleado" : "Sin operarios activos"}
+                  searchPlaceholder="Buscar empleado..."
+                  disabled={!filteredOperatives.length || loading}
+                />
+                {selectedOperative ? (
+                  <p className="mt-3 text-xs text-slate-500">
+                    {[selectedOperative.position, selectedOperative.contract_type].filter(Boolean).join(" - ") || "Operario activo"}
+                  </p>
+                ) : null}
               </Card>
             </div>
 
@@ -308,7 +369,6 @@ export default function ControlIngresoPage() {
                     <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-extrabold text-blue-700">
                       {selectedOperative?.contract_type?.toUpperCase() || "OPERARIO"}
                     </span>
-                    <span className="text-xs font-semibold text-slate-400">ID: {selectedOperative?.id || "-"}</span>
                   </div>
 
                   <h2 className="mt-2 text-lg font-extrabold leading-tight text-slate-900">
@@ -406,9 +466,9 @@ export default function ControlIngresoPage() {
                         {activeEntries.map((entry) => (
                           <RowItem
                             key={entry.id}
-                            name={entry?.operative?.user?.full_name || "Operario"}
-                            role={entry?.operative?.position || "-"}
-                            place={entry?.operative?.contract_type || "-"}
+                            name={resolveEntryName(entry)}
+                            role={resolveEntryRole(entry)}
+                            place={resolveEntryPlace(entry)}
                             time={formatDateTime(entry?.check_in_at)}
                             status="active"
                           />
@@ -456,9 +516,9 @@ export default function ControlIngresoPage() {
                         {historyEntries.map((entry) => (
                           <RowItem
                             key={entry.id}
-                            name={entry?.operative?.user?.full_name || "Operario"}
-                            role={entry?.operative?.position || "-"}
-                            place={entry?.operative?.contract_type || "-"}
+                            name={resolveEntryName(entry)}
+                            role={resolveEntryRole(entry)}
+                            place={resolveEntryPlace(entry)}
                             time={formatDateTime(entry?.check_out_at)}
                             status="completed"
                           />
@@ -466,7 +526,7 @@ export default function ControlIngresoPage() {
                         {historyEntriesPagination.lastPage > 1 ? (
                           <div className="mt-2 flex flex-col items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-3 py-3 sm:flex-row">
                             <p className="text-xs font-semibold text-slate-500">
-                              Página {historyEntriesPagination.currentPage} de {historyEntriesPagination.lastPage}
+                              Pagina {historyEntriesPagination.currentPage} de {historyEntriesPagination.lastPage}
                             </p>
                             <div className="flex items-center gap-2">
                               <button
@@ -495,7 +555,7 @@ export default function ControlIngresoPage() {
                       </>
                     ) : (
                       <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
-                        Aún no hay historial de salidas.
+                        AÃºn no hay historial de salidas.
                       </div>
                     )}
                   </div>

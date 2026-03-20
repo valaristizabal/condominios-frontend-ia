@@ -86,7 +86,7 @@ function OperativesPage() {
     }
 
     await changeUserPassword(targetUserId, payload);
-    setSuccess("Contraseña actualizada correctamente.");
+    setSuccess("ContraseÃ±a actualizada correctamente.");
     closePasswordModal();
   };
 

@@ -1,6 +1,7 @@
 ﻿import { useEffect, useMemo, useRef, useState } from "react";
 import { PlusCircle } from "lucide-react";
 import BackButton from "../../../components/common/BackButton";
+import { useNotification } from "../../../hooks/useNotification";
 import { useCleaningAreas } from "./useCleaningAreas";
 
 const inputBase =
@@ -51,6 +52,7 @@ const defaultTaskSchedule = {
 };
 
 function CleaningAreasPage() {
+  const { success: notifySuccess } = useNotification();
   const {
     cleaningAreas,
     cleaningSchedules,
@@ -82,7 +84,6 @@ function CleaningAreasPage() {
   const [newTaskTextByArea, setNewTaskTextByArea] = useState({});
   const [taskScheduleByArea, setTaskScheduleByArea] = useState({});
   const [localError, setLocalError] = useState("");
-  const [success, setSuccess] = useState("");
   const newAreaInputRef = useRef(null);
 
   const checklist = useMemo(() => {
@@ -117,13 +118,12 @@ function CleaningAreasPage() {
     if (!cleanName) return;
 
     setLocalError("");
-    setSuccess("");
 
     try {
       await createCleaningArea({ name: cleanName });
       setNewAreaName("");
       setShowCreateAreaForm(false);
-      setSuccess("Área creada correctamente.");
+      notifySuccess("Area creada correctamente.");
     } catch (err) {
       setLocalError(normalizeApiError(err, "No fue posible crear el Área."));
     }
@@ -133,7 +133,6 @@ function CleaningAreasPage() {
     setEditingAreaId(area.id);
     setEditingName(area.name || "");
     setLocalError("");
-    setSuccess("");
   };
 
   const cancelEdit = () => {
@@ -145,14 +144,13 @@ function CleaningAreasPage() {
     if (!editingAreaId || !String(editingName || "").trim()) return;
 
     setLocalError("");
-    setSuccess("");
 
     try {
       await updateCleaningArea(editingAreaId, {
         name: String(editingName).trim(),
       });
       cancelEdit();
-      setSuccess("Ãrea actualizada correctamente.");
+      notifySuccess("Area actualizada correctamente.");
     } catch (err) {
       setLocalError(normalizeApiError(err, "No fue posible actualizar el Área."));
     }
@@ -160,11 +158,10 @@ function CleaningAreasPage() {
 
   const onToggleActive = async (area) => {
     setLocalError("");
-    setSuccess("");
 
     try {
       await toggleCleaningArea(area.id);
-      setSuccess(area.is_active ? "Área desactivada correctamente." : "Área activada correctamente.");
+      notifySuccess(area.is_active ? "Area desactivada correctamente." : "Area activada correctamente.");
     } catch (err) {
       setLocalError(normalizeApiError(err, "No fue posible cambiar estado del Área."));
     }
@@ -224,7 +221,6 @@ function CleaningAreasPage() {
     }
 
     setLocalError("");
-    setSuccess("");
 
     try {
       const createdTask = await addChecklistItem(areaId, { item_name: cleanTask });
@@ -244,7 +240,7 @@ function CleaningAreasPage() {
       }
 
       setNewTaskTextByArea((prev) => ({ ...prev, [areaId]: "" }));
-      setSuccess("Tarea agregada al checklist.");
+      notifySuccess("Tarea agregada al checklist.");
     } catch (err) {
       setLocalError(normalizeApiError(err, "No fue posible agregar tarea."));
     }
@@ -252,7 +248,6 @@ function CleaningAreasPage() {
 
   const deleteTask = async (areaId, taskId) => {
     setLocalError("");
-    setSuccess("");
 
     try {
       const linkedSchedule = linkedScheduleByChecklistItemId[taskId];
@@ -261,7 +256,7 @@ function CleaningAreasPage() {
       }
 
       await removeChecklistItem(areaId, taskId);
-      setSuccess("Tarea eliminada del checklist.");
+      notifySuccess("Tarea eliminada del checklist.");
     } catch (err) {
       setLocalError(normalizeApiError(err, "No fue posible eliminar tarea."));
     }
@@ -309,11 +304,6 @@ function CleaningAreasPage() {
         </p>
       ) : null}
 
-      {success ? (
-        <p className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-          {success}
-        </p>
-      ) : null}
 
       {showCreateAreaForm ? (
         <section className="mb-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">

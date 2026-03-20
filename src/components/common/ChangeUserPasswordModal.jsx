@@ -22,12 +22,12 @@ function ChangeUserPasswordModal({ open, loading, targetLabel, onCancel, onSubmi
     const cleanConfirmation = String(passwordConfirmation || "");
 
     if (cleanPassword.length < 8) {
-      setError("La contraseña debe tener al menos 8 caracteres.");
+      setError("La contraseÃ±aa debe tener al menos 8 caracteres.");
       return;
     }
 
     if (cleanPassword !== cleanConfirmation) {
-      setError("La confirmación de contraseña no coincide.");
+      setError("La confirmaciÃ³n de contraseÃ±a no coincide.");
       return;
     }
 
@@ -37,21 +37,21 @@ function ChangeUserPasswordModal({ open, loading, targetLabel, onCancel, onSubmi
         password_confirmation: cleanConfirmation,
       });
     } catch (err) {
-      setError(normalizeApiError(err, "No fue posible actualizar la contraseña."));
+      setError(normalizeApiError(err, "No fue posible actualizar la contraseÃ±aa."));
     }
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/45 p-4 sm:items-center">
       <div className="w-full max-w-xl rounded-2xl bg-white p-5 shadow-2xl">
-        <h3 className="text-lg font-extrabold text-slate-900">Cambiar contraseña</h3>
+        <h3 className="text-lg font-extrabold text-slate-900">Cambiar contraseÃ±a</h3>
         <p className="mt-1 text-sm text-slate-500">
           Usuario: <span className="font-semibold text-slate-700">{targetLabel || "-"}</span>
         </p>
 
         <form className="mt-4 space-y-4" onSubmit={handleSubmit}>
           <Field
-            label="Nueva contraseña"
+            label="Nueva contraseÃ±a"
             type="password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
@@ -59,7 +59,7 @@ function ChangeUserPasswordModal({ open, loading, targetLabel, onCancel, onSubmi
           />
 
           <Field
-            label="Confirmar contraseña"
+            label="Confirmar contraseÃ±a"
             type="password"
             value={passwordConfirmation}
             onChange={(event) => setPasswordConfirmation(event.target.value)}

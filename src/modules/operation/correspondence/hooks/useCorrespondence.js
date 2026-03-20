@@ -90,13 +90,11 @@ export function useCorrespondence() {
     setError("");
 
     try {
-      const [apartmentsRes, residentsRes] = await Promise.all([
-        apiClient.get("/apartments", requestConfig),
-        apiClient.get("/residents", requestConfig),
-      ]);
+      const bootstrapRes = await apiClient.get("/correspondences/bootstrap-data", requestConfig);
+      const payload = bootstrapRes?.data || {};
 
-      setApartments(Array.isArray(apartmentsRes.data) ? apartmentsRes.data : []);
-      setResidents(Array.isArray(residentsRes.data) ? residentsRes.data : []);
+      setApartments(Array.isArray(payload?.apartments) ? payload.apartments : []);
+      setResidents(Array.isArray(payload?.residents) ? payload.residents : []);
     } catch (err) {
       setError(normalizeApiError(err, "No fue posible cargar correspondencia."));
       setApartments([]);
@@ -130,6 +128,12 @@ export function useCorrespondence() {
         if (payload.digital_signature) {
           formData.append("digital_signature", String(payload.digital_signature));
         }
+        if (payload.resident_receiver_id) {
+          formData.append("resident_receiver_id", String(payload.resident_receiver_id));
+        }
+        if (payload.deliver_immediately) {
+          formData.append("deliver_immediately", "1");
+        }
 
         if (payload.evidence_photo) {
           formData.append("evidence_photo", payload.evidence_photo);
@@ -161,7 +165,7 @@ export function useCorrespondence() {
   );
 
   const deliverCorrespondence = useCallback(
-    async (id, residentReceiverId, digitalSignature) => {
+    async (id, residentReceiverId, digitalSignature, targetPage = currentPage) => {
       if (!activeCondominiumId || !id) return;
 
       setDelivering(true);
@@ -178,7 +182,7 @@ export function useCorrespondence() {
           requestConfig
         );
 
-        await loadCorrespondences(currentPage);
+        await loadCorrespondences(targetPage);
       } catch (err) {
         const nextErrors = extractFieldErrors(err);
         if (Object.keys(nextErrors).length) {

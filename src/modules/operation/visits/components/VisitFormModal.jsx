@@ -1,6 +1,7 @@
 ﻿import { useEffect, useMemo, useRef, useState } from "react";
 
 import ImageUploadPrompt from "../../../../components/common/ImageUploadPrompt";
+import { useNotification } from "../../../../hooks/useNotification";
 
 const Card = ({ children, className = "" }) => (
   <div className={`rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5 ${className}`}>
@@ -132,8 +133,9 @@ function SearchableSelect({
 
 export default function VisitFormModal({ unitTypes = [], apartments = [], onSubmit, loading }) {
   const fileRef = useRef(null);
+  const { warning } = useNotification();
 
-  const [fullName, setFullName] = useState("");
+const [fullName, setFullName] = useState("");
   const [document, setDocument] = useState("");
   const [phone, setPhone] = useState("");
   const [unitTypeId, setUnitTypeId] = useState("");
@@ -199,7 +201,7 @@ export default function VisitFormModal({ unitTypes = [], apartments = [], onSubm
     if (!file) return;
 
     if (!file.type?.startsWith("image/")) {
-      alert("Selecciona una imagen válida.");
+      warning("Selecciona una imagen valida.");
       event.target.value = "";
       return;
     }

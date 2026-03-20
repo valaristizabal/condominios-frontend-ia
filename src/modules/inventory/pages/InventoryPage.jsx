@@ -10,6 +10,8 @@ import QuickMovementForm from "../components/QuickMovementForm";
 import MovementHistory from "../components/MovementHistory";
 import LowStockAlerts from "../components/LowStockAlerts";
 import { canAccessInventorySettings } from "../../../utils/roles";
+import SearchableSelect from "../../../components/common/SearchableSelect";
+import { useNotification } from "../../../hooks/useNotification";
 import {
   createProduct,
   getInventories,
@@ -45,6 +47,7 @@ function InventoryPage({ allowProductManagement = false, showOperationTools = tr
   const { id: routeCondominiumId } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { success: notifySuccess, error: notifyError, warning } = useNotification();
 
   const [selectedInventoryId, setSelectedInventoryId] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -55,7 +58,6 @@ function InventoryPage({ allowProductManagement = false, showOperationTools = tr
     total: 0,
   });
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [editingProductId, setEditingProductId] = useState(null);
   const [productForm, setProductForm] = useState(buildEmptyProductForm());
@@ -122,6 +124,37 @@ function InventoryPage({ allowProductManagement = false, showOperationTools = tr
   const suppliers = useMemo(
     () => inventoriesAndCategoriesQuery.data?.suppliers ?? EMPTY_LIST,
     [inventoriesAndCategoriesQuery.data?.suppliers]
+  );
+  const inventoryOptions = useMemo(
+    () =>
+      inventories.map((inventory) => ({
+        value: String(inventory.id),
+        label: inventory.name,
+      })),
+    [inventories]
+  );
+  const categoryOptions = useMemo(
+    () =>
+      categories.map((category) => ({
+        value: String(category.id),
+        label: category.name,
+      })),
+    [categories]
+  );
+  const supplierOptions = useMemo(
+    () =>
+      suppliers.map((supplier) => ({
+        value: String(supplier.id),
+        label: supplier.name,
+      })),
+    [suppliers]
+  );
+  const productTypeOptions = useMemo(
+    () => [
+      { value: "consumable", label: "Consumible" },
+      { value: "asset", label: "Activo fijo" },
+    ],
+    []
   );
 
   useEffect(() => {
@@ -308,7 +341,6 @@ function InventoryPage({ allowProductManagement = false, showOperationTools = tr
 
   const openCreateProduct = () => {
     setError("");
-    setSuccess("");
     setEditingProductId(null);
     setProductForm(buildEmptyProductForm(selectedInventoryId));
     setShowAddProduct(true);
@@ -316,7 +348,6 @@ function InventoryPage({ allowProductManagement = false, showOperationTools = tr
 
   const openEditProduct = (product) => {
     setError("");
-    setSuccess("");
     setEditingProductId(product.id);
     setProductForm({
       inventory_id: String(product.inventory_id ?? selectedInventoryId ?? ""),
@@ -351,10 +382,12 @@ function InventoryPage({ allowProductManagement = false, showOperationTools = tr
   };
 
   const handleRegisterMovement = async () => {
-    if (!movementForm.product_id || !movementForm.type || Number(movementForm.quantity) <= 0) return;
+    if (!movementForm.product_id || !movementForm.type || Number(movementForm.quantity) <= 0) {
+      warning("Selecciona producto, tipo de movimiento y una cantidad valida.");
+      return;
+    }
 
     setError("");
-    setSuccess("");
 
     try {
       const payload = {
@@ -372,7 +405,7 @@ function InventoryPage({ allowProductManagement = false, showOperationTools = tr
         queryKey: ["inventory", "products-with-movements", resolvedCondominiumId, selectedInventoryId, currentPage],
       });
 
-      setSuccess("Movimiento registrado correctamente.");
+      notifySuccess("Movimiento registrado correctamente.");
       setMovementForm({
         product_id: "",
         type: "",
@@ -380,16 +413,23 @@ function InventoryPage({ allowProductManagement = false, showOperationTools = tr
         observations: "",
       });
     } catch (err) {
-      setError(normalizeApiError(err, "No fue posible registrar el movimiento."));
+      const message = normalizeApiError(err, "No fue posible registrar el movimiento.");
+      setError(message);
+      notifyError(message);
     }
   };
 
   const handleSaveProduct = async () => {
-    if (!productForm.name.trim()) return;
+    if (!productForm.name.trim()) {
+      warning("El nombre del producto es obligatorio.");
+      return;
+    }
 
     const inventoryId = Number(productForm.inventory_id || selectedInventoryId);
     if (!inventoryId) {
-      setError("Selecciona una ubicaciÃ³n de inventario para guardar el producto.");
+      const message = "Selecciona una ubicacion de inventario para guardar el producto.";
+      setError(message);
+      warning(message);
       return;
     }
 
@@ -397,7 +437,6 @@ function InventoryPage({ allowProductManagement = false, showOperationTools = tr
     const parsedUnitCost = Number(productForm.unit_cost);
 
     setError("");
-    setSuccess("");
 
     try {
       const payload = {
@@ -423,16 +462,18 @@ function InventoryPage({ allowProductManagement = false, showOperationTools = tr
           id: editingProductId,
           payload,
         });
-        setSuccess("Producto actualizado correctamente.");
+        notifySuccess("Producto actualizado correctamente.");
       } else {
         await createProductMutation.mutateAsync(payload);
-        setSuccess("Producto creado correctamente.");
+        notifySuccess("Producto creado correctamente.");
       }
 
       closeProductForm();
     } catch (err) {
       const fallback = isEditing ? "No fue posible actualizar el producto." : "No fue posible crear el producto.";
-      setError(normalizeApiError(err, fallback));
+      const message = normalizeApiError(err, fallback);
+      setError(message);
+      notifyError(message);
     }
   };
 
@@ -457,19 +498,15 @@ function InventoryPage({ allowProductManagement = false, showOperationTools = tr
 
       <section className="mt-6 rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
         <label className="block text-sm font-semibold text-gray-700">Inventario activo</label>
-        <select
+        <SearchableSelect
           value={selectedInventoryId}
-          onChange={(event) => setSelectedInventoryId(event.target.value)}
-          className="mt-2 w-full max-w-md rounded-2xl border border-gray-200 bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-400 transition"
+          onChange={(value) => setSelectedInventoryId(String(value))}
+          options={inventoryOptions}
+          placeholder="Seleccione inventario"
+          searchPlaceholder="Buscar inventario..."
           disabled={!resolvedCondominiumId || inventories.length === 0}
-        >
-          <option value="">Seleccione inventario</option>
-          {inventories.map((inventory) => (
-            <option key={inventory.id} value={inventory.id}>
-              {inventory.name}
-            </option>
-          ))}
-        </select>
+          className="mt-2 w-full max-w-md"
+        />
       </section>
 
       {!resolvedCondominiumId ? (
@@ -488,31 +525,19 @@ function InventoryPage({ allowProductManagement = false, showOperationTools = tr
         <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">{error}</div>
       ) : null}
 
-      {success ? (
-        <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
-          {success}
-        </div>
-      ) : null}
-
       {showAddProduct && canManageProducts ? (
         <section className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
           <h2 className="text-xl font-bold text-gray-800">{isEditing ? "Editar producto" : "Nuevo producto"}</h2>
           <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
             <div>
               <label className="mb-1.5 block text-sm font-semibold text-gray-700">Ubicación de inventario</label>
-              <select
-                name="inventory_id"
+              <SearchableSelect
                 value={productForm.inventory_id}
-                onChange={handleProductChange}
-                className="w-full rounded-2xl border border-gray-200 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-300"
-              >
-                <option value="">Seleccione ubicaciÃ³n</option>
-                {inventories.map((inventory) => (
-                  <option key={inventory.id} value={inventory.id}>
-                    {inventory.name}
-                  </option>
-                ))}
-              </select>
+                onChange={(value) => handleProductChange({ target: { name: "inventory_id", value: String(value) } })}
+                options={inventoryOptions}
+                placeholder="Seleccione ubicaci?n"
+                searchPlaceholder="Buscar inventario..."
+              />
             </div>
 
             <div>
@@ -528,49 +553,35 @@ function InventoryPage({ allowProductManagement = false, showOperationTools = tr
 
             <div>
               <label className="mb-1.5 block text-sm font-semibold text-gray-700">Tipo</label>
-              <select
-                name="type"
+              <SearchableSelect
                 value={productForm.type}
-                onChange={handleProductChange}
-                className="w-full rounded-2xl border border-gray-200 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-300"
-              >
-                <option value="consumable">Consumible</option>
-                <option value="asset">Activo fijo</option>
-              </select>
+                onChange={(value) => handleProductChange({ target: { name: "type", value: String(value) } })}
+                options={productTypeOptions}
+                placeholder="Seleccione tipo"
+                searchPlaceholder="Buscar tipo..."
+              />
             </div>
 
             <div>
               <label className="mb-1.5 block text-sm font-semibold text-gray-700">Categorí­a</label>
-              <select
-                name="category_id"
+              <SearchableSelect
                 value={productForm.category_id}
-                onChange={handleProductChange}
-                className="w-full rounded-2xl border border-gray-200 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-300"
-              >
-                <option value="">Seleccione categorí­a</option>
-                {categories.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
+                onChange={(value) => handleProductChange({ target: { name: "category_id", value: String(value) } })}
+                options={categoryOptions}
+                placeholder="Seleccione categor?a"
+                searchPlaceholder="Buscar categor?a..."
+              />
             </div>
 
             <div>
               <label className="mb-1.5 block text-sm font-semibold text-gray-700">Proveedor</label>
-              <select
-                name="supplier_id"
+              <SearchableSelect
                 value={productForm.supplier_id}
-                onChange={handleProductChange}
-                className="w-full rounded-2xl border border-gray-200 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-300"
-              >
-                <option value="">Seleccione proveedor</option>
-                {suppliers.map((supplier) => (
-                  <option key={supplier.id} value={supplier.id}>
-                    {supplier.name}
-                  </option>
-                ))}
-              </select>
+                onChange={(value) => handleProductChange({ target: { name: "supplier_id", value: String(value) } })}
+                options={supplierOptions}
+                placeholder="Seleccione proveedor"
+                searchPlaceholder="Buscar proveedor..."
+              />
             </div>
 
             <div>

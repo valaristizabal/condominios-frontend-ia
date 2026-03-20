@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import BackButton from "../../../../components/common/BackButton";
+import { useNotification } from "../../../../hooks/useNotification";
 import InventoryFormModal from "../components/InventoryFormModal";
 import InventoryTable from "../components/InventoryTable";
 import { useInventories } from "../hooks/useInventories";
 
 function InventoriesPage() {
+  const { success } = useNotification();
   const {
     inventories,
     loading,
@@ -55,14 +57,17 @@ function InventoriesPage() {
     const filters = { query, status };
     if (editing) {
       await updateInventory(editing.id, payload, filters);
+      success("Inventario actualizado correctamente.");
     } else {
       await createInventory(payload, filters);
+      success("Inventario creado correctamente.");
     }
     closeModal();
   };
 
   const handleToggle = async (item) => {
     await toggleInventory(item.id, { query, status });
+    success(item.is_active ? "Inventario desactivado correctamente." : "Inventario activado correctamente.");
   };
 
   return (

@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import BackButton from "../../../../components/common/BackButton";
+import { useNotification } from "../../../../hooks/useNotification";
 import VehicleTypeFormModal from "../components/VehicleTypeFormModal";
 import VehicleTypeTable from "../components/VehicleTypeTable";
 import { useVehicleTypes } from "../hooks/useVehicleTypes";
 
 function VehicleTypesPage() {
+  const { success } = useNotification();
   const {
     vehicleTypes,
     loading,
@@ -54,14 +56,17 @@ function VehicleTypesPage() {
     const filters = { query, status };
     if (editing) {
       await updateVehicleType(editing.id, payload, filters);
+      success("Tipo de vehiculo actualizado correctamente.");
     } else {
       await createVehicleType(payload, filters);
+      success("Tipo de vehiculo creado correctamente.");
     }
     closeModal();
   };
 
   const handleToggle = async (item) => {
     await toggleVehicleType(item.id, { query, status });
+    success(item.is_active ? "Tipo de vehiculo desactivado correctamente." : "Tipo de vehiculo activado correctamente.");
   };
 
   return (
