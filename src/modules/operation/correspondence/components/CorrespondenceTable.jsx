@@ -28,7 +28,7 @@ function EmptyState() {
     <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center">
       <p className="text-sm font-extrabold text-slate-900">Sin registros recientes</p>
       <p className="mt-1 text-xs font-semibold text-slate-500">
-        Cuando registres entregas, aparecerán aquí para consulta rápida.
+        Cuando registres entregas, apareceran aqui para consulta rapida.
       </p>
     </div>
   );
@@ -47,10 +47,10 @@ function Row({ item, onRequestDeliver }) {
     >
       <div className="min-w-0">
         <p className="truncate text-sm font-extrabold text-slate-900">
-          {item?.courier || "Mensajería"} • {item?.unit || "Unidad"}
+          {item?.courier || "Mensajeria"} � {item?.unit || "Unidad"}
         </p>
         <p className="truncate text-[11px] font-semibold text-slate-500">
-          {item?.type || "Documento"} • Recibe: {item?.receiver || "—"}
+          {item?.type || "Documento"} � Recibe: {item?.receiver || "-"}
         </p>
         {isDelivered && item?.signatureUrl ? (
           <div className="mt-2">
@@ -63,7 +63,7 @@ function Row({ item, onRequestDeliver }) {
         ) : null}
       </div>
       <span className="rounded-xl bg-slate-100 px-3 py-1 text-xs font-extrabold text-slate-700">
-        {item?.date || "—"}
+        {item?.date || "-"}
       </span>
 
       {isReceived ? (
@@ -85,13 +85,24 @@ function Row({ item, onRequestDeliver }) {
   );
 }
 
-export default function CorrespondenceTable({ recent = [], onRequestDeliver }) {
+export default function CorrespondenceTable({
+  recent = [],
+  onRequestDeliver,
+  loading = false,
+  currentPage = 1,
+  totalPages = 1,
+  totalItems = 0,
+  onPageChange,
+}) {
+  const canGoPrev = currentPage > 1;
+  const canGoNext = currentPage < totalPages;
+
   return (
     <Card>
       <SectionTitle
         icon={<Clock className="h-5 w-5" />}
-        title="Últimos registros"
-        desc="Consulta rápida de correspondencias registradas recientemente."
+        title="Ultimos registros"
+        desc="Consulta rapida de correspondencias registradas recientemente."
       />
 
       <div className="mt-6 space-y-3">
@@ -103,6 +114,33 @@ export default function CorrespondenceTable({ recent = [], onRequestDeliver }) {
           ))
         )}
       </div>
+
+      {totalPages > 1 ? (
+        <div className="mt-6 flex flex-col items-center justify-between gap-3 border-t border-slate-100 pt-4 sm:flex-row">
+          <p className="text-xs font-semibold text-slate-500">
+            Pagina {currentPage} de {totalPages} ({totalItems} registros)
+          </p>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => canGoPrev && onPageChange?.(currentPage - 1)}
+              disabled={!canGoPrev || loading}
+              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Anterior
+            </button>
+            <button
+              type="button"
+              onClick={() => canGoNext && onPageChange?.(currentPage + 1)}
+              disabled={!canGoNext || loading}
+              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Siguiente
+            </button>
+          </div>
+        </div>
+      ) : null}
     </Card>
   );
 }

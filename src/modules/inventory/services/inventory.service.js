@@ -10,16 +10,18 @@ export async function getProducts(requestConfig, inventoryId) {
   return toRows(response.data);
 }
 
-export async function getProductsWithMovements(requestConfig, inventoryId, perPage = 20) {
+export async function getProductsWithMovements(requestConfig, inventoryId, page = 1, perPage = 10) {
   const response = await apiClient.get("/inventory/products-with-movements", {
     ...(requestConfig || {}),
     params: {
       inventory_id: inventoryId,
+      page,
       per_page: perPage,
     },
   });
 
-  const rows = toRows(response.data);
+  const payload = response?.data || {};
+  const rows = toRows(payload);
   const movements = rows
     .flatMap((product) =>
       Array.isArray(product?.last_movements)
@@ -41,7 +43,16 @@ export async function getProductsWithMovements(requestConfig, inventoryId, perPa
     })
     .slice(0, 30);
 
-  return { products: rows, movements };
+  return {
+    products: rows,
+    movements,
+    pagination: {
+      currentPage: Number(payload?.current_page || page || 1),
+      lastPage: Number(payload?.last_page || 1),
+      perPage: Number(payload?.per_page || perPage),
+      total: Number(payload?.total || rows.length),
+    },
+  };
 }
 
 export async function getInventories(requestConfig) {

@@ -1,6 +1,19 @@
 import { Pencil, Trash } from "lucide-react";
 
-function ProductTable({ products, onEdit, saving = false, canEdit = true }) {
+function ProductTable({
+  products,
+  onEdit,
+  saving = false,
+  canEdit = true,
+  currentPage = 1,
+  totalPages = 1,
+  totalItems = 0,
+  loading = false,
+  onPageChange,
+}) {
+  const canGoPrev = currentPage > 1;
+  const canGoNext = currentPage < totalPages;
+
   return (
     <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
       <h2 className="text-xl font-bold text-gray-800">Listado de Productos</h2>
@@ -63,6 +76,32 @@ function ProductTable({ products, onEdit, saving = false, canEdit = true }) {
           </tbody>
         </table>
       </div>
+
+      {totalPages > 1 ? (
+        <div className="mt-4 flex flex-col items-center justify-between gap-3 border-t border-slate-100 pt-4 sm:flex-row">
+          <p className="text-xs font-semibold text-slate-500">
+            Pagina {currentPage} de {totalPages} ({totalItems} registros)
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => canGoPrev && onPageChange?.(currentPage - 1)}
+              disabled={!canGoPrev || loading}
+              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Anterior
+            </button>
+            <button
+              type="button"
+              onClick={() => canGoNext && onPageChange?.(currentPage + 1)}
+              disabled={!canGoNext || loading}
+              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Siguiente
+            </button>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

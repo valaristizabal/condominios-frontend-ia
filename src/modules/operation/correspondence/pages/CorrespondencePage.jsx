@@ -22,6 +22,9 @@ export default function CorrespondencePage() {
     apartments,
     residents,
     correspondences,
+    currentPage,
+    pagination,
+    setCurrentPage,
     loadingInitial,
     submitting,
     delivering,
@@ -345,6 +348,11 @@ export default function CorrespondencePage() {
 
           <CorrespondenceTable
             recent={recent}
+            loading={loadingInitial || delivering || submitting}
+            currentPage={pagination.currentPage || currentPage}
+            totalPages={pagination.lastPage || 1}
+            totalItems={pagination.total || 0}
+            onPageChange={setCurrentPage}
             onRequestDeliver={(item) => {
               if ((item?.status || "RECEIVED_BY_SECURITY") === "RECEIVED_BY_SECURITY") {
                 setDeliveryItem(item.raw);

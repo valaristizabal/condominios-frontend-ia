@@ -47,6 +47,13 @@ function InventoryPage({ allowProductManagement = false, showOperationTools = tr
   const queryClient = useQueryClient();
 
   const [selectedInventoryId, setSelectedInventoryId] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    lastPage: 1,
+    perPage: 10,
+    total: 0,
+  });
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [showAddProduct, setShowAddProduct] = useState(false);
@@ -139,9 +146,9 @@ function InventoryPage({ allowProductManagement = false, showOperationTools = tr
   }, [editingProductId, selectedInventoryId, showAddProduct]);
 
   const productsWithMovementsQuery = useQuery({
-    queryKey: ["inventory", "products-with-movements", resolvedCondominiumId, selectedInventoryId],
+    queryKey: ["inventory", "products-with-movements", resolvedCondominiumId, selectedInventoryId, currentPage],
     enabled: canQuery && Boolean(selectedInventoryId),
-    queryFn: () => getProductsWithMovements(requestConfig, Number(selectedInventoryId), 20),
+    queryFn: () => getProductsWithMovements(requestConfig, Number(selectedInventoryId), currentPage, 10),
   });
 
   const products = useMemo(
@@ -181,6 +188,37 @@ function InventoryPage({ allowProductManagement = false, showOperationTools = tr
     () => productsWithMovementsQuery.data?.movements ?? EMPTY_LIST,
     [productsWithMovementsQuery.data?.movements]
   );
+
+  useEffect(() => {
+    const next = productsWithMovementsQuery.data?.pagination;
+    if (!next) {
+      setPagination({
+        currentPage: 1,
+        lastPage: 1,
+        perPage: 10,
+        total: 0,
+      });
+      return;
+    }
+
+    const normalizedLastPage = Number(next.lastPage || 1) > 0 ? Number(next.lastPage) : 1;
+    const normalizedCurrentPage = Number(next.currentPage || currentPage || 1);
+
+    setPagination({
+      currentPage: normalizedCurrentPage,
+      lastPage: normalizedLastPage,
+      perPage: Number(next.perPage || 10),
+      total: Number(next.total || 0),
+    });
+
+    if (normalizedCurrentPage > normalizedLastPage) {
+      setCurrentPage(normalizedLastPage);
+    }
+  }, [currentPage, productsWithMovementsQuery.data?.pagination]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedInventoryId, resolvedCondominiumId]);
 
   const loading =
     inventoriesAndCategoriesQuery.isLoading ||
@@ -328,6 +366,10 @@ function InventoryPage({ allowProductManagement = false, showOperationTools = tr
       await registerMovementMutation.mutateAsync({
         type: movementForm.type,
         payload,
+      });
+
+      await queryClient.invalidateQueries({
+        queryKey: ["inventory", "products-with-movements", resolvedCondominiumId, selectedInventoryId, currentPage],
       });
 
       setSuccess("Movimiento registrado correctamente.");
@@ -657,6 +699,11 @@ function InventoryPage({ allowProductManagement = false, showOperationTools = tr
             onEdit={openEditProduct}
             saving={savingProduct}
             canEdit={canManageProducts}
+            currentPage={pagination.currentPage || currentPage}
+            totalPages={pagination.lastPage || 1}
+            totalItems={pagination.total || 0}
+            loading={productsWithMovementsQuery.isLoading}
+            onPageChange={setCurrentPage}
           />
           {showOperationTools ? (
             <>

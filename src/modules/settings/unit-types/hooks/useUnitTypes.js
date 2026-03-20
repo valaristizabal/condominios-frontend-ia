@@ -2,9 +2,16 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useActiveCondominium } from "../../../../context/useActiveCondominium";
 import apiClient from "../../../../services/apiClient";
 
-export function useUnitTypes() {
+export function useUnitTypes(filters = {}) {
   const { activeCondominiumId } = useActiveCondominium();
   const [items, setItems] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    lastPage: 1,
+    perPage: 10,
+    total: 0,
+  });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -21,19 +28,64 @@ export function useUnitTypes() {
     [activeCondominiumId]
   );
 
-  const fetchUnitTypes = useCallback(async () => {
+  const normalizedQuery = String(filters?.query || "").trim();
+  const normalizedStatus = String(filters?.status || "all");
+
+  const fetchUnitTypes = useCallback(async (page = 1) => {
     setLoading(true);
     setError("");
 
     try {
-      const response = await apiClient.get("/unit-types", requestConfig);
-      setItems(Array.isArray(response.data) ? response.data : []);
+      const params = {
+        page,
+        per_page: 10,
+      };
+
+      if (normalizedQuery) {
+        params.q = normalizedQuery;
+      }
+
+      if (normalizedStatus === "active") {
+        params.is_active = 1;
+      } else if (normalizedStatus === "inactive") {
+        params.is_active = 0;
+      }
+
+      const response = await apiClient.get("/unit-types", {
+        ...(requestConfig || {}),
+        params,
+      });
+
+      const payload = response?.data || {};
+      const rows = Array.isArray(payload?.data) ? payload.data : [];
+      const nextCurrentPage = Number(payload?.current_page || page || 1);
+      const nextLastPage = Number(payload?.last_page || 1);
+      const normalizedLastPage = nextLastPage > 0 ? nextLastPage : 1;
+
+      setItems(rows);
+      setPagination({
+        currentPage: nextCurrentPage,
+        lastPage: normalizedLastPage,
+        perPage: Number(payload?.per_page || 10),
+        total: Number(payload?.total || rows.length),
+      });
+
+      if (nextCurrentPage > normalizedLastPage) {
+        setCurrentPage(normalizedLastPage);
+      }
     } catch (err) {
       setError(normalizeApiError(err, "No fue posible cargar tipos de unidad."));
+      setItems([]);
+      setPagination({
+        currentPage: 1,
+        lastPage: 1,
+        perPage: 10,
+        total: 0,
+      });
     } finally {
       setLoading(false);
     }
-  }, [requestConfig]);
+  }, [normalizedQuery, normalizedStatus, requestConfig]);
 
   const createUnitType = useCallback(
     async (payload) => {
@@ -42,7 +94,8 @@ export function useUnitTypes() {
 
       try {
         const response = await apiClient.post("/unit-types", payload, requestConfig);
-        await fetchUnitTypes();
+        setCurrentPage(1);
+        await fetchUnitTypes(1);
         return response.data;
       } catch (err) {
         setError(normalizeApiError(err, "No fue posible crear el tipo de unidad."));
@@ -61,7 +114,7 @@ export function useUnitTypes() {
 
       try {
         const response = await apiClient.put(`/unit-types/${id}`, payload, requestConfig);
-        await fetchUnitTypes();
+        await fetchUnitTypes(currentPage);
         return response.data;
       } catch (err) {
         setError(normalizeApiError(err, "No fue posible actualizar el tipo de unidad."));
@@ -70,7 +123,7 @@ export function useUnitTypes() {
         setSaving(false);
       }
     },
-    [fetchUnitTypes, requestConfig]
+    [currentPage, fetchUnitTypes, requestConfig]
   );
 
   const toggleUnitType = useCallback(
@@ -80,7 +133,7 @@ export function useUnitTypes() {
 
       try {
         const response = await apiClient.patch(`/unit-types/${id}/toggle`, {}, requestConfig);
-        await fetchUnitTypes();
+        await fetchUnitTypes(currentPage);
         return response.data;
       } catch (err) {
         setError(normalizeApiError(err, "No fue posible cambiar el estado del tipo de unidad."));
@@ -89,17 +142,24 @@ export function useUnitTypes() {
         setSaving(false);
       }
     },
-    [fetchUnitTypes, requestConfig]
+    [currentPage, fetchUnitTypes, requestConfig]
   );
 
   useEffect(() => {
-    fetchUnitTypes();
-  }, [fetchUnitTypes]);
+    fetchUnitTypes(currentPage);
+  }, [currentPage, fetchUnitTypes]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeCondominiumId, normalizedQuery, normalizedStatus]);
 
   const hasTenantContext = useMemo(() => Boolean(activeCondominiumId), [activeCondominiumId]);
 
   return {
     unitTypes: items,
+    currentPage,
+    pagination,
+    setCurrentPage,
     loading,
     saving,
     error,
@@ -127,4 +187,3 @@ function normalizeApiError(err, fallbackMessage) {
 
   return responseData?.message || err?.message || fallbackMessage;
 }
-

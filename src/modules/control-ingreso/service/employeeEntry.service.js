@@ -1,7 +1,13 @@
 import apiClient from "../../../services/apiClient";
 
-export async function getEmployeeEntries(requestConfig) {
-  const response = await apiClient.get("/employee-entries", requestConfig);
+export async function getEmployeeEntries(requestConfig, params = {}) {
+  const response = await apiClient.get("/employee-entries", {
+    ...(requestConfig || {}),
+    params: {
+      per_page: 10,
+      ...params,
+    },
+  });
   return response.data || {};
 }
 

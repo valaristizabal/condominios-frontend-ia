@@ -5,22 +5,26 @@ import UnitTypeTable from "../components/UnitTypeTable";
 import { useUnitTypes } from "../hooks/useUnitTypes";
 
 function UnitTypesPage() {
-  const { unitTypes, loading, saving, error, hasTenantContext, createUnitType, updateUnitType, toggleUnitType } =
-    useUnitTypes();
-
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("all");
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
 
-  const filtered = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
-    return unitTypes.filter((item) => {
-      const matchQuery = !normalizedQuery || String(item.name || "").toLowerCase().includes(normalizedQuery);
-      const matchStatus = status === "all" || (status === "active" ? item.is_active : !item.is_active);
-      return matchQuery && matchStatus;
-    });
-  }, [query, status, unitTypes]);
+  const filters = useMemo(() => ({ query, status }), [query, status]);
+
+  const {
+    unitTypes,
+    currentPage,
+    pagination,
+    setCurrentPage,
+    loading,
+    saving,
+    error,
+    hasTenantContext,
+    createUnitType,
+    updateUnitType,
+    toggleUnitType,
+  } = useUnitTypes(filters);
 
   const openCreate = () => {
     setEditing(null);
@@ -105,7 +109,17 @@ function UnitTypesPage() {
           Cargando tipos de unidad...
         </div>
       ) : (
-        <UnitTypeTable rows={filtered} busy={saving} onEdit={openEdit} onToggle={handleToggle} />
+        <UnitTypeTable
+          rows={unitTypes}
+          busy={saving}
+          onEdit={openEdit}
+          onToggle={handleToggle}
+          currentPage={pagination.currentPage || currentPage}
+          totalPages={pagination.lastPage || 1}
+          totalItems={pagination.total || 0}
+          loading={loading}
+          onPageChange={setCurrentPage}
+        />
       )}
 
       {modalOpen ? (

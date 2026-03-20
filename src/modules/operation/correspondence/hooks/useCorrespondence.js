@@ -7,6 +7,13 @@ export function useCorrespondence() {
   const [apartments, setApartments] = useState([]);
   const [residents, setResidents] = useState([]);
   const [items, setItems] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    lastPage: 1,
+    perPage: 10,
+    total: 0,
+  });
   const [loadingInitial, setLoadingInitial] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [delivering, setDelivering] = useState(false);
@@ -26,11 +33,56 @@ export function useCorrespondence() {
     [activeCondominiumId]
   );
 
+  const loadCorrespondences = useCallback(async (page = 1) => {
+    if (!activeCondominiumId) {
+      setItems([]);
+      setPagination({
+        currentPage: 1,
+        lastPage: 1,
+        perPage: 10,
+        total: 0,
+      });
+      return;
+    }
+
+    const response = await apiClient.get("/correspondences", {
+      ...(requestConfig || {}),
+      params: {
+        page,
+        per_page: 10,
+      },
+    });
+
+    const payload = response?.data || {};
+    const rows = Array.isArray(payload?.data) ? payload.data : [];
+    const nextCurrentPage = Number(payload?.current_page || page || 1);
+    const nextLastPage = Number(payload?.last_page || 1);
+    const normalizedLastPage = nextLastPage > 0 ? nextLastPage : 1;
+
+    setItems(rows);
+    setPagination({
+      currentPage: nextCurrentPage,
+      lastPage: normalizedLastPage,
+      perPage: Number(payload?.per_page || 10),
+      total: Number(payload?.total || rows.length),
+    });
+
+    if (nextCurrentPage > normalizedLastPage) {
+      setCurrentPage(normalizedLastPage);
+    }
+  }, [activeCondominiumId, requestConfig]);
+
   const loadInitialData = useCallback(async () => {
     if (!activeCondominiumId) {
       setApartments([]);
       setResidents([]);
       setItems([]);
+      setPagination({
+        currentPage: 1,
+        lastPage: 1,
+        perPage: 10,
+        total: 0,
+      });
       return;
     }
 
@@ -38,33 +90,27 @@ export function useCorrespondence() {
     setError("");
 
     try {
-      const [apartmentsRes, residentsRes, correspondencesRes] = await Promise.all([
+      const [apartmentsRes, residentsRes] = await Promise.all([
         apiClient.get("/apartments", requestConfig),
         apiClient.get("/residents", requestConfig),
-        apiClient.get("/correspondences", requestConfig),
       ]);
 
       setApartments(Array.isArray(apartmentsRes.data) ? apartmentsRes.data : []);
       setResidents(Array.isArray(residentsRes.data) ? residentsRes.data : []);
-      setItems(Array.isArray(correspondencesRes.data) ? correspondencesRes.data : []);
     } catch (err) {
       setError(normalizeApiError(err, "No fue posible cargar correspondencia."));
       setApartments([]);
       setResidents([]);
       setItems([]);
+      setPagination({
+        currentPage: 1,
+        lastPage: 1,
+        perPage: 10,
+        total: 0,
+      });
     } finally {
       setLoadingInitial(false);
     }
-  }, [activeCondominiumId, requestConfig]);
-
-  const loadCorrespondences = useCallback(async () => {
-    if (!activeCondominiumId) {
-      setItems([]);
-      return;
-    }
-
-    const response = await apiClient.get("/correspondences", requestConfig);
-    setItems(Array.isArray(response.data) ? response.data : []);
   }, [activeCondominiumId, requestConfig]);
 
   const createCorrespondence = useCallback(
@@ -97,7 +143,8 @@ export function useCorrespondence() {
           },
         });
 
-        await loadCorrespondences();
+        setCurrentPage(1);
+        await loadCorrespondences(1);
         return response.data;
       } catch (err) {
         const nextErrors = extractFieldErrors(err);
@@ -131,7 +178,7 @@ export function useCorrespondence() {
           requestConfig
         );
 
-        await loadCorrespondences();
+        await loadCorrespondences(currentPage);
       } catch (err) {
         const nextErrors = extractFieldErrors(err);
         if (Object.keys(nextErrors).length) {
@@ -143,7 +190,7 @@ export function useCorrespondence() {
         setDelivering(false);
       }
     },
-    [activeCondominiumId, loadCorrespondences, requestConfig]
+    [activeCondominiumId, currentPage, loadCorrespondences, requestConfig]
   );
 
   const clearFieldError = useCallback((fieldName) => {
@@ -168,10 +215,21 @@ export function useCorrespondence() {
     loadInitialData();
   }, [loadInitialData]);
 
+  useEffect(() => {
+    loadCorrespondences(currentPage);
+  }, [currentPage, loadCorrespondences]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeCondominiumId]);
+
   return {
     apartments,
     residents,
     correspondences: items,
+    currentPage,
+    pagination,
+    setCurrentPage,
     loadingInitial,
     submitting,
     delivering,

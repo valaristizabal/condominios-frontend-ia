@@ -107,6 +107,8 @@ export default function ControlIngresoPage() {
   const [activeTab, setActiveTab] = useState("turno");
   const [segment, setSegment] = useState("todos");
   const [error, setError] = useState("");
+  const [activePage, setActivePage] = useState(1);
+  const [historyPage, setHistoryPage] = useState(1);
 
   const requestConfig = useMemo(
     () =>
@@ -133,14 +135,30 @@ export default function ControlIngresoPage() {
   });
 
   const entriesQuery = useQuery({
-    queryKey: ["employee-entries", activeCondominiumId],
+    queryKey: ["employee-entries", activeCondominiumId, activePage, historyPage],
     enabled: canQuery,
-    queryFn: () => getEmployeeEntries(requestConfig),
+    queryFn: () =>
+      getEmployeeEntries(requestConfig, {
+        active_page: activePage,
+        history_page: historyPage,
+      }),
   });
 
   const allOperatives = operativesQuery.data || [];
-  const activeEntries = Array.isArray(entriesQuery.data?.active_entries) ? entriesQuery.data.active_entries : [];
-  const historyEntries = Array.isArray(entriesQuery.data?.history_entries) ? entriesQuery.data.history_entries : [];
+  const activeEntries = Array.isArray(entriesQuery.data?.active_entries?.data) ? entriesQuery.data.active_entries.data : [];
+  const historyEntries = Array.isArray(entriesQuery.data?.history_entries?.data)
+    ? entriesQuery.data.history_entries.data
+    : [];
+  const activeEntriesPagination = {
+    currentPage: Number(entriesQuery.data?.active_entries?.current_page || activePage || 1),
+    lastPage: Number(entriesQuery.data?.active_entries?.last_page || 1),
+    total: Number(entriesQuery.data?.active_entries?.total || 0),
+  };
+  const historyEntriesPagination = {
+    currentPage: Number(entriesQuery.data?.history_entries?.current_page || historyPage || 1),
+    lastPage: Number(entriesQuery.data?.history_entries?.last_page || 1),
+    total: Number(entriesQuery.data?.history_entries?.total || 0),
+  };
 
   const filteredOperatives = useMemo(() => {
     if (segment === "todos") return allOperatives;
@@ -198,6 +216,11 @@ export default function ControlIngresoPage() {
     if (!queryError) return;
     setError(extractErrorMessage(queryError, "No se pudo cargar el control de ingreso."));
   }, [operativesQuery.error, entriesQuery.error]);
+
+  useEffect(() => {
+    setActivePage(1);
+    setHistoryPage(1);
+  }, [activeCondominiumId]);
 
   const handleToggleAttendance = async () => {
     if (!selectedOperative?.id || saving || !activeCondominiumId) return;
@@ -355,7 +378,7 @@ export default function ControlIngresoPage() {
                 >
                   Personal en turno
                   <span className="ml-2 rounded-full bg-slate-200 px-2 py-0.5 text-[10px] text-slate-700">
-                    {activeEntries.length}
+                    {activeEntriesPagination.total}
                   </span>
                 </button>
 
@@ -379,16 +402,47 @@ export default function ControlIngresoPage() {
                 ) : activeTab === "turno" ? (
                   <div className="space-y-3 p-2">
                     {activeEntries.length ? (
-                      activeEntries.map((entry) => (
-                        <RowItem
-                          key={entry.id}
-                          name={entry?.operative?.user?.full_name || "Operario"}
-                          role={entry?.operative?.position || "-"}
-                          place={entry?.operative?.contract_type || "-"}
-                          time={formatDateTime(entry?.check_in_at)}
-                          status="active"
-                        />
-                      ))
+                      <>
+                        {activeEntries.map((entry) => (
+                          <RowItem
+                            key={entry.id}
+                            name={entry?.operative?.user?.full_name || "Operario"}
+                            role={entry?.operative?.position || "-"}
+                            place={entry?.operative?.contract_type || "-"}
+                            time={formatDateTime(entry?.check_in_at)}
+                            status="active"
+                          />
+                        ))}
+                        {activeEntriesPagination.lastPage > 1 ? (
+                          <div className="mt-2 flex flex-col items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-3 py-3 sm:flex-row">
+                            <p className="text-xs font-semibold text-slate-500">
+                              PÃ¡gina {activeEntriesPagination.currentPage} de {activeEntriesPagination.lastPage}
+                            </p>
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setActivePage((prev) => Math.max(1, prev - 1))}
+                                disabled={loading || activeEntriesPagination.currentPage <= 1}
+                                className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                Anterior
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setActivePage((prev) =>
+                                    Math.min(activeEntriesPagination.lastPage, prev + 1)
+                                  )
+                                }
+                                disabled={loading || activeEntriesPagination.currentPage >= activeEntriesPagination.lastPage}
+                                className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                Siguiente
+                              </button>
+                            </div>
+                          </div>
+                        ) : null}
+                      </>
                     ) : (
                       <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
                         No hay personal en turno.
@@ -398,19 +452,50 @@ export default function ControlIngresoPage() {
                 ) : (
                   <div className="space-y-3 p-2">
                     {historyEntries.length ? (
-                      historyEntries.map((entry) => (
-                        <RowItem
-                          key={entry.id}
-                          name={entry?.operative?.user?.full_name || "Operario"}
-                          role={entry?.operative?.position || "-"}
-                          place={entry?.operative?.contract_type || "-"}
-                          time={formatDateTime(entry?.check_out_at)}
-                          status="completed"
-                        />
-                      ))
+                      <>
+                        {historyEntries.map((entry) => (
+                          <RowItem
+                            key={entry.id}
+                            name={entry?.operative?.user?.full_name || "Operario"}
+                            role={entry?.operative?.position || "-"}
+                            place={entry?.operative?.contract_type || "-"}
+                            time={formatDateTime(entry?.check_out_at)}
+                            status="completed"
+                          />
+                        ))}
+                        {historyEntriesPagination.lastPage > 1 ? (
+                          <div className="mt-2 flex flex-col items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-3 py-3 sm:flex-row">
+                            <p className="text-xs font-semibold text-slate-500">
+                              Página {historyEntriesPagination.currentPage} de {historyEntriesPagination.lastPage}
+                            </p>
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setHistoryPage((prev) => Math.max(1, prev - 1))}
+                                disabled={loading || historyEntriesPagination.currentPage <= 1}
+                                className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                Anterior
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setHistoryPage((prev) =>
+                                    Math.min(historyEntriesPagination.lastPage, prev + 1)
+                                  )
+                                }
+                                disabled={loading || historyEntriesPagination.currentPage >= historyEntriesPagination.lastPage}
+                                className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                Siguiente
+                              </button>
+                            </div>
+                          </div>
+                        ) : null}
+                      </>
                     ) : (
                       <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
-                        AÃºn no hay historial de salidas.
+                        Aún no hay historial de salidas.
                       </div>
                     )}
                   </div>

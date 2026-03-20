@@ -56,7 +56,9 @@ function ApartmentFormModal({ open, initialValues, loading, onCancel, onSubmit }
       try {
         const response = await apiClient.get("/unit-types", requestConfig);
         if (!cancelled) {
-          setUnitTypes(Array.isArray(response.data) ? response.data : []);
+          const payload = response?.data;
+          const rows = Array.isArray(payload) ? payload : Array.isArray(payload?.data) ? payload.data : [];
+          setUnitTypes(rows);
         }
       } catch (err) {
         if (!cancelled) {

@@ -1,10 +1,17 @@
-﻿import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useActiveCondominium } from "../../../../context/useActiveCondominium";
 import apiClient from "../../../../services/apiClient";
 
-export function useApartments() {
+export function useApartments(filters = {}) {
   const { activeCondominiumId } = useActiveCondominium();
   const [items, setItems] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    lastPage: 1,
+    perPage: 10,
+    total: 0,
+  });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -21,19 +28,69 @@ export function useApartments() {
     [activeCondominiumId]
   );
 
-  const fetchApartments = useCallback(async () => {
+  const normalizedQuery = String(filters?.query || "").trim();
+  const normalizedStatus = String(filters?.status || "all");
+  const normalizedTower = String(filters?.tower || "all");
+
+  const fetchApartments = useCallback(async (page = 1) => {
     setLoading(true);
     setError("");
 
     try {
-      const response = await apiClient.get("/apartments", requestConfig);
-      setItems(Array.isArray(response.data) ? response.data : []);
+      const params = {
+        page,
+        per_page: 10,
+      };
+
+      if (normalizedQuery) {
+        params.q = normalizedQuery;
+      }
+
+      if (normalizedStatus === "active") {
+        params.is_active = 1;
+      } else if (normalizedStatus === "inactive") {
+        params.is_active = 0;
+      }
+
+      if (normalizedTower && normalizedTower !== "all") {
+        params.tower = normalizedTower;
+      }
+
+      const response = await apiClient.get("/apartments", {
+        ...(requestConfig || {}),
+        params,
+      });
+
+      const payload = response?.data || {};
+      const rows = Array.isArray(payload?.data) ? payload.data : [];
+      const nextCurrentPage = Number(payload?.current_page || page || 1);
+      const nextLastPage = Number(payload?.last_page || 1);
+      const normalizedLastPage = nextLastPage > 0 ? nextLastPage : 1;
+
+      setItems(rows);
+      setPagination({
+        currentPage: nextCurrentPage,
+        lastPage: normalizedLastPage,
+        perPage: Number(payload?.per_page || 10),
+        total: Number(payload?.total || rows.length),
+      });
+
+      if (nextCurrentPage > normalizedLastPage) {
+        setCurrentPage(normalizedLastPage);
+      }
     } catch (err) {
       setError(normalizeApiError(err, "No fue posible cargar inmuebles."));
+      setItems([]);
+      setPagination({
+        currentPage: 1,
+        lastPage: 1,
+        perPage: 10,
+        total: 0,
+      });
     } finally {
       setLoading(false);
     }
-  }, [requestConfig]);
+  }, [normalizedQuery, normalizedStatus, normalizedTower, requestConfig]);
 
   const createApartment = useCallback(
     async (payload) => {
@@ -41,7 +98,8 @@ export function useApartments() {
       setError("");
       try {
         const response = await apiClient.post("/apartments", payload, requestConfig);
-        await fetchApartments();
+        setCurrentPage(1);
+        await fetchApartments(1);
         return response.data;
       } catch (err) {
         setError(normalizeApiError(err, "No fue posible crear el inmueble."));
@@ -59,7 +117,7 @@ export function useApartments() {
       setError("");
       try {
         const response = await apiClient.put(`/apartments/${id}`, payload, requestConfig);
-        await fetchApartments();
+        await fetchApartments(currentPage);
         return response.data;
       } catch (err) {
         setError(normalizeApiError(err, "No fue posible actualizar el inmueble."));
@@ -68,7 +126,7 @@ export function useApartments() {
         setSaving(false);
       }
     },
-    [fetchApartments, requestConfig]
+    [currentPage, fetchApartments, requestConfig]
   );
 
   const toggleApartment = useCallback(
@@ -77,7 +135,7 @@ export function useApartments() {
       setError("");
       try {
         const response = await apiClient.patch(`/apartments/${id}/toggle`, {}, requestConfig);
-        await fetchApartments();
+        await fetchApartments(currentPage);
         return response.data;
       } catch (err) {
         setError(normalizeApiError(err, "No fue posible cambiar el estado del inmueble."));
@@ -86,17 +144,24 @@ export function useApartments() {
         setSaving(false);
       }
     },
-    [fetchApartments, requestConfig]
+    [currentPage, fetchApartments, requestConfig]
   );
 
   useEffect(() => {
-    fetchApartments();
-  }, [fetchApartments]);
+    fetchApartments(currentPage);
+  }, [currentPage, fetchApartments]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeCondominiumId, normalizedQuery, normalizedStatus, normalizedTower]);
 
   const hasTenantContext = useMemo(() => Boolean(activeCondominiumId), [activeCondominiumId]);
 
   return {
     apartments: items,
+    currentPage,
+    pagination,
+    setCurrentPage,
     loading,
     saving,
     error,
@@ -124,5 +189,3 @@ function normalizeApiError(err, fallbackMessage) {
 
   return responseData?.message || err?.message || fallbackMessage;
 }
-
-

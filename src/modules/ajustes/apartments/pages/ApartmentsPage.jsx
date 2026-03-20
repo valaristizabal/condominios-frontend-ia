@@ -5,31 +5,31 @@ import ApartmentTable from "../components/ApartmentTable";
 import { useApartments } from "../hooks/useApartments";
 
 function ApartmentsPage() {
-  const { apartments, loading, saving, error, hasTenantContext, createApartment, updateApartment, toggleApartment } =
-    useApartments();
-
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("all");
   const [tower, setTower] = useState("all");
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
+  const filters = useMemo(() => ({ query, status, tower }), [query, status, tower]);
+
+  const {
+    apartments,
+    currentPage,
+    pagination,
+    setCurrentPage,
+    loading,
+    saving,
+    error,
+    hasTenantContext,
+    createApartment,
+    updateApartment,
+    toggleApartment,
+  } = useApartments(filters);
 
   const towerOptions = useMemo(() => {
     const unique = Array.from(new Set(apartments.map((item) => item.tower).filter(Boolean)));
     return ["all", ...unique];
   }, [apartments]);
-
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-
-    return apartments.filter((item) => {
-      const text = `${item.number || ""} ${item.tower || ""} ${item.floor || ""} ${item.unit_type?.name || item.unitType?.name || ""}`.toLowerCase();
-      const matchQuery = !q || text.includes(q);
-      const matchStatus = status === "all" || (status === "active" ? item.is_active : !item.is_active);
-      const matchTower = tower === "all" || String(item.tower || "") === String(tower);
-      return matchQuery && matchStatus && matchTower;
-    });
-  }, [apartments, query, status, tower]);
 
   const openCreate = () => {
     setEditing(null);
@@ -124,7 +124,17 @@ function ApartmentsPage() {
           Cargando inmuebles...
         </div>
       ) : (
-        <ApartmentTable rows={filtered} busy={saving} onEdit={openEdit} onToggle={handleToggle} />
+        <ApartmentTable
+          rows={apartments}
+          busy={saving}
+          onEdit={openEdit}
+          onToggle={handleToggle}
+          currentPage={pagination.currentPage || currentPage}
+          totalPages={pagination.lastPage || 1}
+          totalItems={pagination.total || 0}
+          loading={loading}
+          onPageChange={setCurrentPage}
+        />
       )}
 
       {modalOpen ? (
