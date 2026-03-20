@@ -6,8 +6,6 @@ import apiClient from "../../../../services/apiClient";
 import {
   AVAILABLE_MODULES,
   canManageUserPermissions,
-  isSuperUser,
-  isTenantAdminRole,
 } from "../../../../utils/roles";
 
 const MODULE_LABELS = {
@@ -31,6 +29,13 @@ function UsersPermissionsPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [query, setQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    lastPage: 1,
+    perPage: 10,
+    total: 0,
+  });
   const [targetUser, setTargetUser] = useState(null);
   const [permissionDraft, setPermissionDraft] = useState({});
 
@@ -48,29 +53,50 @@ function UsersPermissionsPage() {
     [activeCondominiumId]
   );
 
-  const filteredUsers = useMemo(() => {
-    const q = String(query || "").trim().toLowerCase();
-    const nonAdminUsers = users.filter((item) => !isAdminUser(item));
-    if (!q) return nonAdminUsers;
+  const filteredUsers = useMemo(() => users, [users]);
 
-    return nonAdminUsers.filter((item) => {
-      const name = String(item?.full_name || "").toLowerCase();
-      const email = String(item?.email || "").toLowerCase();
-      return name.includes(q) || email.includes(q);
-    });
-  }, [query, users]);
-
-  const loadUsers = async () => {
+  const loadUsers = async (page = currentPage) => {
     if (!activeCondominiumId) return;
     if (!canManage) return;
 
     setLoading(true);
     setError("");
     try {
-      const response = await apiClient.get("/users", requestConfig);
-      setUsers(Array.isArray(response.data) ? response.data : []);
+      const response = await apiClient.get("/users", {
+        ...(requestConfig || {}),
+        params: {
+          page,
+          per_page: 10,
+          q: String(query || "").trim() || undefined,
+        },
+      });
+
+      const payload = response?.data || {};
+      const rows = Array.isArray(payload?.data) ? payload.data : [];
+      const nextCurrentPage = Number(payload?.current_page || page || 1);
+      const nextLastPage = Number(payload?.last_page || 1);
+      const normalizedLastPage = nextLastPage > 0 ? nextLastPage : 1;
+
+      setUsers(rows);
+      setPagination({
+        currentPage: nextCurrentPage,
+        lastPage: normalizedLastPage,
+        perPage: Number(payload?.per_page || 10),
+        total: Number(payload?.total || rows.length),
+      });
+
+      if (nextCurrentPage > normalizedLastPage) {
+        setCurrentPage(normalizedLastPage);
+      }
     } catch (err) {
       setError(normalizeApiError(err, "No fue posible cargar usuarios."));
+      setUsers([]);
+      setPagination({
+        currentPage: 1,
+        lastPage: 1,
+        perPage: 10,
+        total: 0,
+      });
     } finally {
       setLoading(false);
     }
@@ -129,9 +155,13 @@ function UsersPermissionsPage() {
   };
 
   useEffect(() => {
-    loadUsers();
+    loadUsers(currentPage);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeCondominiumId, canManage]);
+  }, [activeCondominiumId, canManage, currentPage, query]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [query, activeCondominiumId, canManage]);
 
   return (
     <div className="mx-auto w-full max-w-6xl">
@@ -182,7 +212,7 @@ function UsersPermissionsPage() {
         <div className="flex items-end">
           <button
             type="button"
-            onClick={loadUsers}
+            onClick={() => loadUsers(currentPage)}
             disabled={loading || !activeCondominiumId || !canManage}
             className="h-10 rounded-lg bg-indigo-600 px-4 text-sm font-bold text-white hover:bg-indigo-700 disabled:opacity-70"
           >
@@ -229,6 +259,32 @@ function UsersPermissionsPage() {
           </tbody>
         </table>
       </div>
+
+      {pagination.lastPage > 1 ? (
+        <div className="mt-4 flex flex-col items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 sm:flex-row">
+          <p className="text-xs font-semibold text-slate-500">
+            Pagina {pagination.currentPage} de {pagination.lastPage} ({pagination.total} registros)
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+              disabled={loading || pagination.currentPage <= 1}
+              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Anterior
+            </button>
+            <button
+              type="button"
+              onClick={() => setCurrentPage((prev) => Math.min(pagination.lastPage, prev + 1))}
+              disabled={loading || pagination.currentPage >= pagination.lastPage}
+              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Siguiente
+            </button>
+          </div>
+        </div>
+      ) : null}
 
       {targetUser ? (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/45 p-4 sm:items-center">
@@ -311,29 +367,6 @@ function normalizeApiError(err, fallbackMessage) {
   }
 
   return responseData?.message || err?.message || fallbackMessage;
-}
-
-function isAdminUser(userItem) {
-  const roles = [];
-
-  if (typeof userItem?.role === "string" && userItem.role.trim()) {
-    roles.push(userItem.role);
-  }
-
-  if (Array.isArray(userItem?.roles)) {
-    userItem.roles.forEach((roleItem) => {
-      if (typeof roleItem === "string" && roleItem.trim()) {
-        roles.push(roleItem);
-        return;
-      }
-
-      if (typeof roleItem?.name === "string" && roleItem.name.trim()) {
-        roles.push(roleItem.name);
-      }
-    });
-  }
-
-  return roles.some((roleName) => isSuperUser(roleName) || isTenantAdminRole(roleName));
 }
 
 export default UsersPermissionsPage;

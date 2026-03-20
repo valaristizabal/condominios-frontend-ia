@@ -1,13 +1,20 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useActiveCondominium } from "../../../../context/useActiveCondominium";
 import apiClient from "../../../../services/apiClient";
 
 export function useVehicleTypes() {
   const { activeCondominiumId } = useActiveCondominium();
   const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    lastPage: 1,
+    perPage: 12,
+    total: 0,
+  });
 
   const requestConfig = useMemo(
     () =>
@@ -21,80 +28,113 @@ export function useVehicleTypes() {
     [activeCondominiumId]
   );
 
-  const fetchVehicleTypes = useCallback(async () => {
-    setLoading(true);
-    setError("");
+  const fetchVehicleTypes = useCallback(
+    async ({ page = 1, query = "", status = "all" } = {}) => {
+      setLoading(true);
+      setError("");
 
-    try {
-      const response = await apiClient.get("/vehicle-types", requestConfig);
-      setItems(Array.isArray(response.data) ? response.data : []);
-    } catch (err) {
-      setError(normalizeApiError(err, "No fue posible cargar tipos de vehículo."));
-    } finally {
-      setLoading(false);
-    }
-  }, [requestConfig]);
+      try {
+        const response = await apiClient.get("/vehicle-types", {
+          ...(requestConfig || {}),
+          params: {
+            page,
+            per_page: 12,
+            q: String(query || "").trim() || undefined,
+            status: status || "all",
+          },
+        });
+
+        const payload = response?.data || {};
+        const rows = Array.isArray(payload?.data) ? payload.data : [];
+        const nextCurrentPage = Number(payload?.current_page || page || 1);
+        const nextLastPage = Math.max(1, Number(payload?.last_page || 1));
+
+        if (nextCurrentPage > nextLastPage) {
+          await fetchVehicleTypes({ page: nextLastPage, query, status });
+          return;
+        }
+
+        setItems(rows);
+        setPagination({
+          currentPage: nextCurrentPage,
+          lastPage: nextLastPage,
+          perPage: Number(payload?.per_page || 12),
+          total: Number(payload?.total || rows.length),
+        });
+        setCurrentPage(nextCurrentPage);
+      } catch (err) {
+        setError(normalizeApiError(err, "No fue posible cargar tipos de vehiculo."));
+        setItems([]);
+        setPagination({
+          currentPage: 1,
+          lastPage: 1,
+          perPage: 12,
+          total: 0,
+        });
+        setCurrentPage(1);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [requestConfig]
+  );
 
   const createVehicleType = useCallback(
-    async (payload) => {
+    async (payload, filters = { query: "", status: "all" }) => {
       setSaving(true);
       setError("");
 
       try {
         const response = await apiClient.post("/vehicle-types", payload, requestConfig);
-        await fetchVehicleTypes();
+        await fetchVehicleTypes({ page: currentPage, ...filters });
         return response.data;
       } catch (err) {
-        setError(normalizeApiError(err, "No fue posible crear el tipo de vehículo."));
+        setError(normalizeApiError(err, "No fue posible crear el tipo de vehiculo."));
         throw err;
       } finally {
         setSaving(false);
       }
     },
-    [fetchVehicleTypes, requestConfig]
+    [currentPage, fetchVehicleTypes, requestConfig]
   );
 
   const updateVehicleType = useCallback(
-    async (id, payload) => {
+    async (id, payload, filters = { query: "", status: "all" }) => {
       setSaving(true);
       setError("");
 
       try {
         const response = await apiClient.put(`/vehicle-types/${id}`, payload, requestConfig);
-        await fetchVehicleTypes();
+        await fetchVehicleTypes({ page: currentPage, ...filters });
         return response.data;
       } catch (err) {
-        setError(normalizeApiError(err, "No fue posible actualizar el tipo de vehículo."));
+        setError(normalizeApiError(err, "No fue posible actualizar el tipo de vehiculo."));
         throw err;
       } finally {
         setSaving(false);
       }
     },
-    [fetchVehicleTypes, requestConfig]
+    [currentPage, fetchVehicleTypes, requestConfig]
   );
 
   const toggleVehicleType = useCallback(
-    async (id) => {
+    async (id, filters = { query: "", status: "all" }) => {
       setSaving(true);
       setError("");
 
       try {
         const response = await apiClient.patch(`/vehicle-types/${id}/toggle`, {}, requestConfig);
-        await fetchVehicleTypes();
+        await fetchVehicleTypes({ page: currentPage, ...filters });
         return response.data;
       } catch (err) {
-        setError(normalizeApiError(err, "No fue posible cambiar el estado del tipo de vehículo."));
+        setError(normalizeApiError(err, "No fue posible cambiar el estado del tipo de vehiculo."));
         throw err;
       } finally {
         setSaving(false);
       }
     },
-    [fetchVehicleTypes, requestConfig]
+    [currentPage, fetchVehicleTypes, requestConfig]
   );
-
-  useEffect(() => {
-    fetchVehicleTypes();
-  }, [fetchVehicleTypes]);
 
   const hasTenantContext = useMemo(() => Boolean(activeCondominiumId), [activeCondominiumId]);
 
@@ -103,8 +143,11 @@ export function useVehicleTypes() {
     loading,
     saving,
     error,
+    currentPage,
+    pagination,
     hasTenantContext,
     activeCondominiumId,
+    setCurrentPage,
     fetchVehicleTypes,
     createVehicleType,
     updateVehicleType,
@@ -127,4 +170,3 @@ function normalizeApiError(err, fallbackMessage) {
 
   return responseData?.message || err?.message || fallbackMessage;
 }
-
