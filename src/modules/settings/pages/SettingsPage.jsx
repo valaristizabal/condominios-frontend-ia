@@ -1,4 +1,5 @@
 ﻿import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuthContext } from "../../../context/useAuthContext";
 import { useActiveCondominium } from "../../../context/useActiveCondominium";
@@ -88,6 +89,24 @@ export default function SettingsPage() {
     [resolvedCondominiumId]
   );
 
+
+  const { data: activeCondominiumInfo } = useQuery({
+    queryKey: ["settings-active-condominium-info", resolvedCondominiumId],
+    enabled: Boolean(resolvedCondominiumId),
+    staleTime: 1000 * 60,
+    queryFn: async () => {
+      if (!resolvedCondominiumId) return null;
+      const response = await apiClient.get("/condominiums/active", {
+        headers: {
+          "X-Active-Condominium-Id": String(resolvedCondominiumId),
+        },
+      });
+      return response?.data || null;
+    },
+  });
+
+  const condominiumLabel = activeCondominiumInfo?.name || "Propiedad";
+
   const downloadDailyLog = async () => {
     if (!resolvedCondominiumId) return;
 
@@ -100,7 +119,7 @@ export default function SettingsPage() {
       await exportDailyMinutaWorkbook({
         payload: response.data,
         fileName: `minuta-diaria-${today}.xlsx`,
-        condominiumLabel: `Propiedad #${resolvedCondominiumId}`,
+        condominiumLabel,
       });
     } catch (err) {
       setDownloadError(normalizeApiError(err, "No fue posible descargar la minuta diaria."));
@@ -132,7 +151,7 @@ export default function SettingsPage() {
         monthlySummary: summaryResponse.data,
         dailyLogs,
         fileName: `minuta-mensual-${month}.xlsx`,
-        condominiumLabel: `Propiedad #${resolvedCondominiumId}`,
+        condominiumLabel,
       });
     } catch (err) {
       setDownloadError(normalizeApiError(err, "No fue posible descargar la minuta mensual."));

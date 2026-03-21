@@ -22,75 +22,79 @@ const MODULE_SHEETS = {
   visits: {
     name: "VISITAS",
     columns: [
-      { header: "Fecha", value: (row) => formatDateTime(row?.created_at || row?.check_in_at) },
+      { header: "Fecha", value: (row) => formatDate(row?.created_at || row?.check_in_at) },
       { header: "Nombre visitante", value: (row) => row?.full_name || "-" },
       { header: "Documento", value: (row) => row?.document_number || "-" },
-      { header: "Inmueble", value: (row) => row?.apartment_id || "-" },
-      { header: "Hora ingreso", value: (row) => formatDateTime(row?.check_in_at) },
-      { header: "Hora salida", value: (row) => formatDateTime(row?.check_out_at) },
-      { header: "Registrado por", value: (row) => row?.registered_by_id || "-" },
-      { header: "Estado", value: (row) => row?.status || "-" },
+      { header: "Inmueble", value: (row) => humanizeApartment(row) },
+      { header: "Hora ingreso", value: (row) => formatTime(row?.check_in_at) },
+      { header: "Hora salida", value: (row) => formatTime(row?.check_out_at) },
+      { header: "Registrado por", value: (row) => humanizeUser(row?.registered_by || row?.registeredBy, row?.registered_by_id, "Usuario") },
+      { header: "Estado", value: (row) => humanizeStatus(row?.status) },
     ],
   },
   employee_entries: {
     name: "PERSONAL",
     columns: [
-      { header: "Fecha", value: (row) => formatDateTime(row?.check_in_at || row?.created_at) },
-      { header: "Operario ID", value: (row) => row?.operative_id || "-" },
-      { header: "Cargo", value: (row) => row?.position || "-" },
-      { header: "Hora ingreso", value: (row) => formatDateTime(row?.check_in_at) },
-      { header: "Hora salida", value: (row) => formatDateTime(row?.check_out_at) },
-      { header: "Estado", value: (row) => row?.status || "-" },
-      { header: "Observaciones", value: (row) => row?.observations || "-" },
+      { header: "Fecha", value: (row) => formatDate(row?.check_in_at || row?.created_at) },
+      { header: "Operario", value: (row) => humanizeOperative(row) },
+      { header: "Cargo", value: (row) => humanizePosition(row?.position) },
+      { header: "Hora ingreso", value: (row) => formatTime(row?.check_in_at) },
+      { header: "Hora salida", value: (row) => formatTime(row?.check_out_at) },
+      { header: "Estado", value: (row) => humanizeStatus(row?.status) },
+      { header: "Observaciones", value: (row) => row?.observations || row?.notes || "-" },
     ],
   },
   vehicle_entries: {
     name: "VEHICULOS",
     columns: [
-      { header: "Fecha", value: (row) => formatDateTime(row?.check_in_at || row?.created_at) },
-      { header: "Vehículo ID", value: (row) => row?.vehicle_id || "-" },
-      { header: "Hora ingreso", value: (row) => formatDateTime(row?.check_in_at) },
-      { header: "Hora salida", value: (row) => formatDateTime(row?.check_out_at) },
-      { header: "Estado", value: (row) => row?.status || "-" },
-      { header: "Observaciones", value: (row) => row?.observations || "-" },
+      { header: "Fecha", value: (row) => formatDate(row?.check_in_at || row?.created_at) },
+      { header: "Vehículo", value: (row) => humanizeVehicle(row) },
+      { header: "Hora ingreso", value: (row) => formatTime(row?.check_in_at) },
+      { header: "Hora salida", value: (row) => formatTime(row?.check_out_at) },
+      { header: "Estado", value: (row) => humanizeStatus(row?.status) },
+      { header: "Observaciones", value: (row) => row?.observations || row?.notes || "-" },
     ],
   },
   correspondences: {
     name: "CORRESPONDENCIA",
     columns: [
-      { header: "Fecha", value: (row) => formatDateTime(row?.created_at) },
+      { header: "Fecha", value: (row) => formatDate(row?.created_at) },
+      { header: "Hora", value: (row) => formatTime(row?.created_at) },
       { header: "Empresa", value: (row) => row?.courier_company || "-" },
-      { header: "Tipo paquete", value: (row) => row?.package_type || "-" },
-      { header: "Estado", value: (row) => row?.status || "-" },
-      { header: "Recibido por", value: (row) => row?.received_by_id || "-" },
-      { header: "Entregado por", value: (row) => row?.delivered_by_id || "-" },
-      { header: "Fecha entrega", value: (row) => formatDateTime(row?.delivered_at) },
+      { header: "Tipo paquete", value: (row) => humanizePackageType(row?.package_type) },
+      { header: "Estado", value: (row) => humanizeStatus(row?.status) },
+      { header: "Recibido por", value: (row) => humanizeUser(row?.received_by || row?.receivedBy, row?.received_by_id, "Usuario") },
+      { header: "Entregado por", value: (row) => humanizeUser(row?.delivered_by || row?.deliveredBy, row?.delivered_by_id, "Usuario") },
+      { header: "Fecha entrega", value: (row) => formatDate(row?.delivered_at) },
+      { header: "Hora entrega", value: (row) => formatTime(row?.delivered_at) },
     ],
   },
   cleaning_records: {
     name: "ASEO",
     columns: [
       { header: "Fecha", value: (row) => formatDate(row?.cleaning_date) },
-      { header: "Área", value: (row) => row?.cleaning_area_id || "-" },
-      { header: "Operario", value: (row) => row?.operative_id || "-" },
-      { header: "Estado", value: (row) => row?.status || "-" },
-      { header: "Observaciones", value: (row) => row?.observations || "-" },
-      { header: "Registrado por", value: (row) => row?.registered_by_id || "-" },
+      { header: "Área", value: (row) => humanizeCleaningArea(row) },
+      { header: "Operario", value: (row) => humanizeOperative(row) },
+      { header: "Estado", value: (row) => humanizeStatus(row?.status) },
+      { header: "Hora inicio", value: (row) => formatTime(row?.started_at || row?.created_at) },
+      { header: "Hora finalización", value: (row) => formatTime(row?.finished_at) },
+      { header: "Observaciones", value: (row) => row?.observations || row?.notes || "-" },
+      { header: "Registrado por", value: (row) => humanizeUser(row?.registered_by || row?.registeredBy, row?.registered_by_id, "Usuario") },
     ],
   },
   emergencies: {
     name: "EMERGENCIAS",
     columns: [
-      { header: "Fecha", value: (row) => formatDateTime(row?.event_date || row?.created_at) },
-      { header: "Tipo de emergencia", value: (row) => row?.emergency_type_id || "-" },
-      { header: "Nivel", value: (row) => row?.level || "-" },
-      { header: "Ubicación", value: (row) => row?.event_location || "-" },
+      { header: "Fecha", value: (row) => formatDate(row?.event_date || row?.created_at) },
+      { header: "Hora", value: (row) => formatTime(row?.event_date || row?.created_at) },
+      { header: "Tipo de emergencia", value: (row) => humanizeEmergencyType(row) },
+      { header: "Nivel", value: (row) => humanizeLevel(row?.level) },
+      { header: "Ubicación", value: (row) => row?.event_location || row?.location || "-" },
       { header: "Descripción", value: (row) => row?.description || "-" },
-      { header: "Estado", value: (row) => row?.status || "-" },
+      { header: "Estado", value: (row) => humanizeStatus(row?.status) },
     ],
   },
 };
-
 const BORDER_ALL = {
   top: { style: "thin", color: { argb: "FFD1D5DB" } },
   left: { style: "thin", color: { argb: "FFD1D5DB" } },
@@ -237,30 +241,26 @@ function addMonthlyCoverSheet(workbook, { condominiumLabel, month, generatedAt, 
 
 function addSummarySheet(workbook, sheetName, title, counts) {
   const sheet = workbook.addWorksheet(sheetName);
-  sheet.columns = [{ width: 34 }, { width: 14 }, { width: 42 }];
-  sheet.mergeCells("A1:C1");
+  sheet.columns = [{ width: 34 }, { width: 14 }];
+  sheet.mergeCells("A1:B1");
   sheet.getCell("A1").value = title;
   sheet.getCell("A1").font = { bold: true, size: 14, color: { argb: "FF0F172A" } };
   sheet.getCell("A1").alignment = { horizontal: "center", vertical: "middle" };
   sheet.getRow(1).height = 26;
   sheet.addRow([]);
 
-  const header = sheet.addRow(["Módulo", "Cantidad", "Gráfico de barras"]);
+  const header = sheet.addRow(["Módulo", "Cantidad"]);
   styleHeaderRow(header);
-
-  const max = Math.max(...MODULE_ORDER.map((key) => Number(counts[key] || 0)), 1);
 
   MODULE_ORDER.forEach((moduleKey) => {
     const count = Number(counts[moduleKey] || 0);
-    const bars = "#".repeat(Math.max(0, Math.round((count / max) * 30)));
-    const row = sheet.addRow([MODULE_LABELS[moduleKey], count, bars]);
+    const row = sheet.addRow([MODULE_LABELS[moduleKey], count]);
     styleDataRow(row);
   });
 
   sheet.views = [{ state: "frozen", ySplit: 3 }];
-  sheet.autoFilter = "A3:C3";
+  sheet.autoFilter = "A3:B3";
 }
-
 function addDetailSheet(workbook, moduleKey, rows) {
   const config = MODULE_SHEETS[moduleKey];
   if (!config) return;
@@ -393,6 +393,118 @@ function formatDateTime(value) {
   });
 }
 
+function formatTime(value) {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  return date.toLocaleTimeString("es-CO", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function humanizeApartment(row) {
+  const apartment = row?.apartment;
+  const unitTypeName = apartment?.unit_type?.name || apartment?.unitType?.name || row?.unit_type_name;
+  if (apartment?.number) {
+    const location = apartment?.tower ? `Torre ${apartment.tower} - ${apartment.number}` : String(apartment.number);
+    return unitTypeName ? `${unitTypeName} - ${location}` : location;
+  }
+  if (row?.apartment_number) {
+    return unitTypeName ? `${unitTypeName} - ${row.apartment_number}` : row.apartment_number;
+  }
+  return "No disponible";
+}
+function humanizeOperative(row) {
+  const operative = row?.operative;
+  const fullName = operative?.user?.full_name || operative?.full_name || row?.full_name || row?.employee_name;
+  if (fullName) return fullName;
+  return labelFromId("Operario", row?.operative_id);
+}
+
+function humanizeVehicle(row) {
+  const vehicle = row?.vehicle;
+  if (vehicle?.plate) return `Placa ${vehicle.plate}`;
+  if (row?.plate) return `Placa ${row.plate}`;
+  return labelFromId("Vehículo", row?.vehicle_id);
+}
+
+function humanizeCleaningArea(row) {
+  const area = row?.cleaningArea || row?.area;
+  return area?.name || row?.cleaning_area_name || "No disponible";
+}
+function humanizeEmergencyType(row) {
+  const type = row?.emergencyType || row?.type;
+  return type?.name || row?.emergency_type_name || "No disponible";
+}
+
+function humanizeUser(user, fallbackId, label = "Usuario") {
+  const fullName = user?.full_name || user?.name;
+  if (fullName) return fullName;
+  return "No disponible";
+}
+function humanizePosition(value) {
+  return humanizeSimpleValue(value) || "-";
+}
+
+function humanizePackageType(value) {
+  return humanizeSimpleValue(value) || "-";
+}
+
+function humanizeLevel(value) {
+  return humanizeSimpleValue(value) || "-";
+}
+
+function humanizeStatus(value) {
+  return humanizeSimpleValue(value) || "-";
+}
+
+function humanizeSimpleValue(value) {
+  if (value === null || value === undefined || value === "") return "";
+  const raw = String(value).trim();
+  if (!raw) return "";
+
+  const normalized = raw.toLowerCase();
+  const labels = {
+    inside: "Dentro",
+    outside: "Fuera",
+    active: "Activo",
+    inactive: "Inactivo",
+    pending: "Pendiente",
+    delivered: "Entregado",
+    received_by_security: "Recibido por seguridad",
+    completed: "Completado",
+    cancelled: "Cancelado",
+    canceled: "Cancelado",
+    entry: "Entrada",
+    exit: "Salida",
+    owner: "Dueño",
+    resident: "Residente",
+    visitor: "Visitante",
+    check_in: "Ingreso",
+    check_out: "Salida",
+    low: "Bajo",
+    medium: "Medio",
+    high: "Alto",
+    critical: "Crítico",
+    asset: "Activo fijo",
+    consumable: "Consumible",
+    cleaning: "Aseo",
+    security: "Seguridad",
+  };
+
+  if (labels[normalized]) return labels[normalized];
+  return raw
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+function labelFromId(label, id) {
+  if (!id) return "-";
+  return `${label} #${id}`;
+}
+
 function toDateInput(date) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -414,9 +526,9 @@ function colLetter(index) {
 function formatCellValue(value) {
   if (value === null || value === undefined || value === "") return "-";
   if (typeof value === "boolean") return value ? "SI" : "NO";
+  if (typeof value === "string") return humanizeSimpleValue(value) || "-";
   return value;
 }
-
 async function downloadWorkbook(workbook, fileName) {
   const buffer = await workbook.xlsx.writeBuffer();
   const blob = new Blob([buffer], {
