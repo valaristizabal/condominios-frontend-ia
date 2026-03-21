@@ -1,13 +1,19 @@
 import { useEffect, useState } from "react";
 import { useActiveCondominium } from "../../../../context/useActiveCondominium";
+import { useNotification } from "../../../../hooks/useNotification";
 import { useSuppliers } from "../hooks/useSuppliers";
 
 const EMPTY_FORM = {
   name: "",
+  rut: "",
   contact_name: "",
   phone: "",
   email: "",
   address: "",
+  certificacion_bancaria_file: null,
+  documento_representante_legal_file: null,
+  certificacion_bancaria: "",
+  documento_representante_legal: "",
   is_active: true,
 };
 
@@ -27,6 +33,7 @@ function SuppliersPage() {
     updateSupplier,
     deactivateSupplier,
   } = useSuppliers();
+  const { success, error: notifyError, warning } = useNotification();
 
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("all");
@@ -56,10 +63,15 @@ function SuppliersPage() {
     setLocalError("");
     setForm({
       name: item?.name || "",
+      rut: item?.rut || "",
       contact_name: item?.contact_name || "",
       phone: item?.phone || "",
       email: item?.email || "",
       address: item?.address || "",
+      certificacion_bancaria_file: null,
+      documento_representante_legal_file: null,
+      certificacion_bancaria: item?.certificacion_bancaria || "",
+      documento_representante_legal: item?.documento_representante_legal || "",
       is_active: Boolean(item?.is_active),
     });
     setModalOpen(true);
@@ -76,16 +88,23 @@ function SuppliersPage() {
   const handleSave = async () => {
     const cleanName = String(form.name || "").trim();
     if (!cleanName) {
-      setLocalError("El nombre del proveedor es obligatorio.");
+      const message = "El nombre del proveedor es obligatorio.";
+      setLocalError(message);
+      warning(message);
       return;
     }
 
     const payload = {
       name: cleanName,
+      rut: String(form.rut || "").trim() || null,
       contact_name: String(form.contact_name || "").trim() || null,
       phone: String(form.phone || "").trim() || null,
       email: String(form.email || "").trim() || null,
       address: String(form.address || "").trim() || null,
+      certificacion_bancaria: form.certificacion_bancaria || null,
+      documento_representante_legal: form.documento_representante_legal || null,
+      certificacion_bancaria_file: form.certificacion_bancaria_file || undefined,
+      documento_representante_legal_file: form.documento_representante_legal_file || undefined,
       is_active: Boolean(form.is_active),
     };
 
@@ -93,22 +112,34 @@ function SuppliersPage() {
       const filters = { query, status };
       if (editing) {
         await updateSupplier(editing.id, payload, filters);
+        success("Proveedor actualizado correctamente.");
       } else {
         await createSupplier(payload, filters);
+        success("Proveedor creado correctamente.");
       }
       closeModal();
     } catch (err) {
-      setLocalError(err?.response?.data?.message || err?.message || "No fue posible guardar el proveedor.");
+      const message = err?.response?.data?.message || err?.message || "No fue posible guardar el proveedor.";
+      setLocalError(message);
+      notifyError(message);
     }
   };
 
   const handleToggle = async (item) => {
     const filters = { query, status };
-    if (item.is_active) {
-      await deactivateSupplier(item.id, filters);
-      return;
+    try {
+      if (item.is_active) {
+        await deactivateSupplier(item.id, filters);
+        success("Proveedor desactivado correctamente.");
+        return;
+      }
+      await updateSupplier(item.id, { is_active: true }, filters);
+      success("Proveedor activado correctamente.");
+    } catch (err) {
+      const message = err?.response?.data?.message || err?.message || "No fue posible actualizar el proveedor.";
+      setLocalError(message);
+      notifyError(message);
     }
-    await updateSupplier(item.id, { is_active: true }, filters);
   };
 
   return (
@@ -176,9 +207,11 @@ function SuppliersPage() {
             <thead className="bg-slate-50 text-left text-xs uppercase tracking-wider text-slate-500">
               <tr>
                 <th className="px-4 py-3">Nombre</th>
+                <th className="px-4 py-3">RUT</th>
                 <th className="px-4 py-3">Contacto</th>
                 <th className="px-4 py-3">Telefono</th>
                 <th className="px-4 py-3">Email</th>
+                <th className="px-4 py-3">Documentos</th>
                 <th className="px-4 py-3">Estado</th>
                 <th className="px-4 py-3 text-right">Acciones</th>
               </tr>
@@ -187,9 +220,16 @@ function SuppliersPage() {
               {suppliers.map((item) => (
                 <tr key={item.id} className="border-t border-slate-100">
                   <td className="px-4 py-3 font-semibold text-slate-800">{item.name || "-"}</td>
+                  <td className="px-4 py-3 text-slate-700">{item.rut || "-"}</td>
                   <td className="px-4 py-3 text-slate-700">{item.contact_name || "-"}</td>
                   <td className="px-4 py-3 text-slate-700">{item.phone || "-"}</td>
                   <td className="px-4 py-3 text-slate-700">{item.email || "-"}</td>
+                  <td className="px-4 py-3 text-slate-700">
+                    <div className="flex flex-col gap-1">
+                      <DocumentLink href={item.certificacion_bancaria_url} label="Certificación bancaria" />
+                      <DocumentLink href={item.documento_representante_legal_url} label="Representante legal" />
+                    </div>
+                  </td>
                   <td className="px-4 py-3">
                     <span
                       className={`rounded-full px-2.5 py-1 text-xs font-bold ${
@@ -264,6 +304,12 @@ function SuppliersPage() {
                 placeholder="Nombre del proveedor"
               />
               <Field
+                label="RUT"
+                value={form.rut}
+                onChange={(event) => setForm((prev) => ({ ...prev, rut: event.target.value }))}
+                placeholder="RUT"
+              />
+              <Field
                 label="Contacto"
                 value={form.contact_name}
                 onChange={(event) => setForm((prev) => ({ ...prev, contact_name: event.target.value }))}
@@ -290,6 +336,32 @@ function SuppliersPage() {
                   placeholder="Direccion"
                 />
               </div>
+              <FileField
+                label="Certificación bancaria"
+                fileName={form.certificacion_bancaria_file?.name || fileNameFromPath(form.certificacion_bancaria)}
+                link={editing?.certificacion_bancaria_url || null}
+                onChange={(file) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    certificacion_bancaria_file: file,
+                    certificacion_bancaria: file ? "" : prev.certificacion_bancaria,
+                  }))
+                }
+              />
+              <FileField
+                label="Documento representante legal"
+                fileName={
+                  form.documento_representante_legal_file?.name || fileNameFromPath(form.documento_representante_legal)
+                }
+                link={editing?.documento_representante_legal_url || null}
+                onChange={(file) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    documento_representante_legal_file: file,
+                    documento_representante_legal: file ? "" : prev.documento_representante_legal,
+                  }))
+                }
+              />
               <label className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3 md:col-span-2">
                 <span className="text-sm font-semibold text-slate-700">Activo</span>
                 <input
@@ -359,6 +431,42 @@ function Select({ label, value, onChange, options }) {
       </select>
     </label>
   );
+}
+
+function FileField({ label, fileName, link, onChange }) {
+  return (
+    <label className="block md:col-span-2">
+      <span className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-500">{label}</span>
+      <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+        <input
+          type="file"
+          onChange={(event) => onChange(event.target.files?.[0] || null)}
+          className="block w-full text-sm text-slate-700 file:mr-3 file:rounded-lg file:border-0 file:bg-indigo-600 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white"
+        />
+        {fileName ? <p className="mt-2 text-sm text-slate-600">Archivo: {fileName}</p> : null}
+        {link ? (
+          <a href={link} target="_blank" rel="noreferrer" className="mt-2 inline-block text-sm font-semibold text-indigo-700">
+            Ver archivo actual
+          </a>
+        ) : null}
+      </div>
+    </label>
+  );
+}
+
+function DocumentLink({ href, label }) {
+  if (!href) return <span className="text-slate-400">-</span>;
+  return (
+    <a href={href} target="_blank" rel="noreferrer" className="font-semibold text-indigo-700 hover:text-indigo-800">
+      {label}
+    </a>
+  );
+}
+
+function fileNameFromPath(path) {
+  if (!path) return "";
+  const parts = String(path).split(/[\\/]/);
+  return parts[parts.length - 1] || "";
 }
 
 export default SuppliersPage;

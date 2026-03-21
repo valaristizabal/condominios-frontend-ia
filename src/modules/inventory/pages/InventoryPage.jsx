@@ -14,6 +14,7 @@ import SearchableSelect from "../../../components/common/SearchableSelect";
 import { useNotification } from "../../../hooks/useNotification";
 import {
   createProduct,
+  deactivateAsset,
   getInventories,
   getInventoryCategories,
   getLowStockProducts,
@@ -37,6 +38,7 @@ function buildEmptyProductForm(inventoryId = "") {
     minimum_stock: "",
     unit_cost: "",
     asset_code: "",
+    serial: "",
     location: "",
   };
 }
@@ -60,6 +62,7 @@ function InventoryPage({ allowProductManagement = false, showOperationTools = tr
   const [error, setError] = useState("");
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [editingProductId, setEditingProductId] = useState(null);
+  const [assetToDeactivate, setAssetToDeactivate] = useState(null);
   const [productForm, setProductForm] = useState(buildEmptyProductForm());
   const [movementForm, setMovementForm] = useState({
     product_id: "",
@@ -126,27 +129,15 @@ function InventoryPage({ allowProductManagement = false, showOperationTools = tr
     [inventoriesAndCategoriesQuery.data?.suppliers]
   );
   const inventoryOptions = useMemo(
-    () =>
-      inventories.map((inventory) => ({
-        value: String(inventory.id),
-        label: inventory.name,
-      })),
+    () => inventories.map((inventory) => ({ value: String(inventory.id), label: inventory.name })),
     [inventories]
   );
   const categoryOptions = useMemo(
-    () =>
-      categories.map((category) => ({
-        value: String(category.id),
-        label: category.name,
-      })),
+    () => categories.map((category) => ({ value: String(category.id), label: category.name })),
     [categories]
   );
   const supplierOptions = useMemo(
-    () =>
-      suppliers.map((supplier) => ({
-        value: String(supplier.id),
-        label: supplier.name,
-      })),
+    () => suppliers.map((supplier) => ({ value: String(supplier.id), label: supplier.name })),
     [suppliers]
   );
   const productTypeOptions = useMemo(
@@ -188,25 +179,6 @@ function InventoryPage({ allowProductManagement = false, showOperationTools = tr
     () => productsWithMovementsQuery.data?.products ?? EMPTY_LIST,
     [productsWithMovementsQuery.data?.products]
   );
-
-  const consumableProducts = useMemo(
-    () => products.filter((product) => product?.type !== "asset"),
-    [products]
-  );
-
-  useEffect(() => {
-    setMovementForm((prev) => {
-      if (!consumableProducts.length) {
-        return prev.product_id ? { ...prev, product_id: "" } : prev;
-      }
-
-      if (!prev.product_id) return prev;
-
-      const exists = consumableProducts.some((product) => String(product.id) === String(prev.product_id));
-      return exists ? prev : { ...prev, product_id: "" };
-    });
-  }, [consumableProducts]);
-
   const lowStockQuery = useQuery({
     queryKey: ["inventory", "low-stock", resolvedCondominiumId, selectedInventoryId],
     enabled: showOperationTools && canQuery && Boolean(selectedInventoryId),
@@ -215,7 +187,6 @@ function InventoryPage({ allowProductManagement = false, showOperationTools = tr
       return response.filter((product) => String(product.inventory_id) === String(selectedInventoryId));
     },
   });
-
   const lowStockProducts = useMemo(() => lowStockQuery.data ?? EMPTY_LIST, [lowStockQuery.data]);
   const movements = useMemo(
     () => productsWithMovementsQuery.data?.movements ?? EMPTY_LIST,
@@ -223,14 +194,20 @@ function InventoryPage({ allowProductManagement = false, showOperationTools = tr
   );
 
   useEffect(() => {
+    setMovementForm((prev) => {
+      if (!products.length) {
+        return prev.product_id ? { ...prev, product_id: "" } : prev;
+      }
+      if (!prev.product_id) return prev;
+      const exists = products.some((product) => String(product.id) === String(prev.product_id));
+      return exists ? prev : { ...prev, product_id: "" };
+    });
+  }, [products]);
+
+  useEffect(() => {
     const next = productsWithMovementsQuery.data?.pagination;
     if (!next) {
-      setPagination({
-        currentPage: 1,
-        lastPage: 1,
-        perPage: 10,
-        total: 0,
-      });
+      setPagination({ currentPage: 1, lastPage: 1, perPage: 10, total: 0 });
       return;
     }
 
@@ -265,7 +242,6 @@ function InventoryPage({ allowProductManagement = false, showOperationTools = tr
       (showOperationTools ? lowStockQuery.error : null);
 
     if (!queryError) return;
-
     setError(normalizeApiError(queryError, "No fue posible cargar inventario."));
   }, [inventoriesAndCategoriesQuery.error, lowStockQuery.error, productsWithMovementsQuery.error, showOperationTools]);
 
@@ -273,12 +249,8 @@ function InventoryPage({ allowProductManagement = false, showOperationTools = tr
     mutationFn: (payload) => createProduct(payload, requestConfig),
     onSuccess: async () => {
       await Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: ["inventory", "products-with-movements", resolvedCondominiumId, selectedInventoryId],
-        }),
-        queryClient.invalidateQueries({
-          queryKey: ["inventory", "low-stock", resolvedCondominiumId, selectedInventoryId],
-        }),
+        queryClient.invalidateQueries({ queryKey: ["inventory", "products-with-movements", resolvedCondominiumId, selectedInventoryId] }),
+        queryClient.invalidateQueries({ queryKey: ["inventory", "low-stock", resolvedCondominiumId, selectedInventoryId] }),
       ]);
     },
   });
@@ -287,31 +259,31 @@ function InventoryPage({ allowProductManagement = false, showOperationTools = tr
     mutationFn: ({ id, payload }) => updateProduct(id, payload, requestConfig),
     onSuccess: async () => {
       await Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: ["inventory", "products-with-movements", resolvedCondominiumId, selectedInventoryId],
-        }),
-        queryClient.invalidateQueries({
-          queryKey: ["inventory", "low-stock", resolvedCondominiumId, selectedInventoryId],
-        }),
+        queryClient.invalidateQueries({ queryKey: ["inventory", "products-with-movements", resolvedCondominiumId, selectedInventoryId] }),
+        queryClient.invalidateQueries({ queryKey: ["inventory", "low-stock", resolvedCondominiumId, selectedInventoryId] }),
       ]);
     },
   });
 
   const registerMovementMutation = useMutation({
     mutationFn: async ({ type, payload }) => {
-      if (type === "entry") {
-        return registerEntry(payload, requestConfig);
-      }
+      if (type === "entry") return registerEntry(payload, requestConfig);
       return registerExit(payload, requestConfig);
     },
     onSuccess: async () => {
       await Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: ["inventory", "products-with-movements", resolvedCondominiumId, selectedInventoryId],
-        }),
-        queryClient.invalidateQueries({
-          queryKey: ["inventory", "low-stock", resolvedCondominiumId, selectedInventoryId],
-        }),
+        queryClient.invalidateQueries({ queryKey: ["inventory", "products-with-movements", resolvedCondominiumId, selectedInventoryId] }),
+        queryClient.invalidateQueries({ queryKey: ["inventory", "low-stock", resolvedCondominiumId, selectedInventoryId] }),
+      ]);
+    },
+  });
+
+  const deactivateAssetMutation = useMutation({
+    mutationFn: (productId) => deactivateAsset(productId, requestConfig),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["inventory", "products-with-movements", resolvedCondominiumId, selectedInventoryId] }),
+        queryClient.invalidateQueries({ queryKey: ["inventory", "low-stock", resolvedCondominiumId, selectedInventoryId] }),
       ]);
     },
   });
@@ -359,6 +331,7 @@ function InventoryPage({ allowProductManagement = false, showOperationTools = tr
       minimum_stock: String(product.minimum_stock ?? 0),
       unit_cost: product.unit_cost !== null && product.unit_cost !== undefined ? String(product.unit_cost) : "",
       asset_code: String(product.asset_code || ""),
+      serial: String(product.serial || ""),
       location: String(product.location || ""),
     });
     setShowAddProduct(true);
@@ -373,7 +346,20 @@ function InventoryPage({ allowProductManagement = false, showOperationTools = tr
 
   const handleMovementChange = (event) => {
     const { name, value } = event.target;
-    setMovementForm((prev) => ({ ...prev, [name]: value }));
+    setMovementForm((prev) => {
+      const next = { ...prev, [name]: value };
+      if (name === "type") {
+        next.product_id = "";
+      }
+      if (name === "product_id") {
+        const selectedProduct = products.find((product) => String(product.id) === String(value));
+        if (selectedProduct?.type === "asset") {
+          next.type = "exit";
+          next.quantity = "1";
+        }
+      }
+      return next;
+    });
   };
 
   const handleProductChange = (event) => {
@@ -382,7 +368,10 @@ function InventoryPage({ allowProductManagement = false, showOperationTools = tr
   };
 
   const handleRegisterMovement = async () => {
-    if (!movementForm.product_id || !movementForm.type || Number(movementForm.quantity) <= 0) {
+    const selectedProduct = products.find((product) => String(product.id) === String(movementForm.product_id));
+    const movementQuantity = movementForm.type === "exit" && selectedProduct?.type === "asset" ? 1 : Number(movementForm.quantity);
+
+    if (!movementForm.product_id || !movementForm.type || movementQuantity <= 0) {
       warning("Selecciona producto, tipo de movimiento y una cantidad valida.");
       return;
     }
@@ -392,26 +381,15 @@ function InventoryPage({ allowProductManagement = false, showOperationTools = tr
     try {
       const payload = {
         product_id: Number(movementForm.product_id),
-        quantity: Number(movementForm.quantity),
+        quantity: movementQuantity,
         observations: String(movementForm.observations || "").trim() || null,
       };
 
-      await registerMovementMutation.mutateAsync({
-        type: movementForm.type,
-        payload,
-      });
-
-      await queryClient.invalidateQueries({
-        queryKey: ["inventory", "products-with-movements", resolvedCondominiumId, selectedInventoryId, currentPage],
-      });
+      await registerMovementMutation.mutateAsync({ type: movementForm.type, payload });
+      await queryClient.invalidateQueries({ queryKey: ["inventory", "products-with-movements", resolvedCondominiumId, selectedInventoryId, currentPage] });
 
       notifySuccess("Movimiento registrado correctamente.");
-      setMovementForm({
-        product_id: "",
-        type: "",
-        quantity: "",
-        observations: "",
-      });
+      setMovementForm({ product_id: "", type: "", quantity: "", observations: "" });
     } catch (err) {
       const message = normalizeApiError(err, "No fue posible registrar el movimiento.");
       setError(message);
@@ -436,6 +414,11 @@ function InventoryPage({ allowProductManagement = false, showOperationTools = tr
     const type = productForm.type === "asset" ? "asset" : "consumable";
     const parsedUnitCost = Number(productForm.unit_cost);
 
+    if (type === "asset" && !String(productForm.serial || "").trim()) {
+      warning("El serial es obligatorio para activos fijos.");
+      return;
+    }
+
     setError("");
 
     try {
@@ -445,7 +428,7 @@ function InventoryPage({ allowProductManagement = false, showOperationTools = tr
         type,
         category_id: productForm.category_id ? Number(productForm.category_id) : null,
         supplier_id: productForm.supplier_id ? Number(productForm.supplier_id) : null,
-        stock: Math.max(0, Number(productForm.stock || 0)),
+        stock: type === "asset" ? 1 : Math.max(0, Number(productForm.stock || 0)),
         minimum_stock: type === "consumable" ? Math.max(0, Number(productForm.minimum_stock || 0)) : 0,
         unit_cost:
           productForm.unit_cost === "" || productForm.unit_cost === null || productForm.unit_cost === undefined
@@ -454,14 +437,12 @@ function InventoryPage({ allowProductManagement = false, showOperationTools = tr
               ? Math.max(0, parsedUnitCost)
               : null,
         asset_code: type === "asset" ? String(productForm.asset_code || "").trim() || null : null,
+        serial: type === "asset" ? String(productForm.serial || "").trim() || null : null,
         location: type === "asset" ? String(productForm.location || "").trim() || null : null,
       };
 
       if (isEditing) {
-        await updateProductMutation.mutateAsync({
-          id: editingProductId,
-          payload,
-        });
+        await updateProductMutation.mutateAsync({ id: editingProductId, payload });
         notifySuccess("Producto actualizado correctamente.");
       } else {
         await createProductMutation.mutateAsync(payload);
@@ -472,6 +453,19 @@ function InventoryPage({ allowProductManagement = false, showOperationTools = tr
     } catch (err) {
       const fallback = isEditing ? "No fue posible actualizar el producto." : "No fue posible crear el producto.";
       const message = normalizeApiError(err, fallback);
+      setError(message);
+      notifyError(message);
+    }
+  };
+
+  const handleConfirmDeactivateAsset = async () => {
+    if (!assetToDeactivate) return;
+    try {
+      await deactivateAssetMutation.mutateAsync(assetToDeactivate.id);
+      notifySuccess("Activo fijo dado de baja correctamente.");
+      setAssetToDeactivate(null);
+    } catch (err) {
+      const message = normalizeApiError(err, "No fue posible dar de baja el activo fijo.");
       setError(message);
       notifyError(message);
     }
@@ -526,7 +520,7 @@ function InventoryPage({ allowProductManagement = false, showOperationTools = tr
       ) : null}
 
       {showAddProduct && canManageProducts ? (
-        <section className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
+        <section className="mt-6 rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
           <h2 className="text-xl font-bold text-gray-800">{isEditing ? "Editar producto" : "Nuevo producto"}</h2>
           <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
             <div>
@@ -535,7 +529,7 @@ function InventoryPage({ allowProductManagement = false, showOperationTools = tr
                 value={productForm.inventory_id}
                 onChange={(value) => handleProductChange({ target: { name: "inventory_id", value: String(value) } })}
                 options={inventoryOptions}
-                placeholder="Seleccione ubicaci?n"
+                placeholder="Seleccione ubicación"
                 searchPlaceholder="Buscar inventario..."
               />
             </div>
@@ -563,13 +557,13 @@ function InventoryPage({ allowProductManagement = false, showOperationTools = tr
             </div>
 
             <div>
-              <label className="mb-1.5 block text-sm font-semibold text-gray-700">Categorí­a</label>
+              <label className="mb-1.5 block text-sm font-semibold text-gray-700">Categoría</label>
               <SearchableSelect
                 value={productForm.category_id}
                 onChange={(value) => handleProductChange({ target: { name: "category_id", value: String(value) } })}
                 options={categoryOptions}
-                placeholder="Seleccione categor?a"
-                searchPlaceholder="Buscar categor?a..."
+                placeholder="Seleccione categoría"
+                searchPlaceholder="Buscar categoría..."
               />
             </div>
 
@@ -584,22 +578,28 @@ function InventoryPage({ allowProductManagement = false, showOperationTools = tr
               />
             </div>
 
-            <div>
-              <label className="mb-1.5 block text-sm font-semibold text-gray-700">Stock</label>
-              <input
-                name="stock"
-                type="number"
-                min="0"
-                value={productForm.stock}
-                onChange={handleProductChange}
-                className="w-full rounded-2xl border border-gray-200 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-300"
-                placeholder="Stock"
-              />
-            </div>
+            {productForm.type === "consumable" ? (
+              <div>
+                <label className="mb-1.5 block text-sm font-semibold text-gray-700">Stock</label>
+                <input
+                  name="stock"
+                  type="number"
+                  min="0"
+                  value={productForm.stock}
+                  onChange={handleProductChange}
+                  className="w-full rounded-2xl border border-gray-200 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-300"
+                  placeholder="Stock"
+                />
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-800 md:col-span-2">
+                Los activos fijos se manejan individualmente (cantidad = 1).
+              </div>
+            )}
 
             {productForm.type === "consumable" ? (
               <div>
-                <label className="mb-1.5 block text-sm font-semibold text-gray-700">Stock mí­nimo de alerta</label>
+                <label className="mb-1.5 block text-sm font-semibold text-gray-700">Stock mínimo de alerta</label>
                 <input
                   name="minimum_stock"
                   type="number"
@@ -607,7 +607,7 @@ function InventoryPage({ allowProductManagement = false, showOperationTools = tr
                   value={productForm.minimum_stock}
                   onChange={handleProductChange}
                   className="w-full rounded-2xl border border-gray-200 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-300"
-                  placeholder="Stock mí­nimo de alerta"
+                  placeholder="Stock mínimo de alerta"
                 />
               </div>
             ) : null}
@@ -629,13 +629,24 @@ function InventoryPage({ allowProductManagement = false, showOperationTools = tr
             {productForm.type === "asset" ? (
               <>
                 <div>
-                  <label className="mb-1.5 block text-sm font-semibold text-gray-700">Código de activo</label>
+                  <label className="mb-1.5 block text-sm font-semibold text-gray-700">Codigo de activo</label>
                   <input
                     name="asset_code"
                     value={productForm.asset_code}
                     onChange={handleProductChange}
                     className="w-full rounded-2xl border border-gray-200 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-300"
-                    placeholder="Código de activo"
+                    placeholder="Codigo de activo"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1.5 block text-sm font-semibold text-gray-700">Serial</label>
+                  <input
+                    name="serial"
+                    value={productForm.serial}
+                    onChange={handleProductChange}
+                    className="w-full rounded-2xl border border-gray-200 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-300"
+                    placeholder="Serial"
                   />
                 </div>
 
@@ -658,9 +669,7 @@ function InventoryPage({ allowProductManagement = false, showOperationTools = tr
               <p className="text-sm font-semibold text-amber-700">No hay proveedores registrados para esta propiedad.</p>
               <button
                 type="button"
-                onClick={() =>
-                  navigate(routeCondominiumId ? `/condominio/${routeCondominiumId}/settings/suppliers` : "/settings/suppliers")
-                }
+                onClick={() => navigate(routeCondominiumId ? `/condominio/${routeCondominiumId}/settings/suppliers` : "/settings/suppliers")}
                 className="mt-2 rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-amber-700"
               >
                 Crear proveedor
@@ -708,8 +717,10 @@ function InventoryPage({ allowProductManagement = false, showOperationTools = tr
           <ProductTable
             products={products}
             onEdit={openEditProduct}
+            onDeactivate={setAssetToDeactivate}
             saving={savingProduct}
             canEdit={canManageProducts}
+            canDeactivate={canManageProducts}
             currentPage={pagination.currentPage || currentPage}
             totalPages={pagination.lastPage || 1}
             totalItems={pagination.total || 0}
@@ -732,6 +743,36 @@ function InventoryPage({ allowProductManagement = false, showOperationTools = tr
           ) : null}
         </div>
       )}
+
+      {assetToDeactivate ? (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/45 p-4 sm:items-center">
+          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl">
+            <h3 className="text-lg font-extrabold text-slate-900">Dar de baja activo fijo</h3>
+            <p className="mt-2 text-sm text-slate-600">
+              Vas a marcar como inactivo el activo <span className="font-semibold text-slate-800">{assetToDeactivate.name}</span>
+              {assetToDeactivate.serial ? ` (Serial ${assetToDeactivate.serial})` : ""}. No podrá recibir movimientos nuevos.
+            </p>
+            <div className="mt-4 flex gap-3">
+              <button
+                type="button"
+                onClick={handleConfirmDeactivateAsset}
+                disabled={deactivateAssetMutation.isPending}
+                className="flex-1 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-red-700 disabled:opacity-70"
+              >
+                {deactivateAssetMutation.isPending ? "Procesando..." : "Confirmar baja"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setAssetToDeactivate(null)}
+                disabled={deactivateAssetMutation.isPending}
+                className="flex-1 rounded-xl bg-slate-100 px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-200"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -765,6 +806,3 @@ function formatCurrency(value) {
 }
 
 export default InventoryPage;
-
-
-

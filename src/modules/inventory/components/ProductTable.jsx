@@ -1,10 +1,12 @@
-import { Pencil, Trash } from "lucide-react";
+import { Ban, Pencil, Trash } from "lucide-react";
 
 function ProductTable({
   products,
   onEdit,
+  onDeactivate,
   saving = false,
   canEdit = true,
+  canDeactivate = false,
   currentPage = 1,
   totalPages = 1,
   totalItems = 0,
@@ -22,6 +24,7 @@ function ProductTable({
           <thead className="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">
             <tr>
               <th className="px-4 py-3">Producto</th>
+              <th className="px-4 py-3">Serial</th>
               <th className="px-4 py-3">Tipo</th>
               <th className="px-4 py-3">Categoría</th>
               <th className="px-4 py-3">Ubicación</th>
@@ -39,6 +42,7 @@ function ProductTable({
               return (
                 <tr key={product.id} className="border-t border-gray-100">
                   <td className="px-4 py-3 font-semibold text-gray-800">{product.name || "-"}</td>
+                  <td className="px-4 py-3 text-gray-700">{product.serial || "-"}</td>
                   <td className="px-4 py-3">
                     <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">
                       {product.type === "asset" ? "Activo fijo" : "Consumible"}
@@ -67,6 +71,17 @@ function ProductTable({
                         <button type="button" className="rounded-lg bg-gray-100 p-2" disabled>
                           <Trash className="h-4 w-4" />
                         </button>
+                        {canDeactivate && product.type === "asset" && !product.dado_de_baja ? (
+                          <button
+                            type="button"
+                            className="rounded-lg bg-red-50 p-2 text-red-700"
+                            disabled={saving}
+                            onClick={() => onDeactivate?.(product)}
+                            title="Dar de baja"
+                          >
+                            <Ban className="h-4 w-4" />
+                          </button>
+                        ) : null}
                       </div>
                     </td>
                   ) : null}
@@ -108,6 +123,9 @@ function ProductTable({
 
 function resolveStockStatus(product) {
   if (product?.type === "asset") {
+    if (product?.dado_de_baja) {
+      return { label: "INACTIVO", className: "bg-red-100 text-red-700" };
+    }
     return { label: product?.is_active ? "Activo" : "Inactivo", className: "bg-slate-100 text-slate-700" };
   }
 

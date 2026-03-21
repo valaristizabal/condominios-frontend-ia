@@ -97,7 +97,13 @@ export function useSuppliers() {
       setSaving(true);
       setError("");
       try {
-        const response = await apiClient.post("/suppliers", payload, requestConfig);
+        const response = await apiClient.post("/suppliers", toSupplierRequestBody(payload), {
+          ...(requestConfig || {}),
+          headers: {
+            ...(requestConfig?.headers || {}),
+            "Content-Type": "multipart/form-data",
+          },
+        });
         await fetchSuppliers({ page: currentPage, ...filters });
         return response.data;
       } catch (err) {
@@ -115,7 +121,13 @@ export function useSuppliers() {
       setSaving(true);
       setError("");
       try {
-        const response = await apiClient.put(`/suppliers/${id}`, payload, requestConfig);
+        const response = await apiClient.post(`/suppliers/${id}?_method=PUT`, toSupplierRequestBody(payload), {
+          ...(requestConfig || {}),
+          headers: {
+            ...(requestConfig?.headers || {}),
+            "Content-Type": "multipart/form-data",
+          },
+        });
         await fetchSuppliers({ page: currentPage, ...filters });
         return response.data;
       } catch (err) {
@@ -177,4 +189,23 @@ function normalizeApiError(err, fallbackMessage) {
   }
 
   return responseData?.message || err?.message || fallbackMessage;
+}
+
+function toSupplierRequestBody(payload) {
+  const formData = new FormData();
+
+  Object.entries(payload || {}).forEach(([key, value]) => {
+    if (value === undefined) return;
+    if (value === null) {
+      formData.append(key, "");
+      return;
+    }
+    if (value instanceof File) {
+      formData.append(key, value);
+      return;
+    }
+    formData.append(key, typeof value === "boolean" ? (value ? "1" : "0") : String(value));
+  });
+
+  return formData;
 }

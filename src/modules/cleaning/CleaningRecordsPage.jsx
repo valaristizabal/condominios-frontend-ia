@@ -226,8 +226,8 @@ function CleaningRecordsPage() {
                 value={selectedAreaId}
                 onChange={(value) => setSelectedAreaId(String(value))}
                 options={areaOptions}
-                placeholder="Seleccione ?rea"
-                searchPlaceholder="Buscar ?rea..."
+                placeholder="Seleccione área"
+                searchPlaceholder="Buscar área..."
                 disabled={!hasTenantContext || saving || loading}
               />
 

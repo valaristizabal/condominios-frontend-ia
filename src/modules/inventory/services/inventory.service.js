@@ -10,6 +10,7 @@ export async function getProducts(requestConfig, inventoryId) {
   return toRows(response.data);
 }
 
+
 export async function getProductsWithMovements(requestConfig, inventoryId, page = 1, perPage = 10) {
   const response = await apiClient.get("/inventory/products-with-movements", {
     ...(requestConfig || {}),
@@ -77,6 +78,11 @@ export async function createProduct(payload, requestConfig) {
 
 export async function updateProduct(productId, payload, requestConfig) {
   const response = await apiClient.put(`/products/${productId}`, payload, requestConfig);
+  return response.data;
+}
+
+export async function deactivateAsset(productId, requestConfig) {
+  const response = await apiClient.post(`/inventory/activos/${productId}/baja`, {}, requestConfig);
   return response.data;
 }
 

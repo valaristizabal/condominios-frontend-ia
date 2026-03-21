@@ -69,12 +69,30 @@ function InventorySettingsPage() {
     setError("");
 
     try {
-      const response = await apiClient.get("/products", requestConfig);
-      const rows = Array.isArray(response.data?.data)
-        ? response.data.data
-        : Array.isArray(response.data)
-          ? response.data
-          : [];
+      let page = 1;
+      let lastPage = 1;
+      const rows = [];
+
+      do {
+        const response = await apiClient.get("/inventory/products-with-movements", {
+          ...(requestConfig || {}),
+          params: {
+            page,
+            per_page: 10,
+          },
+        });
+
+        const payload = response?.data || {};
+        const pageRows = Array.isArray(payload?.data)
+          ? payload.data
+          : Array.isArray(payload)
+            ? payload
+            : [];
+
+        rows.push(...pageRows);
+        lastPage = Math.max(1, Number(payload?.last_page || 1));
+        page += 1;
+      } while (page <= lastPage);
 
       await exportInventoryWorkbook({
         products: rows,
