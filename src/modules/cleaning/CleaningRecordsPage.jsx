@@ -1,6 +1,8 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import BackButton from "../../components/common/BackButton";
+import SearchableSelect from "../../components/common/SearchableSelect";
+import { useNotification } from "../../hooks/useNotification";
 import { useCleaningRecords } from "./useCleaningRecords";
 
 const inputBase =
@@ -11,6 +13,7 @@ const Card = ({ children, className = "" }) => (
 );
 
 function CleaningRecordsPage() {
+  const { success, error: notifyError, warning } = useNotification();
   const {
     hasTenantContext,
     tenantCacheKey,
@@ -38,6 +41,18 @@ function CleaningRecordsPage() {
   const areas = initialDataQuery.data?.areas || [];
   const operatives = initialDataQuery.data?.operatives || [];
   const records = initialDataQuery.data?.records || [];
+  const areaOptions = useMemo(
+    () => areas.map((area) => ({ value: String(area.id), label: area.name || `Area #${area.id}` })),
+    [areas]
+  );
+  const operativeOptions = useMemo(
+    () =>
+      operatives.map((operative) => ({
+        value: String(operative.id),
+        label: operative.user?.full_name || "Operario",
+      })),
+    [operatives]
+  );
   const areaNameById = useMemo(() => {
     const map = new Map();
     areas.forEach((area) => {
@@ -90,9 +105,12 @@ function CleaningRecordsPage() {
       setSelectedOperativeId("");
       setObservationText("");
       setError("");
+      success("Limpieza creada correctamente.");
     },
     onError: (err) => {
-      setError(normalizeApiError(err, "No fue posible crear la limpieza."));
+      const message = normalizeApiError(err, "No fue posible crear la limpieza.");
+      setError(message);
+      notifyError(message);
     },
   });
 
@@ -102,9 +120,12 @@ function CleaningRecordsPage() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["cleaning", "checklist", tenantCacheKey, selectedRecordId] });
       setError("");
+      success("Tarea de limpieza actualizada correctamente.");
     },
     onError: (err) => {
-      setError(normalizeApiError(err, "No fue posible actualizar la tarea."));
+      const message = normalizeApiError(err, "No fue posible actualizar la tarea.");
+      setError(message);
+      notifyError(message);
     },
   });
 
@@ -117,9 +138,12 @@ function CleaningRecordsPage() {
       ]);
       if (updated?.id) setSelectedRecordId(updated.id);
       setError("");
+      success("Limpieza finalizada correctamente.");
     },
     onError: (err) => {
-      setError(normalizeApiError(err, "No fue posible finalizar la limpieza."));
+      const message = normalizeApiError(err, "No fue posible finalizar la limpieza.");
+      setError(message);
+      notifyError(message);
     },
   });
 
@@ -130,7 +154,10 @@ function CleaningRecordsPage() {
   }, [initialDataQuery.error, checklistQuery.error]);
 
   const createRecord = async () => {
-    if (!selectedAreaId || !selectedOperativeId) return;
+    if (!selectedAreaId || !selectedOperativeId) {
+      warning("Selecciona area y operario para crear la limpieza.");
+      return;
+    }
 
     await createRecordMutation.mutateAsync({
       cleaning_area_id: Number(selectedAreaId),
@@ -195,33 +222,23 @@ function CleaningRecordsPage() {
             </div>
 
             <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <select
+              <SearchableSelect
                 value={selectedAreaId}
-                onChange={(event) => setSelectedAreaId(event.target.value)}
-                className={inputBase}
+                onChange={(value) => setSelectedAreaId(String(value))}
+                options={areaOptions}
+                placeholder="Seleccione ?rea"
+                searchPlaceholder="Buscar ?rea..."
                 disabled={!hasTenantContext || saving || loading}
-              >
-                <option value="">Seleccione Área</option>
-                {areas.map((area) => (
-                  <option key={area.id} value={area.id}>
-                    {area.name}
-                  </option>
-                ))}
-              </select>
+              />
 
-              <select
+              <SearchableSelect
                 value={selectedOperativeId}
-                onChange={(event) => setSelectedOperativeId(event.target.value)}
-                className={inputBase}
+                onChange={(value) => setSelectedOperativeId(String(value))}
+                options={operativeOptions}
+                placeholder="Seleccione operario"
+                searchPlaceholder="Buscar operario..."
                 disabled={!hasTenantContext || saving || loading}
-              >
-                <option value="">Seleccione operario</option>
-                {operatives.map((operative) => (
-                  <option key={operative.id} value={operative.id}>
-                    {operative.user?.full_name || "Operario"}
-                  </option>
-                ))}
-              </select>
+              />
             </div>
 
             <button
@@ -408,3 +425,16 @@ function resolveCleaningAreaName(record, areaNameById) {
 }
 
 
+
+
+function formatCleaningTime(value) {
+  if (!value) return "Pendiente";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Pendiente";
+
+  return date.toLocaleTimeString("es-CO", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}

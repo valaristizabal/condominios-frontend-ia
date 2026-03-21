@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import SearchableSelect from "../../components/common/SearchableSelect";
 
 function CleaningRecordFormModal({ open, areas, operatives, loading, onCancel, onSubmit }) {
   const [form, setForm] = useState({
@@ -40,6 +41,11 @@ function CleaningRecordFormModal({ open, areas, operatives, loading, onCancel, o
 
   if (!open) return null;
 
+  const setField = (name, value) => {
+    setForm((prev) => ({ ...prev, [name]: value }));
+    if (error) setError("");
+  };
+
   const handleChange = (event) => {
     const { name, value } = event.target;
     setForm((prev) => ({ ...prev, [name]: value }));
@@ -74,38 +80,26 @@ function CleaningRecordFormModal({ open, areas, operatives, loading, onCancel, o
         <form className="mt-4 space-y-4" onSubmit={handleSubmit}>
           <label className="block">
             <span className="mb-1.5 block text-sm font-semibold text-slate-700">Area de limpieza</span>
-            <select
-              name="cleaning_area_id"
+            <SearchableSelect
               value={form.cleaning_area_id}
-              onChange={handleChange}
-              className="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
-              required
-            >
-              <option value="">Selecciona un area</option>
-              {areaOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+              onChange={(value) => setField("cleaning_area_id", String(value))}
+              options={areaOptions}
+              placeholder="Selecciona un area"
+              searchPlaceholder="Buscar area..."
+              disabled={loading}
+            />
           </label>
 
           <label className="block">
             <span className="mb-1.5 block text-sm font-semibold text-slate-700">Operativo</span>
-            <select
-              name="operative_id"
+            <SearchableSelect
               value={form.operative_id}
-              onChange={handleChange}
-              className="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
-              required
-            >
-              <option value="">Selecciona un operativo</option>
-              {operativeOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+              onChange={(value) => setField("operative_id", String(value))}
+              options={operativeOptions}
+              placeholder="Selecciona un operativo"
+              searchPlaceholder="Buscar operativo..."
+              disabled={loading}
+            />
           </label>
 
           <label className="block">

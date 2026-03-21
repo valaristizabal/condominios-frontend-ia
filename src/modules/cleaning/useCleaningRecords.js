@@ -42,19 +42,12 @@ export function useCleaningRecords() {
       };
     }
 
-    const [areasResponse, operativesResponse, recordsResponse] = await Promise.all([
-      apiClient.get("/cleaning-areas", requestConfig),
-      apiClient.get("/operatives", requestConfig),
-      apiClient.get("/cleaning-records", requestConfig),
-    ]);
+    const response = await apiClient.get("/cleaning/bootstrap-data", requestConfig);
+    const payload = response?.data || {};
 
-    const areas = Array.isArray(areasResponse.data) ? areasResponse.data.filter((a) => a?.is_active !== false) : [];
-    const operatives = Array.isArray(operativesResponse.data) ? operativesResponse.data : [];
-    const records = Array.isArray(recordsResponse.data)
-      ? recordsResponse.data
-      : Array.isArray(recordsResponse.data?.data)
-        ? recordsResponse.data.data
-        : [];
+    const areas = Array.isArray(payload?.areas) ? payload.areas.filter((a) => a?.is_active !== false) : [];
+    const operatives = Array.isArray(payload?.operatives) ? payload.operatives : [];
+    const records = Array.isArray(payload?.records) ? payload.records : [];
 
     return { areas, operatives, records };
   }, [resolvedCondominiumId, requestConfig]);
