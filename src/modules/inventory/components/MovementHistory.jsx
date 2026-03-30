@@ -34,7 +34,7 @@ function MovementHistory({ rows }) {
               <th className="px-4 py-3">Costo unitario</th>
               <th className="px-4 py-3">Valor mov.</th>
               <th className="px-4 py-3">Usuario</th>
-              <th className="px-4 py-3">Observación</th>
+              <th className="px-4 py-3">ObservaciÃ³n</th>
             </tr>
           </thead>
           <tbody>

@@ -17,10 +17,10 @@ const FREQUENCY_OPTIONS = [
 const WEEK_DAYS = [
   { value: 1, label: "Lunes" },
   { value: 2, label: "Martes" },
-  { value: 3, label: "MiÃ©rcoles" },
+  { value: 3, label: "Miércoles" },
   { value: 4, label: "Jueves" },
   { value: 5, label: "Viernes" },
-  { value: 6, label: "SÃ¡bado" },
+  { value: 6, label: "Sábado" },
   { value: 0, label: "Domingo" },
 ];
 
