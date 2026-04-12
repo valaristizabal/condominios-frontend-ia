@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useActiveCondominium } from "../../../../context/useActiveCondominium";
 import apiClient from "../../../../services/apiClient";
 
@@ -8,7 +8,6 @@ const EMPTY_FORM = {
   document_number: "",
   phone: "",
   birth_date: "",
-  unit_type_id: "",
   apartment_id: "",
   type: "propietario",
   is_active: true,
@@ -17,7 +16,6 @@ const EMPTY_FORM = {
 function ResidentFormModal({ open, initialValues, loading, onCancel, onSubmit }) {
   const { activeCondominiumId } = useActiveCondominium();
   const [form, setForm] = useState(() => buildInitialForm(initialValues));
-  const [unitTypes, setUnitTypes] = useState([]);
   const [apartments, setApartments] = useState([]);
   const [catalogLoading, setCatalogLoading] = useState(false);
   const [error, setError] = useState("");
@@ -83,20 +81,13 @@ function ResidentFormModal({ open, initialValues, loading, onCancel, onSubmit })
     const loadCatalogs = async () => {
       setCatalogLoading(true);
       try {
-        const [unitTypesRows, apartmentsRows] = await Promise.all([
-          loadAllRows("/unit-types"),
-          loadAllRows("/apartments"),
-        ]);
-
+        const apartmentsRows = await loadAllRows("/apartments");
         if (cancelled) return;
-
-        setUnitTypes(unitTypesRows);
         setApartments(apartmentsRows);
       } catch (err) {
         if (!cancelled) {
-          setUnitTypes([]);
           setApartments([]);
-          setError(normalizeApiError(err, "No fue posible cargar tipos y inmuebles."));
+          setError(normalizeApiError(err, "No fue posible cargar apartamentos."));
         }
       } finally {
         if (!cancelled) {
@@ -112,45 +103,30 @@ function ResidentFormModal({ open, initialValues, loading, onCancel, onSubmit })
     };
   }, [open, requestConfig]);
 
-  useEffect(() => {
-    if (!open || !apartments.length) return;
+  const primaryApartments = useMemo(
+    () => apartments.filter((item) => Boolean((item?.unit_type || item?.unitType)?.allows_residents)),
+    [apartments]
+  );
 
-    if (!form.unit_type_id && form.apartment_id) {
-      const selectedApartment = apartments.find((item) => String(item.id) === String(form.apartment_id));
-      if (selectedApartment?.unit_type_id) {
-        setForm((prev) => ({
-          ...prev,
-          unit_type_id: String(selectedApartment.unit_type_id),
-        }));
-      }
-    }
-  }, [apartments, form.apartment_id, form.unit_type_id, open]);
+  const selectedApartment = useMemo(
+    () => primaryApartments.find((item) => String(item.id) === String(form.apartment_id)),
+    [form.apartment_id, primaryApartments]
+  );
 
-  const filteredApartments = useMemo(() => {
-    if (!form.unit_type_id) return [];
-
-    return apartments.filter((item) => String(item.unit_type_id) === String(form.unit_type_id));
-  }, [apartments, form.unit_type_id]);
+  const relatedUnits = useMemo(() => {
+    if (!selectedApartment) return [];
+    return Array.isArray(selectedApartment.children) ? selectedApartment.children : [];
+  }, [selectedApartment]);
 
   if (!open) return null;
 
   const handleChange = (event) => {
     const { name, value, type, checked } = event.target;
 
-    setForm((prev) => {
-      if (name === "unit_type_id") {
-        return {
-          ...prev,
-          unit_type_id: value,
-          apartment_id: "",
-        };
-      }
-
-      return {
-        ...prev,
-        [name]: type === "checkbox" ? checked : value,
-      };
-    });
+    setForm((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
 
     if (error) setError("");
   };
@@ -162,7 +138,6 @@ function ResidentFormModal({ open, initialValues, loading, onCancel, onSubmit })
     const fullName = String(form.full_name || "").trim();
     const email = String(form.email || "").trim();
     const documentNumber = String(form.document_number || "").trim();
-    const unitTypeId = Number(form.unit_type_id);
     const apartmentId = Number(form.apartment_id);
 
     if (!fullName || !email || !documentNumber) {
@@ -170,24 +145,14 @@ function ResidentFormModal({ open, initialValues, loading, onCancel, onSubmit })
       return;
     }
 
-    if (!unitTypeId) {
-      setError("Debes seleccionar el tipo de inmueble.");
-      return;
-    }
-
     if (!apartmentId) {
-      setError("Debes seleccionar el inmueble.");
+      setError("Debes seleccionar un inmueble.");
       return;
     }
 
-    const apartmentMatchesUnitType = apartments.some(
-      (item) =>
-        Number(item.id) === apartmentId &&
-        Number(item.unit_type_id) === unitTypeId
-    );
-
-    if (!apartmentMatchesUnitType) {
-      setError("El inmueble seleccionado no corresponde al tipo de inmueble elegido.");
+    const apartmentExists = primaryApartments.some((item) => Number(item.id) === apartmentId);
+    if (!apartmentExists) {
+      setError("Solo se pueden registrar residentes en inmuebles cuyo tipo permita residentes directos.");
       return;
     }
 
@@ -212,7 +177,7 @@ function ResidentFormModal({ open, initialValues, loading, onCancel, onSubmit })
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/45 p-4 sm:items-center">
-      <div className="w-full max-w-xl rounded-2xl bg-white p-5 shadow-2xl">
+      <div className="max-h-[92vh] w-full max-w-xl overflow-y-auto rounded-2xl bg-white p-5 shadow-2xl">
         <h3 className="text-lg font-extrabold text-slate-900">
           {isEditing ? "Editar residente" : "Nuevo residente"}
         </h3>
@@ -260,50 +225,40 @@ function ResidentFormModal({ open, initialValues, loading, onCancel, onSubmit })
             onChange={handleChange}
           />
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className="block">
-              <span className="mb-1.5 block text-sm font-semibold text-slate-700">Tipo de inmueble</span>
-              <select
-                name="unit_type_id"
-                value={form.unit_type_id ?? ""}
-                onChange={handleChange}
-                className="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
-                required
-                disabled={catalogLoading}
-              >
-                <option value="">{catalogLoading ? "Cargando..." : "Selecciona tipo"}</option>
-                {unitTypes.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="block">
-              <span className="mb-1.5 block text-sm font-semibold text-slate-700">Inmueble</span>
-              <select
-                name="apartment_id"
-                value={form.apartment_id ?? ""}
-                onChange={handleChange}
-                className="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
-                required
-                disabled={catalogLoading || !form.unit_type_id}
-              >
-                <option value="">
-                  {!form.unit_type_id
-                    ? "Primero selecciona tipo"
-                    : catalogLoading
-                    ? "Cargando..."
-                    : "Selecciona inmueble"}
+          <label className="block">
+            <span className="mb-1.5 block text-sm font-semibold text-slate-700">Inmueble principal</span>
+            <select
+              name="apartment_id"
+              value={form.apartment_id ?? ""}
+              onChange={handleChange}
+              className="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+              required
+              disabled={catalogLoading}
+            >
+              <option value="">{catalogLoading ? "Cargando..." : "Selecciona inmueble"}</option>
+              {primaryApartments.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {buildApartmentLabel(item)}
                 </option>
-                {filteredApartments.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {buildApartmentLabel(item)}
-                  </option>
+              ))}
+            </select>
+          </label>
+
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <p className="text-sm font-semibold text-slate-700">Unidades relacionadas</p>
+            {relatedUnits.length > 0 ? (
+              <ul className="mt-2 space-y-2 text-sm text-slate-600">
+                {relatedUnits.map((item) => (
+                  <li key={item.id} className="rounded-lg bg-white px-3 py-2">
+                    {buildRelatedUnitLabel(item)}
+                  </li>
                 ))}
-              </select>
-            </label>
+              </ul>
+            ) : (
+              <p className="mt-2 text-sm text-slate-500">
+                Este inmueble no tiene unidades relacionadas.
+              </p>
+            )}
           </div>
 
           <label className="block">
@@ -381,9 +336,6 @@ function buildInitialForm(initialValues) {
     birth_date: initialValues.user?.birth_date
       ? String(initialValues.user.birth_date).slice(0, 10)
       : "",
-    unit_type_id: initialValues.apartment?.unit_type_id
-      ? String(initialValues.apartment.unit_type_id)
-      : "",
     apartment_id: initialValues.apartment_id ? String(initialValues.apartment_id) : "",
     type: initialValues.type ?? "propietario",
     is_active: Boolean(initialValues.is_active),
@@ -395,6 +347,11 @@ function buildApartmentLabel(apartment) {
   const tower = apartment?.tower ? `Torre: ${apartment.tower}` : "Torre: Sin torre";
   const floor = apartment?.floor ?? "-";
   return `${number} | ${tower} | Piso: ${floor}`;
+}
+
+function buildRelatedUnitLabel(unit) {
+  const typeName = unit?.unit_type?.name || unit?.unitType?.name || "Unidad";
+  return `${typeName}: ${unit?.number || "-"} | Torre: ${unit?.tower || "Sin torre"} | Piso: ${unit?.floor ?? "-"}`;
 }
 
 function normalizeApiError(err, fallbackMessage) {
@@ -410,34 +367,12 @@ function normalizeApiError(err, fallbackMessage) {
     }
   }
 
-  const rawMessage = String(responseData?.message || err?.message || fallbackMessage || "");
-  const normalizedMessage = rawMessage.toLowerCase();
-
-  if (
-    normalizedMessage.includes("duplicate entry") ||
-    normalizedMessage.includes("integrity constraint violation") ||
-    normalizedMessage.includes("already exists")
-  ) {
-    const keyMatch = rawMessage.match(/for key ['"]?([^'"]+)['"]?/i);
-    const keyName = String(keyMatch?.[1] || "");
-    const normalizedKey = keyName.split(".").pop()?.replace(/_unique$/i, "") || "";
-    const fieldName = normalizedKey.split("_").filter(Boolean).pop() || "";
-    const fieldLabel = resolveFieldLabel(fieldName);
-
-    if (fieldLabel) {
-      return "Ya existe un registro con ese " + fieldLabel + ".";
-    }
-
-    return "Ya existe un registro con esos datos.";
-  }
-
-  return rawMessage || fallbackMessage;
+  return String(responseData?.message || err?.message || fallbackMessage || "");
 }
 
 function translateValidationMessage(message) {
   const rawMessage = String(message || "");
   const trimmedMessage = rawMessage.trim();
-  const lowerMessage = trimmedMessage.toLowerCase();
 
   const takenMatch = trimmedMessage.match(/^the\s+(.+?)\s+has already been taken\.?$/i);
   if (takenMatch) {
@@ -470,16 +405,13 @@ function resolveFieldLabel(fieldName) {
   const normalizedField = String(fieldName || "").toLowerCase();
 
   const labels = {
-    name: "nombre",
     email: "correo",
     phone: "telefono",
-    mobile: "telefono",
     number: "numero",
-    code: "codigo",
-    asset_code: "codigo",
     tower: "torre",
-    plate: "placa",
-    description: "descripcion",
+    apartment_id: "apartamento",
+    apartment: "inmueble",
+    document_number: "documento",
   };
 
   const cleanField = normalizedField.replace(/_/g, " ").trim();
@@ -487,4 +419,3 @@ function resolveFieldLabel(fieldName) {
 }
 
 export default ResidentFormModal;
-

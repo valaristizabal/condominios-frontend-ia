@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { resolveCondominiumLogo } from "../../../utils/condominiumBrand";
 
 const INITIAL_FORM = {
   name: "",
@@ -6,7 +7,6 @@ const INITIAL_FORM = {
   type: "",
   tower: "",
   floors: "",
-  common_areas: "",
   address: "",
   contact_info: "",
   expiration_date: "",
@@ -14,7 +14,7 @@ const INITIAL_FORM = {
 };
 
 function resolveLogoPreview(initialValues) {
-  return initialValues?.logo_url || initialValues?.logo_path || initialValues?.image_url || "";
+  return resolveCondominiumLogo(initialValues) || initialValues?.image_url || "";
 }
 
 function toFormValues(initialValues) {
@@ -28,7 +28,6 @@ function toFormValues(initialValues) {
     type: initialValues.type || "",
     tower: initialValues.tower || "",
     floors: initialValues.floors ?? "",
-    common_areas: initialValues.common_areas || "",
     address: initialValues.address || "",
     contact_info: initialValues.contact_info || "",
     expiration_date: initialValues.expiration_date ? String(initialValues.expiration_date).slice(0, 10) : "",
@@ -82,7 +81,6 @@ function CondominiumForm({ initialValues, loading, onCancel, onSubmit }) {
       floors: form.floors === "" ? null : Number(form.floors),
       type: form.type || null,
       tower: form.tower || null,
-      common_areas: form.common_areas || null,
       address: form.address || null,
       contact_info: form.contact_info || null,
       expiration_date: form.expiration_date || null,
@@ -148,7 +146,7 @@ function CondominiumForm({ initialValues, loading, onCancel, onSubmit }) {
           onChange={handleChange}
         />
         <Field
-          label="Número de Pisos"
+          label="Numero de Pisos"
           name="floors"
           type="number"
           min="1"
@@ -158,18 +156,10 @@ function CondominiumForm({ initialValues, loading, onCancel, onSubmit }) {
         />
       </div>
 
-      <TextArea
-        label="Áreas Comunes"
-        name="common_areas"
-        placeholder="Describe áreas comunes de la propiedad..."
-        value={form.common_areas}
-        onChange={handleChange}
-      />
-
       <Field
-        label="Dirección Completa"
+        label="Direccion Completa"
         name="address"
-        placeholder="Calle, Número, Ciudad, Estado"
+        placeholder="Calle, Numero, Ciudad, Estado"
         value={form.address}
         onChange={handleChange}
       />
@@ -183,9 +173,9 @@ function CondominiumForm({ initialValues, loading, onCancel, onSubmit }) {
       />
 
       <TextArea
-        label="Información de Contacto"
+        label="Informacion de Contacto"
         name="contact_info"
-        placeholder="Teléfonos de administración, correos, etc."
+        placeholder="Telefonos de administracion, correos, etc."
         value={form.contact_info}
         onChange={handleChange}
       />

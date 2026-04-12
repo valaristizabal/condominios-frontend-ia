@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import BackButton from "../../../../components/common/BackButton";
 import ChangeUserPasswordModal from "../../../../components/common/ChangeUserPasswordModal";
 import { useAuthContext } from "../../../../context/useAuthContext";
@@ -9,6 +9,7 @@ import { isSuperUser, isTenantAdminRole } from "../../../../utils/roles";
 
 function OperativesPage() {
   const { user } = useAuthContext();
+  const fileInputRef = useRef(null);
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("all");
   const [contractType, setContractType] = useState("all");
@@ -26,10 +27,12 @@ function OperativesPage() {
     hasTenantContext,
     createOperative,
     updateOperative,
+    importOperativesCsv,
     changeUserPassword,
   } = useOperatives(filters);
 
   const [success, setSuccess] = useState("");
+  const [importResult, setImportResult] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [passwordModalTarget, setPasswordModalTarget] = useState(null);
@@ -41,12 +44,14 @@ function OperativesPage() {
 
   const openCreate = () => {
     setSuccess("");
+    setImportResult(null);
     setEditing(null);
     setModalOpen(true);
   };
 
   const openEdit = (item) => {
     setSuccess("");
+    setImportResult(null);
     setEditing(item);
     setModalOpen(true);
   };
@@ -54,7 +59,28 @@ function OperativesPage() {
   const openPasswordModal = (item) => {
     if (!canChangePassword) return;
     setSuccess("");
+    setImportResult(null);
     setPasswordModalTarget(item);
+  };
+
+  const openCsvPicker = () => {
+    if (!hasTenantContext || saving) return;
+    fileInputRef.current?.click();
+  };
+
+  const handleCsvChange = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+
+    if (!file) return;
+
+    try {
+      const result = await importOperativesCsv(file);
+      setImportResult(result);
+      setSuccess(`Importación finalizada. Creados: ${Number(result?.created || 0)}. Fallidos: ${Number(result?.failed || 0)}.`);
+    } catch {
+      setImportResult(null);
+    }
   };
 
   const closeModal = () => {
@@ -99,14 +125,31 @@ function OperativesPage() {
         <div>
           <h1 className="text-2xl font-extrabold text-slate-900">Operativos</h1>
         </div>
-        <button
-          type="button"
-          onClick={openCreate}
-          className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-indigo-700"
-          disabled={!hasTenantContext}
-        >
-          + Nuevo Operativo
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".csv"
+            onChange={handleCsvChange}
+            className="hidden"
+          />
+          <button
+            type="button"
+            onClick={openCsvPicker}
+            className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50"
+            disabled={!hasTenantContext || saving}
+          >
+            Cargar CSV
+          </button>
+          <button
+            type="button"
+            onClick={openCreate}
+            className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-indigo-700"
+            disabled={!hasTenantContext || saving}
+          >
+            + Nuevo Operativo
+          </button>
+        </div>
       </header>
 
       {!hasTenantContext ? (
@@ -125,6 +168,25 @@ function OperativesPage() {
         <p className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
           {success}
         </p>
+      ) : null}
+
+      {importResult ? (
+        <section className="mb-4 rounded-xl border border-slate-200 bg-white p-4">
+          <p className="text-sm font-bold text-slate-900">
+            Creados: <span className="text-emerald-700">{Number(importResult.created || 0)}</span>
+            {" | "}
+            Fallidos: <span className="text-rose-700">{Number(importResult.failed || 0)}</span>
+          </p>
+          {Array.isArray(importResult.errors) && importResult.errors.length > 0 ? (
+            <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-rose-700">
+              {importResult.errors.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-2 text-sm text-slate-600">No se encontraron errores en la importación.</p>
+          )}
+        </section>
       ) : null}
 
       <section className="mb-4 grid grid-cols-1 gap-3 rounded-xl border border-slate-200 bg-white p-4 sm:grid-cols-3">

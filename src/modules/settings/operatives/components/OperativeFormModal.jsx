@@ -23,18 +23,56 @@ const EMPTY_FORM = {
 function OperativeFormModal({ open, initialValues, roles = [], loading, onCancel, onSubmit }) {
   const [form, setForm] = useState(() => buildInitialForm(initialValues));
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
   const isEditing = Boolean(initialValues);
 
   if (!open) return null;
 
   const handleChange = (event) => {
     const { name, value, type, checked } = event.target;
-    setForm((prev) => ({ ...prev, [name]: type === "checkbox" ? checked : value }));
+    const nextValue = type === "checkbox" ? checked : value;
+
+    setForm((prev) => ({
+      ...prev,
+      [name]: name === "phone" || name === "document_number" ? String(nextValue).replace(/\D/g, "") : nextValue,
+    }));
+
+    setFieldErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError("");
+    setFieldErrors({});
+
+    const nextFieldErrors = {};
+    const today = new Date().toISOString().slice(0, 10);
+
+    if (!String(form.full_name || "").trim()) nextFieldErrors.full_name = "El nombre es obligatorio.";
+    if (!String(form.document_number || "").trim()) nextFieldErrors.document_number = "El documento es obligatorio.";
+    if (!String(form.email || "").trim()) nextFieldErrors.email = "El correo es obligatorio.";
+    if (!isEditing && !String(form.password || "").trim()) nextFieldErrors.password = "La contraseña es obligatoria.";
+    if (!String(form.role_id || "").trim()) nextFieldErrors.role_id = "Debes seleccionar un cargo.";
+
+    const phone = String(form.phone || "").trim();
+    if (phone && !/^\d{10,15}$/.test(phone)) {
+      nextFieldErrors.phone = "El celular debe contener entre 10 y 15 números.";
+    }
+
+    const salaryText = String(form.salary ?? "").trim();
+    if (salaryText !== "" && !(Number(salaryText) > 0)) {
+      nextFieldErrors.salary = "El salario debe ser mayor a cero.";
+    }
+
+    const contractStartDate = String(form.contract_start_date || "").trim();
+    if (contractStartDate && contractStartDate > today) {
+      nextFieldErrors.contract_start_date = "La fecha de inicio no puede ser futura.";
+    }
+
+    if (Object.keys(nextFieldErrors).length > 0) {
+      setFieldErrors(nextFieldErrors);
+      return;
+    }
 
     try {
       const payload = {
@@ -49,6 +87,7 @@ function OperativeFormModal({ open, initialValues, roles = [], loading, onCancel
 
       await onSubmit(payload);
     } catch (err) {
+      setFieldErrors(extractFieldErrors(err));
       setError(normalizeOperativeError(err, "No fue posible guardar el operativo."));
     }
   };
@@ -63,37 +102,52 @@ function OperativeFormModal({ open, initialValues, roles = [], loading, onCancel
 
           <form className="mt-4 space-y-4" onSubmit={handleSubmit}>
             <div className="grid gap-3 sm:grid-cols-2">
-              <Field
-                label="Nombre completo"
-                name="full_name"
-                value={form.full_name ?? ""}
-                onChange={handleChange}
-                required
-              />
-              <Field
-                label="Documento"
-                name="document_number"
-                value={form.document_number ?? ""}
-                onChange={handleChange}
-                required
-              />
+              <div>
+                <Field
+                  label="Nombre completo"
+                  name="full_name"
+                  value={form.full_name ?? ""}
+                  onChange={handleChange}
+                  required
+                />
+                <FieldError message={fieldErrors.full_name} />
+              </div>
+              <div>
+                <Field
+                  label="Documento"
+                  name="document_number"
+                  value={form.document_number ?? ""}
+                  onChange={handleChange}
+                  inputMode="numeric"
+                  required
+                />
+                <FieldError message={fieldErrors.document_number} />
+              </div>
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2">
-              <Field
-                label="Email"
-                name="email"
-                type="email"
-                value={form.email ?? ""}
-                onChange={handleChange}
-                required
-              />
-              <Field
-                label="Telefono"
-                name="phone"
-                value={form.phone ?? ""}
-                onChange={handleChange}
-              />
+              <div>
+                <Field
+                  label="Email"
+                  name="email"
+                  type="email"
+                  value={form.email ?? ""}
+                  onChange={handleChange}
+                  required
+                />
+                <FieldError message={fieldErrors.email} />
+              </div>
+              <div>
+                <Field
+                  label="Celular"
+                  name="phone"
+                  type="tel"
+                  inputMode="numeric"
+                  value={form.phone ?? ""}
+                  onChange={handleChange}
+                />
+                <FieldError message={fieldErrors.phone} />
+              </div>
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2">
@@ -105,35 +159,41 @@ function OperativeFormModal({ open, initialValues, roles = [], loading, onCancel
                 onChange={handleChange}
               />
               {!isEditing ? (
-                <Field
-                  label="Contrasena"
-                  name="password"
-                  type="password"
-                  value={form.password ?? ""}
-                  onChange={handleChange}
-                  required
-                />
+                <div>
+                  <Field
+                    label="Contrasena"
+                    name="password"
+                    type="password"
+                    value={form.password ?? ""}
+                    onChange={handleChange}
+                    required
+                  />
+                  <FieldError message={fieldErrors.password} />
+                </div>
               ) : null}
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2">
-              <label className="block">
-                <span className="mb-1.5 block text-sm font-semibold text-slate-700">Cargo (rol)</span>
-                <select
-                  name="role_id"
-                  value={form.role_id ?? ""}
-                  onChange={handleChange}
-                  required
-                  className="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
-                >
-                  <option value="">Selecciona un cargo</option>
-                  {roles.map((role) => (
-                    <option key={role.id} value={role.id}>
-                      {role.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <div>
+                <label className="block">
+                  <span className="mb-1.5 block text-sm font-semibold text-slate-700">Cargo (rol)</span>
+                  <select
+                    name="role_id"
+                    value={form.role_id ?? ""}
+                    onChange={handleChange}
+                    required
+                    className="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                  >
+                    <option value="">Selecciona un cargo</option>
+                    {roles.map((role) => (
+                      <option key={role.id} value={role.id}>
+                        {role.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <FieldError message={fieldErrors.role_id} />
+              </div>
               <Field
                 label="Cargo interno"
                 name="position"
@@ -157,15 +217,18 @@ function OperativeFormModal({ open, initialValues, roles = [], loading, onCancel
             </label>
 
             <div className="grid gap-3 sm:grid-cols-2">
-              <Field
-                label="Salario"
-                name="salary"
-                type="number"
-                min="0"
-                step="0.01"
-                value={form.salary ?? ""}
-                onChange={handleChange}
-              />
+              <div>
+                <Field
+                  label="Salario"
+                  name="salary"
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  value={form.salary ?? ""}
+                  onChange={handleChange}
+                />
+                <FieldError message={fieldErrors.salary} />
+              </div>
               <Field
                 label="Institucion financiera"
                 name="financial_institution"
@@ -188,7 +251,7 @@ function OperativeFormModal({ open, initialValues, roles = [], loading, onCancel
                 </select>
               </label>
               <Field
-                label="Número de cuenta"
+                label="Numero de cuenta"
                 name="account_number"
                 value={form.account_number ?? ""}
                 onChange={handleChange}
@@ -210,13 +273,16 @@ function OperativeFormModal({ open, initialValues, roles = [], loading, onCancel
               />
             </div>
 
-            <Field
-              label="Inicio de contrato"
-              name="contract_start_date"
-              type="date"
-              value={form.contract_start_date ?? ""}
-              onChange={handleChange}
-            />
+            <div>
+              <Field
+                label="Inicio de contrato"
+                name="contract_start_date"
+                type="date"
+                value={form.contract_start_date ?? ""}
+                onChange={handleChange}
+              />
+              <FieldError message={fieldErrors.contract_start_date} />
+            </div>
 
             <label className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3">
               <span className="text-sm font-semibold text-slate-700">Activo</span>
@@ -270,6 +336,12 @@ function Field({ label, ...props }) {
   );
 }
 
+function FieldError({ message }) {
+  if (!message) return null;
+
+  return <p className="mt-1 text-xs font-medium text-red-600">{message}</p>;
+}
+
 function buildInitialForm(initialValues) {
   if (!initialValues) return EMPTY_FORM;
 
@@ -313,11 +385,26 @@ function normalizeOperativeError(err, fallbackMessage) {
   return translateOperativeValidationMessage(String(rawMessage));
 }
 
+function extractFieldErrors(err) {
+  const errors = err?.response?.data?.errors;
+  if (!errors || typeof errors !== "object") {
+    return {};
+  }
+
+  return Object.fromEntries(
+    Object.entries(errors).map(([field, messages]) => [field, Array.isArray(messages) ? messages[0] : ""])
+  );
+}
+
 function translateOperativeValidationMessage(message) {
   const normalized = String(message).trim().toLowerCase();
 
   if (normalized.includes("email has already been taken")) {
     return "Este correo ya está registrado en el sistema.";
+  }
+
+  if (normalized.includes("document_number has already been taken")) {
+    return "Ya existe un operativo con este número de documento.";
   }
 
   return message;

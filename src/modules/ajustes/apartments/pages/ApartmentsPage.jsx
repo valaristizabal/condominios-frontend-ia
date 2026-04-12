@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import BackButton from "../../../../components/common/BackButton";
 import { useNotification } from "../../../../hooks/useNotification";
 import ApartmentFormModal from "../components/ApartmentFormModal";
@@ -7,11 +7,13 @@ import { useApartments } from "../hooks/useApartments";
 
 function ApartmentsPage() {
   const { success } = useNotification();
+  const fileInputRef = useRef(null);
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("all");
   const [tower, setTower] = useState("all");
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
+  const [importResult, setImportResult] = useState(null);
   const filters = useMemo(() => ({ query, status, tower }), [query, status, tower]);
 
   const {
@@ -26,6 +28,7 @@ function ApartmentsPage() {
     createApartment,
     updateApartment,
     toggleApartment,
+    importApartmentsCsv,
   } = useApartments(filters);
 
   const towerOptions = useMemo(() => {
@@ -65,6 +68,26 @@ function ApartmentsPage() {
     success(item.is_active ? "Inmueble desactivado correctamente." : "Inmueble activado correctamente.");
   };
 
+  const openCsvPicker = () => {
+    if (!hasTenantContext || saving) return;
+    fileInputRef.current?.click();
+  };
+
+  const handleCsvChange = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+
+    if (!file) return;
+
+    try {
+      const result = await importApartmentsCsv(file);
+      setImportResult(result);
+      success(`Carga finalizada. Registros creados: ${Number(result?.created || 0)}.`);
+    } catch {
+      setImportResult(null);
+    }
+  };
+
   return (
     <div className="mx-auto w-full max-w-6xl">
       <div className="mb-3">
@@ -74,14 +97,32 @@ function ApartmentsPage() {
         <div>
           <h1 className="text-2xl font-extrabold text-slate-900">Inmuebles</h1>
         </div>
-        <button
-          type="button"
-          onClick={openCreate}
-          className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-indigo-700 disabled:opacity-70"
-          disabled={!hasTenantContext || saving}
-        >
-          + Crear inmueble
-        </button>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".csv"
+            onChange={handleCsvChange}
+            className="hidden"
+          />
+          <button
+            type="button"
+            onClick={openCsvPicker}
+            className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-70"
+            disabled={!hasTenantContext || saving}
+          >
+            Cargar CSV
+          </button>
+          <button
+            type="button"
+            onClick={openCreate}
+            className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-indigo-700 disabled:opacity-70"
+            disabled={!hasTenantContext || saving}
+          >
+            + Crear inmueble
+          </button>
+        </div>
       </header>
 
       {!hasTenantContext ? (
@@ -94,12 +135,33 @@ function ApartmentsPage() {
         <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>
       ) : null}
 
+      {importResult ? (
+        <section className="mb-4 rounded-xl border border-slate-200 bg-white p-4">
+          <p className="text-sm font-bold text-slate-900">
+            Registros creados: <span className="text-indigo-700">{Number(importResult.created || 0)}</span>
+          </p>
+
+          {Array.isArray(importResult.errors) && importResult.errors.length > 0 ? (
+            <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
+              <p className="text-sm font-semibold text-amber-800">Errores encontrados</p>
+              <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-amber-700">
+                {importResult.errors.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </div>
+          ) : (
+            <p className="mt-2 text-sm text-slate-600">No se encontraron errores en la importacion.</p>
+          )}
+        </section>
+      ) : null}
+
       <section className="mb-4 grid grid-cols-1 gap-3 rounded-xl border border-slate-200 bg-white p-4 sm:grid-cols-3">
         <Field
           label="Buscar"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Número, torre o tipo"
+          placeholder="Numero, torre o tipo"
         />
 
         <Select
@@ -188,4 +250,3 @@ function Select({ label, value, onChange, options }) {
 }
 
 export default ApartmentsPage;
-

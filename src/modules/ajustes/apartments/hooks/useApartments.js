@@ -147,6 +147,36 @@ export function useApartments(filters = {}) {
     [currentPage, fetchApartments, requestConfig]
   );
 
+  const importApartmentsCsv = useCallback(
+    async (file) => {
+      setSaving(true);
+      setError("");
+
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const response = await apiClient.post("/inmuebles/import", formData, {
+          ...(requestConfig || {}),
+          headers: {
+            ...(requestConfig?.headers || {}),
+            "Content-Type": "multipart/form-data",
+          },
+        });
+
+        await fetchApartments(1);
+        setCurrentPage(1);
+        return response.data;
+      } catch (err) {
+        setError(normalizeApiError(err, "No fue posible importar el archivo CSV."));
+        throw err;
+      } finally {
+        setSaving(false);
+      }
+    },
+    [fetchApartments, requestConfig]
+  );
+
   useEffect(() => {
     fetchApartments(currentPage);
   }, [currentPage, fetchApartments]);
@@ -171,6 +201,7 @@ export function useApartments(filters = {}) {
     createApartment,
     updateApartment,
     toggleApartment,
+    importApartmentsCsv,
   };
 }
 

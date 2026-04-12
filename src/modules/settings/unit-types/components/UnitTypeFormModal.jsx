@@ -2,6 +2,8 @@
 
 function UnitTypeFormModal({ open, initialValues, loading, onCancel, onSubmit }) {
   const [name, setName] = useState("");
+  const [allowsResidents, setAllowsResidents] = useState(false);
+  const [requiresParent, setRequiresParent] = useState(false);
   const [isActive, setIsActive] = useState(true);
   const [error, setError] = useState("");
 
@@ -10,6 +12,8 @@ function UnitTypeFormModal({ open, initialValues, loading, onCancel, onSubmit })
   useEffect(() => {
     if (!open) return;
     setName(initialValues?.name ?? "");
+    setAllowsResidents(Boolean(initialValues?.allows_residents));
+    setRequiresParent(Boolean(initialValues?.requires_parent));
     setIsActive(
       typeof initialValues?.is_active === "boolean" ? Boolean(initialValues.is_active) : true
     );
@@ -33,9 +37,16 @@ function UnitTypeFormModal({ open, initialValues, loading, onCancel, onSubmit })
       return;
     }
 
+    if (requiresParent && allowsResidents) {
+      setError("Un tipo dependiente no puede permitir residentes directos.");
+      return;
+    }
+
     try {
       await onSubmit({
         name: cleanName,
+        allows_residents: allowsResidents,
+        requires_parent: requiresParent,
         is_active: isActive,
       });
     } catch (err) {
@@ -62,6 +73,32 @@ function UnitTypeFormModal({ open, initialValues, loading, onCancel, onSubmit })
               className="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
               placeholder="Ej: Inmueble"
               required
+            />
+          </label>
+
+          <label className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3">
+            <div>
+              <span className="block text-sm font-semibold text-slate-700">Permite residentes directos</span>
+              <span className="text-xs text-slate-500">Usa esta opcion para unidades principales como apartamento, local u oficina.</span>
+            </div>
+            <input
+              type="checkbox"
+              checked={allowsResidents}
+              onChange={(event) => setAllowsResidents(event.target.checked)}
+              className="h-5 w-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-300"
+            />
+          </label>
+
+          <label className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3">
+            <div>
+              <span className="block text-sm font-semibold text-slate-700">Depende de un inmueble principal</span>
+              <span className="text-xs text-slate-500">Activalo para unidades anexas como parqueaderos o depositos.</span>
+            </div>
+            <input
+              type="checkbox"
+              checked={requiresParent}
+              onChange={(event) => setRequiresParent(event.target.checked)}
+              className="h-5 w-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-300"
             />
           </label>
 

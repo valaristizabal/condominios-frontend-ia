@@ -50,7 +50,6 @@ export function useDashboard() {
               emergencies_open: 0,
               incidents_open: 0,
             },
-            recentActivity: [],
           }
         : {
             source: "fallback",
@@ -66,7 +65,6 @@ export function useDashboard() {
               emergencies_open: 0,
               incidents_open: 0,
             },
-            recentActivity: [],
           },
     [activeCondominiumId, data, source]
   );

@@ -1,16 +1,41 @@
+import { useQuery } from "@tanstack/react-query";
+import apiClient from "../../../services/apiClient";
+import PropertyLogo from "../../../components/common/PropertyLogo";
+import { useActiveCondominium } from "../../../context/useActiveCondominium";
+import { resolveCondominiumLogo } from "../../../utils/condominiumBrand";
 import SectionTitle from "../components/SectionTitle";
 import KpiCard from "../components/KpiCard";
 import QuickActions from "../components/QuickActions";
-import RecentActivityTable from "../components/RecentActivityTable";
 import { useDashboard } from "../hooks/useDashboard";
 
 function DashboardPage() {
   const { summary, loading, error } = useDashboard();
+  const { activeCondominiumId } = useActiveCondominium();
+  const { data: activeCondominiumInfo } = useQuery({
+    queryKey: ["dashboard-active-condominium-info", activeCondominiumId],
+    enabled: Boolean(activeCondominiumId),
+    staleTime: 1000 * 60,
+    queryFn: async () => {
+      if (!activeCondominiumId) return null;
+
+      const response = await apiClient.get("/condominiums/active", {
+        headers: {
+          "X-Active-Condominium-Id": String(activeCondominiumId),
+        },
+      });
+
+      return response?.data || null;
+    },
+  });
+
+  const condominiumName =
+    activeCondominiumInfo?.name || `Propiedad #${activeCondominiumId || ""}`;
+  const condominiumLogo = resolveCondominiumLogo(activeCondominiumInfo);
 
   if (loading) {
     return (
       <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center text-slate-500">
-        Cargando menú principal...
+        Cargando menu principal...
       </div>
     );
   }
@@ -18,9 +43,21 @@ function DashboardPage() {
   return (
     <div className="mx-auto w-full max-w-6xl">
       <header className="mb-8 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-extrabold text-slate-900">Menú principal</h1>
+        <div className="flex items-center gap-4">
+          <PropertyLogo
+            src={condominiumLogo}
+            alt={condominiumName}
+            size={56}
+            variant="squircle"
+            fit="contain"
+          />
+
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Propiedad activa</p>
+            <h1 className="text-2xl font-extrabold text-slate-900">{condominiumName}</h1>
+          </div>
         </div>
+
         {summary?.source !== "api" ? (
           <div className="flex flex-col items-end gap-1">
             <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-700">
@@ -40,12 +77,12 @@ function DashboardPage() {
       ) : null}
 
       <section className="mb-8 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <SectionTitle title="Gestión de personal" subtitle="Registro de ingresos y salidas del equipo operativo." />
+        <SectionTitle title="Gestion de personal" subtitle="Registro de ingresos y salidas del equipo operativo." />
         <QuickActions />
       </section>
 
       <section className="mb-8">
-        <SectionTitle title="Indicadores rápidos" subtitle="Métricas clave del día." />
+        <SectionTitle title="Indicadores rapidos" subtitle="Metricas clave del dia." />
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
           <KpiCard
             label="Valor total inventario"
@@ -59,11 +96,6 @@ function DashboardPage() {
           <KpiCard label="Emergencias abiertas" value={summary.kpis.emergencies_open} tone="red" />
           <KpiCard label="Novedades abiertas" value={summary.kpis.incidents_open} tone="indigo" />
         </div>
-      </section>
-
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <SectionTitle title="Actividad reciente" subtitle="Últimos eventos del sistema." />
-        <RecentActivityTable rows={summary.recentActivity} placeholder={summary.source !== "api"} />
       </section>
     </div>
   );

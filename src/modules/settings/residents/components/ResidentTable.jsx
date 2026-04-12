@@ -51,6 +51,14 @@ function ResidentTable({
                 <p className="text-xs text-slate-500">
                   {"Torre: " + (item.apartment?.tower || "Sin torre") + " | Piso: " + (item.apartment?.floor ?? "-")}
                 </p>
+                {Array.isArray(item.apartment?.children) && item.apartment.children.length > 0 ? (
+                  <p className="mt-1 text-xs text-blue-600">
+                    {item.apartment.children.map((child) => {
+                      const typeName = child?.unit_type?.name || child?.unitType?.name || "Unidad";
+                      return `${typeName} ${child?.number || "-"}`;
+                    }).join(" | ")}
+                  </p>
+                ) : null}
               </td>
               <td className="px-4 py-3 text-slate-600">{formatResidentType(item.type)}</td>
               <td className="px-4 py-3">

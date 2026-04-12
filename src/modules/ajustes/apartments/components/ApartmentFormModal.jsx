@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useActiveCondominium } from "../../../../context/useActiveCondominium";
 import apiClient from "../../../../services/apiClient";
 
@@ -9,10 +9,12 @@ function ApartmentFormModal({ open, initialValues, loading, onCancel, onSubmit }
     number: "",
     floor: "",
     unit_type_id: "",
+    parent_id: "",
     is_active: true,
   });
   const [unitTypes, setUnitTypes] = useState([]);
-  const [fetchingUnitTypes, setFetchingUnitTypes] = useState(false);
+  const [apartments, setApartments] = useState([]);
+  const [fetchingCatalogs, setFetchingCatalogs] = useState(false);
   const [error, setError] = useState("");
 
   const isEditing = useMemo(() => Boolean(initialValues), [initialValues]);
@@ -41,6 +43,7 @@ function ApartmentFormModal({ open, initialValues, loading, onCancel, onSubmit }
         : initialValues?.unitType?.id
         ? String(initialValues.unitType.id)
         : "",
+      parent_id: initialValues?.parent_id ? String(initialValues.parent_id) : "",
       is_active:
         typeof initialValues?.is_active === "boolean" ? Boolean(initialValues.is_active) : true,
     });
@@ -51,39 +54,108 @@ function ApartmentFormModal({ open, initialValues, loading, onCancel, onSubmit }
     if (!open) return;
     let cancelled = false;
 
-    const loadUnitTypes = async () => {
-      setFetchingUnitTypes(true);
-      try {
-        const response = await apiClient.get("/unit-types", requestConfig);
-        if (!cancelled) {
-          const payload = response?.data;
-          const rows = Array.isArray(payload) ? payload : Array.isArray(payload?.data) ? payload.data : [];
-          setUnitTypes(rows);
+    const loadAllRows = async (path) => {
+      let page = 1;
+      let lastPage = 1;
+      const rows = [];
+
+      do {
+        const response = await apiClient.get(path, {
+          ...(requestConfig || {}),
+          params: {
+            page,
+            per_page: 10,
+          },
+        });
+
+        const payload = response?.data;
+        const pageRows = Array.isArray(payload)
+          ? payload
+          : Array.isArray(payload?.data)
+            ? payload.data
+            : [];
+
+        rows.push(...pageRows);
+
+        if (Array.isArray(payload)) {
+          lastPage = 1;
+        } else {
+          lastPage = Number(payload?.last_page || 1);
         }
+
+        page += 1;
+      } while (page <= lastPage);
+
+      return rows;
+    };
+
+    const loadCatalogs = async () => {
+      setFetchingCatalogs(true);
+      try {
+        const [unitTypesRows, apartmentsRows] = await Promise.all([
+          loadAllRows("/unit-types"),
+          loadAllRows("/apartments"),
+        ]);
+
+        if (cancelled) return;
+
+        setUnitTypes(unitTypesRows);
+        setApartments(apartmentsRows);
       } catch (err) {
         if (!cancelled) {
           setUnitTypes([]);
-          setError(normalizeApiError(err, "No fue posible cargar tipos de unidad."));
+          setApartments([]);
+          setError(normalizeApiError(err, "No fue posible cargar tipos e inmuebles."));
         }
       } finally {
         if (!cancelled) {
-          setFetchingUnitTypes(false);
+          setFetchingCatalogs(false);
         }
       }
     };
 
-    loadUnitTypes();
+    loadCatalogs();
 
     return () => {
       cancelled = true;
     };
   }, [open, requestConfig]);
 
+  const selectedUnitType = useMemo(
+    () => unitTypes.find((item) => String(item.id) === String(form.unit_type_id)),
+    [form.unit_type_id, unitTypes]
+  );
+
+  const requiresParent = Boolean(selectedUnitType?.requires_parent);
+  const allowsResidents = Boolean(selectedUnitType?.allows_residents);
+
+  const primaryApartments = useMemo(() => {
+    return apartments.filter((item) => {
+      if (initialValues?.id && Number(item.id) === Number(initialValues.id)) {
+        return false;
+      }
+
+      const unitType = item?.unit_type || item?.unitType;
+      return Boolean(unitType?.allows_residents);
+    });
+  }, [apartments, initialValues?.id]);
+
   if (!open) return null;
 
   const handleChange = (event) => {
     const { name, value, type, checked } = event.target;
-    setForm((prev) => ({ ...prev, [name]: type === "checkbox" ? checked : value }));
+    setForm((prev) => {
+      if (name === "unit_type_id") {
+        return {
+          ...prev,
+          unit_type_id: value,
+          parent_id: "",
+        };
+      }
+
+      return { ...prev, [name]: type === "checkbox" ? checked : value };
+    });
+
     if (error) setError("");
   };
 
@@ -95,14 +167,15 @@ function ApartmentFormModal({ open, initialValues, loading, onCancel, onSubmit }
     const tower = String(form.tower || "").trim();
     const floorText = String(form.floor || "").trim();
     const unitTypeId = Number(form.unit_type_id);
+    const parentId = form.parent_id ? Number(form.parent_id) : null;
 
     if (!number) {
-      setError("El número del inmueble es obligatorio.");
+      setError("El numero del inmueble es obligatorio.");
       return;
     }
 
     if (number.length > 50) {
-      setError("El número no puede superar 50 caracteres.");
+      setError("El numero no puede superar 50 caracteres.");
       return;
     }
 
@@ -118,13 +191,24 @@ function ApartmentFormModal({ open, initialValues, loading, onCancel, onSubmit }
 
     const floorNumber = floorText === "" ? null : Number(floorText);
     if (floorNumber !== null && !Number.isInteger(floorNumber)) {
-      setError("El piso debe ser un número entero.");
+      setError("El piso debe ser un numero entero.");
+      return;
+    }
+
+    if (requiresParent && !parentId) {
+      setError("Este tipo de unidad debe asociarse a un inmueble principal.");
+      return;
+    }
+
+    if (!requiresParent && parentId) {
+      setError("Este tipo de unidad no debe tener inmueble padre.");
       return;
     }
 
     try {
       await onSubmit({
         unit_type_id: unitTypeId,
+        parent_id: requiresParent ? parentId : null,
         number,
         tower: tower || null,
         floor: floorNumber,
@@ -145,7 +229,7 @@ function ApartmentFormModal({ open, initialValues, loading, onCancel, onSubmit }
         <form className="mt-4 space-y-4" onSubmit={handleSubmit}>
           <div className="grid gap-3 sm:grid-cols-2">
             <Field
-              label="Número"
+              label="Numero"
               name="number"
               value={form.number}
               onChange={handleChange}
@@ -182,9 +266,9 @@ function ApartmentFormModal({ open, initialValues, loading, onCancel, onSubmit }
                 onChange={handleChange}
                 className="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
                 required
-                disabled={fetchingUnitTypes}
+                disabled={fetchingCatalogs}
               >
-                <option value="">{fetchingUnitTypes ? "Cargando tipos..." : "Seleccione tipo"}</option>
+                <option value="">{fetchingCatalogs ? "Cargando tipos..." : "Seleccione tipo"}</option>
                 {unitTypes.map((item) => (
                   <option key={item.id} value={item.id}>
                     {item.name}
@@ -193,6 +277,34 @@ function ApartmentFormModal({ open, initialValues, loading, onCancel, onSubmit }
               </select>
             </label>
           </div>
+
+          {requiresParent ? (
+            <label className="block">
+              <span className="mb-1.5 block text-sm font-semibold text-slate-700">Inmueble principal</span>
+              <span className="mb-1 block text-xs text-slate-500">Selecciona un inmueble cuyo tipo permita residentes directos.</span>
+              <select
+                name="parent_id"
+                value={form.parent_id}
+                onChange={handleChange}
+                className="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                required
+                disabled={fetchingCatalogs}
+              >
+                <option value="">{fetchingCatalogs ? "Cargando..." : "Seleccione inmueble principal"}</option>
+                {primaryApartments.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {buildApartmentLabel(item)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+
+          {allowsResidents ? (
+            <p className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-700">
+              Los residentes se pueden registrar directamente sobre este tipo de unidad.
+            </p>
+          ) : null}
 
           <label className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3">
             <span className="text-sm font-semibold text-slate-700">Activo</span>
@@ -212,7 +324,7 @@ function ApartmentFormModal({ open, initialValues, loading, onCancel, onSubmit }
           <div className="flex gap-3">
             <button
               type="submit"
-              disabled={loading || fetchingUnitTypes}
+              disabled={loading || fetchingCatalogs}
               className="flex-1 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-indigo-700 disabled:opacity-70"
             >
               {loading ? "Guardando..." : "Guardar"}
@@ -244,6 +356,13 @@ function Field({ label, ...props }) {
   );
 }
 
+function buildApartmentLabel(apartment) {
+  const number = apartment?.number ?? "-";
+  const tower = apartment?.tower ? `Torre: ${apartment.tower}` : "Torre: Sin torre";
+  const floor = apartment?.floor ?? "-";
+  return `${number} | ${tower} | Piso: ${floor}`;
+}
+
 function normalizeApiError(err, fallbackMessage) {
   const responseData = err?.response?.data;
   const errors = responseData?.errors;
@@ -253,85 +372,11 @@ function normalizeApiError(err, fallbackMessage) {
       (fieldErrors) => Array.isArray(fieldErrors) && fieldErrors.length > 0
     );
     if (firstFieldErrors) {
-      return translateValidationMessage(String(firstFieldErrors[0]));
+      return String(firstFieldErrors[0]);
     }
   }
 
-  const rawMessage = String(responseData?.message || err?.message || fallbackMessage || "");
-  const normalizedMessage = rawMessage.toLowerCase();
-
-  if (
-    normalizedMessage.includes("duplicate entry") ||
-    normalizedMessage.includes("integrity constraint violation") ||
-    normalizedMessage.includes("already exists")
-  ) {
-    const keyMatch = rawMessage.match(/for key ['"]?([^'"]+)['"]?/i);
-    const keyName = String(keyMatch?.[1] || "");
-    const normalizedKey = keyName.split(".").pop()?.replace(/_unique$/i, "") || "";
-    const fieldName = normalizedKey.split("_").filter(Boolean).pop() || "";
-    const fieldLabel = resolveFieldLabel(fieldName);
-
-    if (fieldLabel) {
-      return "Ya existe un registro con ese " + fieldLabel + ".";
-    }
-
-    return "Ya existe un registro con esos datos.";
-  }
-
-  return rawMessage || fallbackMessage;
-}
-
-function translateValidationMessage(message) {
-  const rawMessage = String(message || "");
-  const trimmedMessage = rawMessage.trim();
-  const lowerMessage = trimmedMessage.toLowerCase();
-
-  const takenMatch = trimmedMessage.match(/^the\s+(.+?)\s+has already been taken\.?$/i);
-  if (takenMatch) {
-    const fieldLabel = resolveFieldLabel(takenMatch[1]);
-    return fieldLabel
-      ? "Ya existe un registro con ese " + fieldLabel + "."
-      : "Ya existe un registro con esos datos.";
-  }
-
-  const requiredMatch = trimmedMessage.match(/^the\s+(.+?)\s+field is required\.?$/i);
-  if (requiredMatch) {
-    const fieldLabel = resolveFieldLabel(requiredMatch[1]);
-    return fieldLabel
-      ? "El campo " + fieldLabel + " es obligatorio."
-      : "Este campo es obligatorio.";
-  }
-
-  const emailMatch = trimmedMessage.match(/^the\s+(.+?)\s+must be a valid email address\.?$/i);
-  if (emailMatch) {
-    const fieldLabel = resolveFieldLabel(emailMatch[1]);
-    return fieldLabel
-      ? "El campo " + fieldLabel + " debe ser un correo valido."
-      : "Debes ingresar un correo valido.";
-  }
-
-  return rawMessage;
-}
-
-function resolveFieldLabel(fieldName) {
-  const normalizedField = String(fieldName || "").toLowerCase();
-
-  const labels = {
-    name: "nombre",
-    email: "correo",
-    phone: "telefono",
-    mobile: "telefono",
-    number: "numero",
-    code: "codigo",
-    asset_code: "codigo",
-    tower: "torre",
-    plate: "placa",
-    description: "descripcion",
-  };
-
-  const cleanField = normalizedField.replace(/_/g, " ").trim();
-  return labels[normalizedField] || cleanField;
+  return String(responseData?.message || err?.message || fallbackMessage || "");
 }
 
 export default ApartmentFormModal;
-

@@ -110,11 +110,15 @@ export function useOperatives(filters = {}) {
 
   const createOperative = useCallback(async (payload) => {
     setSaving(true);
+    setError("");
     try {
       const response = await apiClient.post("/operatives", payload, requestConfig);
       setCurrentPage(1);
       await loadOperatives(1);
       return response.data;
+    } catch (err) {
+      setError(normalizeApiError(err, "No fue posible crear el operativo."));
+      throw err;
     } finally {
       setSaving(false);
     }
@@ -122,14 +126,45 @@ export function useOperatives(filters = {}) {
 
   const updateOperative = useCallback(async (id, payload) => {
     setSaving(true);
+    setError("");
     try {
       const response = await apiClient.put(`/operatives/${id}`, payload, requestConfig);
       await loadOperatives(currentPage);
       return response.data;
+    } catch (err) {
+      setError(normalizeApiError(err, "No fue posible actualizar el operativo."));
+      throw err;
     } finally {
       setSaving(false);
     }
   }, [currentPage, loadOperatives, requestConfig]);
+
+  const importOperativesCsv = useCallback(async (file) => {
+    setSaving(true);
+    setError("");
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await apiClient.post("/operatives/import", formData, {
+        ...(requestConfig || {}),
+        headers: {
+          ...(requestConfig?.headers || {}),
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      setCurrentPage(1);
+      await loadOperatives(1);
+      return response.data;
+    } catch (err) {
+      setError(normalizeApiError(err, "No fue posible importar el archivo CSV."));
+      throw err;
+    } finally {
+      setSaving(false);
+    }
+  }, [loadOperatives, requestConfig]);
 
   const changeUserPassword = useCallback(async (userId, payload) => {
     setSaving(true);
@@ -169,6 +204,23 @@ export function useOperatives(filters = {}) {
     loadOperatives,
     createOperative,
     updateOperative,
+    importOperativesCsv,
     changeUserPassword,
   };
+}
+
+function normalizeApiError(err, fallbackMessage) {
+  const responseData = err?.response?.data;
+  const errors = responseData?.errors;
+
+  if (errors && typeof errors === "object") {
+    const firstFieldErrors = Object.values(errors).find(
+      (fieldErrors) => Array.isArray(fieldErrors) && fieldErrors.length > 0
+    );
+    if (firstFieldErrors) {
+      return String(firstFieldErrors[0]);
+    }
+  }
+
+  return String(responseData?.message || err?.message || fallbackMessage || "");
 }

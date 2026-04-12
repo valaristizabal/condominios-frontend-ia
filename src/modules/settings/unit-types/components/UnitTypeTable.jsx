@@ -28,6 +28,7 @@ function UnitTypeTable({
         <thead className="bg-slate-50 text-left text-xs uppercase tracking-wider text-slate-500">
           <tr>
             <th className="px-4 py-3">Nombre</th>
+            <th className="px-4 py-3">Comportamiento</th>
             <th className="px-4 py-3">Subunidades</th>
             <th className="px-4 py-3">Estado</th>
             <th className="px-4 py-3 text-right">Acciones</th>
@@ -41,6 +42,11 @@ function UnitTypeTable({
                   <span className="text-lg">{iconByType(item.name)}</span>
                   <span>{item.name || "-"}</span>
                 </div>
+              </td>
+              <td className="px-4 py-3 text-slate-700">
+                <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700">
+                  {describeBehavior(item)}
+                </span>
               </td>
               <td className="px-4 py-3 text-slate-700">
                 <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">
@@ -120,6 +126,12 @@ function iconByType(name = "") {
   if (normalizedName.includes("local")) return <Store className="h-5 w-5" />;
 
   return <Building2 className="h-5 w-5" />;
+}
+
+function describeBehavior(item) {
+  if (item?.requires_parent) return "Unidad anexa";
+  if (item?.allows_residents) return "Unidad principal";
+  return "Unidad independiente";
 }
 
 export default UnitTypeTable;

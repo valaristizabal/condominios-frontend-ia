@@ -44,6 +44,15 @@ function ApartmentTable({
                     <p className="text-xs font-semibold text-slate-500">
                       {"Torre: " + (item.tower || "Sin torre") + " | Piso: " + (item.floor ?? "-")}
                     </p>
+                    {item.parent ? (
+                      <p className="text-xs font-semibold text-amber-600">
+                        Relacionado a apartamento {item.parent.number || "-"}
+                      </p>
+                    ) : Array.isArray(item.children) && item.children.length > 0 ? (
+                      <p className="text-xs font-semibold text-blue-600">
+                        {item.children.length} unidades relacionadas
+                      </p>
+                    ) : null}
                   </div>
                 </div>
               </td>
