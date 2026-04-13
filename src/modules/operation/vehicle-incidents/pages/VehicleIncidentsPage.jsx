@@ -3,6 +3,7 @@ import BackButton from "../../../../components/common/BackButton";
 import VehicleIncidentFormModal from "../components/VehicleIncidentFormModal";
 import VehicleIncidentTable from "../components/VehicleIncidentTable";
 import { useVehicleIncidents } from "../hooks/useVehicleIncidents";
+import { useNotification } from "../../../../hooks/useNotification";
 
 function VehicleIncidentsPage() {
   const {
@@ -22,6 +23,7 @@ function VehicleIncidentsPage() {
     resolveIncident,
     clearFieldError,
   } = useVehicleIncidents();
+  const { success, error: notifyError, warning } = useNotification();
 
   const [form, setForm] = useState({
     tipoVehiculo: "",
@@ -29,6 +31,7 @@ function VehicleIncidentsPage() {
     tipoUnidad: "",
     numeroUnidad: "",
     tipoNovedad: "ROBO",
+    detalleOtro: "",
     observaciones: "",
     photoList: [],
   });
@@ -62,6 +65,7 @@ function VehicleIncidentsPage() {
       tipoUnidad: "",
       numeroUnidad: "",
       tipoNovedad: "ROBO",
+      detalleOtro: "",
       observaciones: "",
       photoList: [],
     });
@@ -103,23 +107,55 @@ function VehicleIncidentsPage() {
 
     if (!activeCondominiumId || submitting) return;
 
-    const firstEvidence = form.photoList?.[0]?.file || null;
+    const evidenceFiles = Array.isArray(form.photoList) ? form.photoList.map((item) => item?.file).filter(Boolean) : [];
+    const plate = String(form.placa || "").trim().toUpperCase();
+    const isOther = form.tipoNovedad === "OTRO";
+    const otherDetail = String(form.detalleOtro || "").trim();
+    const observations = String(form.observaciones || "").trim();
+
+    if (
+      !form.tipoVehiculo ||
+      !plate ||
+      !form.tipoUnidad ||
+      !form.numeroUnidad ||
+      !form.tipoNovedad ||
+      !observations ||
+      (isOther && !otherDetail) ||
+      !evidenceFiles.length
+    ) {
+      warning(
+        isOther
+          ? "Completa todos los campos obligatorios, incluyendo el detalle de 'Otro' y al menos una evidencia."
+          : "Completa todos los campos obligatorios y adjunta al menos una evidencia."
+      );
+      return;
+    }
+
+    const finalObservations =
+      isOther && otherDetail
+        ? observations
+          ? `Otro: ${otherDetail}\n\n${observations}`
+          : `Otro: ${otherDetail}`
+        : observations;
 
     try {
       await createIncident({
         vehicle_id: null,
         apartment_id: form.numeroUnidad ? Number(form.numeroUnidad) : null,
-        plate: String(form.placa || "").trim().toUpperCase(),
+        plate,
         incident_type: incidentTypeMap[form.tipoNovedad] || "other",
-        observations: form.observaciones || "",
-        evidence: firstEvidence,
+        observations: finalObservations,
+        evidences: evidenceFiles,
+        evidence: evidenceFiles[0] || null,
       });
 
       resetForm();
       setCurrentPage(1);
       await resolveFilter(activeFilter, 1);
-    } catch {
-      // Error state is handled by hook and field errors.
+      success("Novedad vehicular registrada correctamente.");
+    } catch (requestError) {
+      const message = normalizeIncidentError(requestError, "No fue posible registrar la novedad vehicular.");
+      notifyError(message);
     }
   };
 
@@ -181,3 +217,19 @@ function VehicleIncidentsPage() {
 }
 
 export default VehicleIncidentsPage;
+
+function normalizeIncidentError(error, fallbackMessage) {
+  const responseData = error?.response?.data;
+  const errors = responseData?.errors;
+
+  if (errors && typeof errors === "object") {
+    const firstFieldErrors = Object.values(errors).find(
+      (messages) => Array.isArray(messages) && messages.length > 0
+    );
+    if (firstFieldErrors) {
+      return String(firstFieldErrors[0]);
+    }
+  }
+
+  return responseData?.message || error?.message || fallbackMessage;
+}

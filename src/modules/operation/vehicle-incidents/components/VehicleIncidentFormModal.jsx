@@ -1,6 +1,6 @@
 ﻿import { useMemo, useRef } from "react";
 import { Camera, Car, HeartCrack, MessageSquare, MoreHorizontal, Shield, TriangleAlert, X } from "lucide-react";
-
+import SearchableSelect from "../../../../components/common/SearchableSelect";
 const inputBase =
   "h-12 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100";
 
@@ -63,7 +63,7 @@ function VehicleIncidentFormModal({
       [
         ...new Map(
           apartments.map((apartment) => [
-            apartment?.unit_type?.id || apartment?.unitType?.id,
+            apartment?.unit_type?.name || apartment?.unitType?.name,
             apartment?.unit_type?.name || apartment?.unitType?.name,
           ])
         ).values(),
@@ -71,19 +71,32 @@ function VehicleIncidentFormModal({
     [apartments]
   );
 
+  const filteredApartments = useMemo(
+    () =>
+      apartments.filter(
+        (apartment) =>
+          String(apartment?.unit_type?.name || apartment?.unitType?.name || "") === String(form.tipoUnidad || "")
+      ),
+    [apartments, form.tipoUnidad]
+  );
+
   const pickPhoto = () => fileRef.current?.click();
 
   const onPhotoChange = (event) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(event.target.files || []);
+    if (!files.length) return;
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      setPhotoList((prev) => [...prev, { file, src: String(reader.result || "") }]);
-      clearFieldError?.("evidence");
-    };
+    files.forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        setPhotoList((prev) => [...prev, { file, src: String(reader.result || "") }]);
+      };
 
-    reader.readAsDataURL(file);
+      reader.readAsDataURL(file);
+    });
+
+    clearFieldError?.("evidence");
+    clearFieldError?.("evidences");
     event.target.value = "";
   };
 
@@ -98,14 +111,16 @@ function VehicleIncidentFormModal({
 
         <div className="space-y-2">
           <Label>Tipo de vehículo</Label>
-          <select className={inputBase} value={form.tipoVehiculo} onChange={(event) => setField("tipoVehiculo", event.target.value)}>
-            <option value="">Seleccione tipo</option>
-            {vehicleTypes.map((type) => (
-              <option key={type.id} value={String(type.id)}>
-                {type.name}
-              </option>
-            ))}
-          </select>
+          <SearchableSelect
+            value={form.tipoVehiculo}
+            options={vehicleTypes.map((type) => ({
+              value: String(type.id),
+              label: type.name,
+            }))}
+            placeholder="Seleccione tipo"
+            searchPlaceholder="Buscar tipo..."
+            onChange={(value) => setField("tipoVehiculo", value)}
+          />
         </div>
 
         <div className="space-y-2">
@@ -125,42 +140,37 @@ function VehicleIncidentFormModal({
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="space-y-2">
             <Label>Tipo de unidad</Label>
-            <select
-              className={inputBase}
+            <SearchableSelect
               value={form.tipoUnidad}
-              onChange={(event) => {
-                setField("tipoUnidad", event.target.value);
+              options={uniqueUnitTypes.map((type) => ({
+                value: type,
+                label: type,
+              }))}
+              placeholder="Seleccione tipo"
+              searchPlaceholder="Buscar tipo..."
+              onChange={(value) => {
+                setField("tipoUnidad", value);
                 setField("numeroUnidad", "");
               }}
-            >
-              <option value="">Seleccione tipo</option>
-              {uniqueUnitTypes.map((type) => (
-                <option key={type} value={type}>
-                  {type}
-                </option>
-              ))}
-            </select>
+            />
           </div>
 
           <div className="space-y-2">
             <Label>Número</Label>
-            <select
-              className={inputBase}
+            <SearchableSelect
               value={form.numeroUnidad}
-              onChange={(event) => {
-                setField("numeroUnidad", event.target.value);
+              options={filteredApartments.map((apartment) => ({
+                value: String(apartment.id),
+                label: apartment.number,
+              }))}
+              disabled={!form.tipoUnidad}
+              placeholder={!form.tipoUnidad ? "Primero seleccione tipo" : "Seleccione unidad"}
+              searchPlaceholder="Buscar unidad..."
+              onChange={(value) => {
+                setField("numeroUnidad", value);
                 clearFieldError?.("apartment_id");
               }}
-            >
-              <option value="">Seleccione unidad</option>
-              {apartments
-                .filter((apartment) => (apartment?.unit_type?.name || apartment?.unitType?.name) === form.tipoUnidad)
-                .map((apartment) => (
-                  <option key={apartment.id} value={String(apartment.id)}>
-                    {apartment.number}
-                  </option>
-                ))}
-            </select>
+            />
             <FieldError message={fieldErrors.apartment_id} />
           </div>
         </div>
@@ -196,6 +206,17 @@ function VehicleIncidentFormModal({
             clearFieldError?.("incident_type");
           }}
         />
+        {form.tipoNovedad === "OTRO" ? (
+          <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
+            <Label>¿Cuál otro?</Label>
+            <input
+              className={inputBase}
+              placeholder="Escriba el tipo de novedad..."
+              value={form.detalleOtro || ""}
+              onChange={(event) => setField("detalleOtro", event.target.value)}
+            />
+          </div>
+        ) : null}
         <FieldError message={fieldErrors.incident_type} />
       </section>
 
@@ -217,7 +238,7 @@ function VehicleIncidentFormModal({
       <section className="space-y-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <SectionTitle icon={<Camera className="h-5 w-5" />} eyebrow="Soporte" title="Evidencia fotográfica" />
 
-        <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onPhotoChange} />
+        <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={onPhotoChange} />
 
         <div className="flex gap-3 overflow-x-auto">
           <button
@@ -242,7 +263,7 @@ function VehicleIncidentFormModal({
             </div>
           ))}
         </div>
-        <FieldError message={fieldErrors.evidence} />
+        <FieldError message={fieldErrors.evidence || fieldErrors.evidences} />
       </section>
 
       <div className="flex flex-col items-center">

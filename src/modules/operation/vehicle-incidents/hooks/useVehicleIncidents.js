@@ -46,13 +46,17 @@ export function useVehicleIncidents() {
     setError("");
 
     try {
-      const [apartmentsRes, vehicleTypesRes] = await Promise.all([
-        apiClient.get("/apartments", requestConfig),
+      const [apartmentsRows, vehicleTypesRes] = await Promise.all([
+        loadAllRows("/apartments", requestConfig),
         apiClient.get("/vehicle-types?active=1", requestConfig),
       ]);
 
-      setApartments(Array.isArray(apartmentsRes.data) ? apartmentsRes.data : []);
-      setVehicleTypes(Array.isArray(vehicleTypesRes.data) ? vehicleTypesRes.data : []);
+      const vehicleTypesPayload = vehicleTypesRes?.data;
+
+      setApartments(apartmentsRows);
+      setVehicleTypes(
+        Array.isArray(vehicleTypesPayload?.data) ? vehicleTypesPayload.data : Array.isArray(vehicleTypesPayload) ? vehicleTypesPayload : []
+      );
     } catch (err) {
       setError(normalizeApiError(err, "Error cargando datos iniciales."));
       setApartments([]);
@@ -148,6 +152,14 @@ export function useVehicleIncidents() {
         formData.append("incident_type", String(payload.incident_type || ""));
         formData.append("observations", String(payload.observations || ""));
 
+        if (Array.isArray(payload.evidences)) {
+          payload.evidences.forEach((file) => {
+            if (file) {
+              formData.append("evidences[]", file);
+            }
+          });
+        }
+
         if (payload.evidence) {
           formData.append("evidence", payload.evidence);
         }
@@ -229,6 +241,32 @@ export function useVehicleIncidents() {
     resolveIncident,
     clearFieldError,
   };
+}
+
+async function loadAllRows(endpoint, requestConfig) {
+  const rows = [];
+  let page = 1;
+  let lastPage = 1;
+
+  do {
+    const response = await apiClient.get(endpoint, {
+      ...(requestConfig || {}),
+      params: {
+        per_page: 10,
+        page,
+      },
+    });
+
+    const payload = response?.data;
+    const pageRows = Array.isArray(payload?.data) ? payload.data : Array.isArray(payload) ? payload : [];
+
+    rows.push(...pageRows);
+
+    lastPage = Math.max(1, Number(payload?.last_page || 1));
+    page += 1;
+  } while (page <= lastPage);
+
+  return rows;
 }
 
 function extractFieldErrors(err) {
