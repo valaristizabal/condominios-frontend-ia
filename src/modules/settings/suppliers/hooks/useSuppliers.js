@@ -158,6 +158,36 @@ export function useSuppliers() {
     [currentPage, fetchSuppliers, requestConfig]
   );
 
+  const importSuppliersCsv = useCallback(
+    async (file, filters = { query: "", status: "all" }) => {
+      setSaving(true);
+      setError("");
+
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const response = await apiClient.post("/suppliers/import", formData, {
+          ...(requestConfig || {}),
+          headers: {
+            ...(requestConfig?.headers || {}),
+            "Content-Type": "multipart/form-data",
+          },
+        });
+
+        await fetchSuppliers({ page: 1, ...filters });
+        setCurrentPage(1);
+        return response.data;
+      } catch (err) {
+        setError(normalizeApiError(err, "No fue posible importar el archivo CSV."));
+        throw err;
+      } finally {
+        setSaving(false);
+      }
+    },
+    [fetchSuppliers, requestConfig]
+  );
+
   return {
     suppliers: items,
     loading,
@@ -172,6 +202,7 @@ export function useSuppliers() {
     createSupplier,
     updateSupplier,
     deactivateSupplier,
+    importSuppliersCsv,
   };
 }
 

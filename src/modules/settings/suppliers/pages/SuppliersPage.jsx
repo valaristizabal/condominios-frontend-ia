@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useActiveCondominium } from "../../../../context/useActiveCondominium";
 import { useNotification } from "../../../../hooks/useNotification";
 import { useSuppliers } from "../hooks/useSuppliers";
@@ -19,6 +19,7 @@ const EMPTY_FORM = {
 
 function SuppliersPage() {
   const { activeCondominiumId } = useActiveCondominium();
+  const fileInputRef = useRef(null);
   const {
     suppliers,
     loading,
@@ -32,6 +33,7 @@ function SuppliersPage() {
     createSupplier,
     updateSupplier,
     deactivateSupplier,
+    importSuppliersCsv,
   } = useSuppliers();
   const { success, error: notifyError, warning } = useNotification();
 
@@ -40,6 +42,7 @@ function SuppliersPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [localError, setLocalError] = useState("");
+  const [importResult, setImportResult] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
 
   useEffect(() => {
@@ -142,6 +145,26 @@ function SuppliersPage() {
     }
   };
 
+  const openCsvPicker = () => {
+    if (!hasTenantContext || saving) return;
+    fileInputRef.current?.click();
+  };
+
+  const handleCsvChange = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+
+    if (!file) return;
+
+    try {
+      const result = await importSuppliersCsv(file, { query, status });
+      setImportResult(result);
+      success(`Carga finalizada. Registros creados: ${Number(result?.created || 0)}.`);
+    } catch {
+      setImportResult(null);
+    }
+  };
+
   return (
     <div className="mx-auto w-full max-w-6xl">
       <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
@@ -152,14 +175,31 @@ function SuppliersPage() {
             {activeCondominiumId ? ` Contexto: #${activeCondominiumId}` : ""}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={openCreate}
-          className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-indigo-700 disabled:opacity-70"
-          disabled={!hasTenantContext || saving}
-        >
-          + Crear proveedor
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".csv"
+            onChange={handleCsvChange}
+            className="hidden"
+          />
+          <button
+            type="button"
+            onClick={openCsvPicker}
+            className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-70"
+            disabled={!hasTenantContext || saving}
+          >
+            Cargar CSV
+          </button>
+          <button
+            type="button"
+            onClick={openCreate}
+            className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-indigo-700 disabled:opacity-70"
+            disabled={!hasTenantContext || saving}
+          >
+            + Crear proveedor
+          </button>
+        </div>
       </header>
 
       {!hasTenantContext ? (
@@ -170,6 +210,35 @@ function SuppliersPage() {
 
       {error ? (
         <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>
+      ) : null}
+
+      {importResult ? (
+        <section className="mb-4 rounded-xl border border-slate-200 bg-white p-4">
+          <div className="flex flex-wrap gap-4 text-sm font-bold text-slate-900">
+            <p>
+              Total de filas: <span className="text-slate-700">{Number(importResult.total || 0)}</span>
+            </p>
+            <p>
+              Registros creados: <span className="text-emerald-700">{Number(importResult.created || 0)}</span>
+            </p>
+            <p>
+              Registros fallidos: <span className="text-rose-700">{Number(importResult.failed || 0)}</span>
+            </p>
+          </div>
+
+          {Array.isArray(importResult.errors) && importResult.errors.length > 0 ? (
+            <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
+              <p className="text-sm font-semibold text-amber-800">Errores encontrados</p>
+              <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-amber-700">
+                {importResult.errors.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </div>
+          ) : (
+            <p className="mt-2 text-sm text-slate-600">No se encontraron errores en la importacion.</p>
+          )}
+        </section>
       ) : null}
 
       <section className="mb-4 grid grid-cols-1 gap-3 rounded-xl border border-slate-200 bg-white p-4 sm:grid-cols-3">
@@ -226,7 +295,7 @@ function SuppliersPage() {
                   <td className="px-4 py-3 text-slate-700">{item.email || "-"}</td>
                   <td className="px-4 py-3 text-slate-700">
                     <div className="flex flex-col gap-1">
-                      <DocumentLink href={item.certificacion_bancaria_url} label="Certificación bancaria" />
+                      <DocumentLink href={item.certificacion_bancaria_url} label="Certificacion bancaria" />
                       <DocumentLink href={item.documento_representante_legal_url} label="Representante legal" />
                     </div>
                   </td>
@@ -337,7 +406,7 @@ function SuppliersPage() {
                 />
               </div>
               <FileField
-                label="Certificación bancaria"
+                label="Certificacion bancaria"
                 fileName={form.certificacion_bancaria_file?.name || fileNameFromPath(form.certificacion_bancaria)}
                 link={editing?.certificacion_bancaria_url || null}
                 onChange={(file) =>
