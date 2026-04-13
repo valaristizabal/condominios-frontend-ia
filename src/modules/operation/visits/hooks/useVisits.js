@@ -6,10 +6,18 @@ export function useVisits() {
   const { activeCondominiumId } = useActiveCondominium();
   const [unitTypes, setUnitTypes] = useState([]);
   const [apartments, setApartments] = useState([]);
-  const [visits, setVisits] = useState([]);
+  const [activeVisits, setActiveVisits] = useState([]);
+  const [historyVisits, setHistoryVisits] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pagination, setPagination] = useState({
+  const [activePage, setActivePage] = useState(1);
+  const [historyPage, setHistoryPage] = useState(1);
+  const [activePagination, setActivePagination] = useState({
+    currentPage: 1,
+    lastPage: 1,
+    perPage: 10,
+    total: 0,
+  });
+  const [historyPagination, setHistoryPagination] = useState({
     currentPage: 1,
     lastPage: 1,
     perPage: 10,
@@ -42,10 +50,17 @@ export function useVisits() {
     setApartments(Array.isArray(payload?.apartments) ? payload.apartments : []);
   }, [activeCondominiumId, requestConfig]);
 
-  const loadVisits = useCallback(async (page = 1) => {
+  const loadVisits = useCallback(async ({ active = 1, history = 1 } = {}) => {
     if (!activeCondominiumId) {
-      setVisits([]);
-      setPagination({
+      setActiveVisits([]);
+      setHistoryVisits([]);
+      setActivePagination({
+        currentPage: 1,
+        lastPage: 1,
+        perPage: 10,
+        total: 0,
+      });
+      setHistoryPagination({
         currentPage: 1,
         lastPage: 1,
         perPage: 10,
@@ -54,31 +69,46 @@ export function useVisits() {
       return;
     }
 
-    const response = await apiClient.get("/visits", {
-      ...(requestConfig || {}),
-      params: {
-        page,
-        per_page: 10,
-      },
-    });
+    const [activeResponse, historyResponse] = await Promise.all([
+      apiClient.get("/visits", {
+        ...(requestConfig || {}),
+        params: {
+          page: active,
+          per_page: 10,
+          status: "INSIDE",
+        },
+      }),
+      apiClient.get("/visits", {
+        ...(requestConfig || {}),
+        params: {
+          page: history,
+          per_page: 10,
+          status: "OUTSIDE",
+        },
+      }),
+    ]);
 
-    const payload = response?.data || {};
-    const rows = Array.isArray(payload?.data) ? payload.data : [];
-    const nextCurrentPage = Number(payload?.current_page || page || 1);
-    const nextLastPage = Number(payload?.last_page || 1);
-    const normalizedLastPage = nextLastPage > 0 ? nextLastPage : 1;
+    const applyPagination = (payload, requestedPage, setRows, setState, setPage) => {
+      const rows = Array.isArray(payload?.data) ? payload.data : [];
+      const nextCurrentPage = Number(payload?.current_page || requestedPage || 1);
+      const nextLastPage = Number(payload?.last_page || 1);
+      const normalizedLastPage = nextLastPage > 0 ? nextLastPage : 1;
 
-    setVisits(rows);
-    setPagination({
-      currentPage: nextCurrentPage,
-      lastPage: normalizedLastPage,
-      perPage: Number(payload?.per_page || 10),
-      total: Number(payload?.total || rows.length),
-    });
+      setRows(rows);
+      setState({
+        currentPage: nextCurrentPage,
+        lastPage: normalizedLastPage,
+        perPage: Number(payload?.per_page || 10),
+        total: Number(payload?.total || rows.length),
+      });
 
-    if (nextCurrentPage > normalizedLastPage) {
-      setCurrentPage(normalizedLastPage);
-    }
+      if (nextCurrentPage > normalizedLastPage) {
+        setPage(normalizedLastPage);
+      }
+    };
+
+    applyPagination(activeResponse?.data || {}, active, setActiveVisits, setActivePagination, setActivePage);
+    applyPagination(historyResponse?.data || {}, history, setHistoryVisits, setHistoryPagination, setHistoryPage);
   }, [activeCondominiumId, requestConfig]);
 
   const registerVisit = useCallback(
@@ -111,15 +141,15 @@ export function useVisits() {
             },
           }
         );
-        setCurrentPage(1);
-        await loadVisits(1);
+        setActivePage(1);
+        await loadVisits({ active: 1, history: historyPage });
       } catch (error) {
         throw error;
       } finally {
         setLoading(false);
       }
     },
-    [activeCondominiumId, loadVisits, requestConfig]
+    [activeCondominiumId, historyPage, loadVisits, requestConfig]
   );
 
   const checkout = useCallback(
@@ -127,9 +157,9 @@ export function useVisits() {
       if (!activeCondominiumId) return;
 
       await apiClient.patch(`/visits/${visitId}/checkout`, {}, requestConfig);
-      await loadVisits(currentPage);
+      await loadVisits({ active: activePage, history: historyPage });
     },
-    [activeCondominiumId, currentPage, loadVisits, requestConfig]
+    [activeCondominiumId, activePage, historyPage, loadVisits, requestConfig]
   );
 
   useEffect(() => {
@@ -137,17 +167,21 @@ export function useVisits() {
   }, [loadBootstrapData]);
 
   useEffect(() => {
-    loadVisits(currentPage);
-  }, [currentPage, loadVisits]);
+    loadVisits({ active: activePage, history: historyPage });
+  }, [activePage, historyPage, loadVisits]);
 
   return {
     unitTypes,
     apartments,
-    visits,
+    activeVisits,
+    historyVisits,
     loading,
-    currentPage,
-    pagination,
-    setCurrentPage,
+    activePage,
+    historyPage,
+    activePagination,
+    historyPagination,
+    setActivePage,
+    setHistoryPage,
     registerVisit,
     checkout,
   };

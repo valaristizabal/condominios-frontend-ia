@@ -4,13 +4,14 @@ const Card = ({ children, className = "" }) => (
   </div>
 );
 
-function EmptyState() {
+function EmptyState({
+  title = "Sin visitantes activos",
+  description = "Cuando registres ingresos, apareceran aqui para controlar la salida.",
+}) {
   return (
     <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center">
-      <p className="text-sm font-extrabold text-slate-900">Sin visitantes activos</p>
-      <p className="mt-1 text-xs font-semibold text-slate-500">
-        Cuando registres ingresos, aparecerán aquí para controlar la salida.
-      </p>
+      <p className="text-sm font-extrabold text-slate-900">{title}</p>
+      <p className="mt-1 text-xs font-semibold text-slate-500">{description}</p>
     </div>
   );
 }
@@ -73,7 +74,7 @@ function Row({ visit, onCheckout, loading = false }) {
           </button>
         ) : (
           <span className="whitespace-nowrap rounded-xl border border-green-200 bg-green-100 px-3 py-2 text-xs font-bold text-green-700">
-            Cerrada
+            Salio
           </span>
         )}
       </div>
@@ -128,6 +129,11 @@ export default function VisitTable({
   totalPages = 1,
   totalItems = 0,
   onPageChange,
+  title = "Visitantes actuales",
+  subtitle = "Control en tiempo real",
+  description = "Registra la salida para mantener el control del acceso.",
+  emptyTitle = "Sin visitantes activos",
+  emptyDescription = "Cuando registres ingresos, aparecerán aquí para controlar la salida.",
 }) {
   const canGoPrev = currentPage > 1;
   const canGoNext = currentPage < totalPages;
@@ -137,20 +143,20 @@ export default function VisitTable({
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            Control en tiempo real
+            {subtitle}
           </p>
           <h2 className="mt-1 text-lg font-bold text-slate-900">
-            Visitantes actuales ({totalItems || 0})
+            {title} ({totalItems || 0})
           </h2>
           <p className="mt-1 text-sm text-slate-500">
-            Registra la salida para mantener el control del acceso.
+            {description}
           </p>
         </div>
       </div>
 
       <div className="mt-6 space-y-3">
         {!visits || visits.length === 0 ? (
-          <EmptyState />
+          <EmptyState title={emptyTitle} description={emptyDescription} />
         ) : (
           visits.map((visit) => (
             <Row

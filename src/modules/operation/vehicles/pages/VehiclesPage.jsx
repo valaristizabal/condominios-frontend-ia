@@ -179,6 +179,7 @@ function VehiclesPage() {
 
   const [form, setForm] = useState({
     tipoUsuario: "",
+    tienePlaca: true,
     placa: "",
     vehicleTypeId: "",
     unitTypeId: "",
@@ -192,7 +193,8 @@ function VehiclesPage() {
   const [evidencePreview, setEvidencePreview] = useState("");
   const [globalError, setGlobalError] = useState("");
   const [activeEntriesPage, setActiveEntriesPage] = useState(1);
-
+  const [historyEntriesPage, setHistoryEntriesPage] = useState(1);
+  const [activeTab, setActiveTab] = useState("actuales");
   const requestConfig = useMemo(
     () =>
       activeCondominiumId
@@ -277,7 +279,30 @@ function VehiclesPage() {
       };
     },
   });
+  const historyEntriesQuery = useQuery({
+    queryKey: ["vehicles", "history-entries", activeCondominiumId, historyEntriesPage],
+    enabled: canQuery,
+    queryFn: async () => {
+      const entriesRes = await apiClient.get("/vehicle-entries", {
+        ...(requestConfig || {}),
+        params: {
+          status: "OUTSIDE", 
+          per_page: 10,
+          page: historyEntriesPage,
+        },
+      });
 
+      const payload = entriesRes?.data || {};
+      const list = Array.isArray(payload?.data) ? payload.data : [];
+
+      return {
+        list: list.filter((entry) => entry?.status === "OUTSIDE"),
+        currentPage: Number(payload?.current_page || historyEntriesPage || 1),
+        lastPage: Math.max(1, Number(payload?.last_page || 1)),
+        total: Number(payload?.total || list.length),
+      };
+    },
+  });
   const activeEntries = activeEntriesQuery.data?.list || [];
   const activeEntriesPagination = useMemo(
     () => ({
@@ -287,7 +312,16 @@ function VehiclesPage() {
     }),
     [activeEntriesPage, activeEntriesQuery.data]
   );
-  const queryError = initialQuery.error || activeEntriesQuery.error;
+  const historyEntries = historyEntriesQuery.data?.list || [];
+  const historyEntriesPagination = useMemo(
+    () => ({
+      currentPage: Number(historyEntriesQuery.data?.currentPage || historyEntriesPage || 1),
+      lastPage: Number(historyEntriesQuery.data?.lastPage || 1),
+      total: Number(historyEntriesQuery.data?.total || 0),
+    }),
+    [historyEntriesPage, historyEntriesQuery.data]
+  );
+  const queryError = initialQuery.error || activeEntriesQuery.error || historyEntriesQuery.error;
 
   useEffect(() => {
     if (!queryError) return;
@@ -296,15 +330,19 @@ function VehiclesPage() {
 
   useEffect(() => {
     setActiveEntriesPage(1);
+    setHistoryEntriesPage(1);
   }, [activeCondominiumId]);
 
   function handleChange(event) {
-    const { name, value } = event.target;
+    const { name, value, type, checked } = event.target;
     setForm((prev) => {
+      if (name === "tienePlaca") {
+        return { ...prev, tienePlaca: checked, placa: checked ? prev.placa : "" };
+      }
       if (name === "unitTypeId") {
         return { ...prev, unitTypeId: value, apartmentId: "" };
       }
-      return { ...prev, [name]: value };
+      return { ...prev, [name]: type === "checkbox" ? checked : value };
     });
   }
 
@@ -362,6 +400,7 @@ function VehiclesPage() {
   function resetForm() {
     setForm({
       tipoUsuario: "",
+      tienePlaca: true,
       placa: "",
       vehicleTypeId: "",
       unitTypeId: "",
@@ -384,13 +423,20 @@ function VehiclesPage() {
 
   const registerEntryMutation = useMutation({
     mutationFn: async (payload) => {
-      const plate = normalizePlate(payload.placa);
-      const vehiclesRes = await apiClient.get(`/vehicles?plate=${encodeURIComponent(plate)}`, requestConfig);
-      const vehicles = Array.isArray(vehiclesRes.data) ? vehiclesRes.data : [];
-      let vehicle = vehicles.find((row) => String(row?.plate || "").toUpperCase() === plate);
+      const hasPlate = Boolean(payload.tienePlaca);
+      const plate = hasPlate ? normalizePlate(payload.placa) : null;
+      let vehicle = null;
+
+      if (hasPlate && plate) {
+        const vehiclesRes = await apiClient.get(`/vehicles?plate=${encodeURIComponent(plate)}`, requestConfig);
+        const vehicles = Array.isArray(vehiclesRes.data) ? vehiclesRes.data : [];
+        vehicle = vehicles.find((row) => String(row?.plate || "").toUpperCase() === plate);
+      }
+
       const baseVehiclePayload = {
         vehicle_type_id: Number(payload.vehicleTypeId),
         apartment_id: payload.apartmentId ? Number(payload.apartmentId) : null,
+        has_plate: hasPlate,
         plate,
         owner_type: ownerTypeMap[payload.tipoUsuario],
         is_active: true,
@@ -431,7 +477,9 @@ function VehiclesPage() {
     },
     onSuccess: async () => {
       setActiveEntriesPage(1);
+      setHistoryEntriesPage(1);
       await queryClient.invalidateQueries({ queryKey: ["vehicles", "active-entries", activeCondominiumId] });
+      await queryClient.invalidateQueries({ queryKey: ["vehicles", "history-entries", activeCondominiumId] });
     },
   });
 
@@ -439,6 +487,7 @@ function VehiclesPage() {
     mutationFn: (entryId) => apiClient.patch(`/vehicle-entries/${entryId}/checkout`, {}, requestConfig),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["vehicles", "active-entries", activeCondominiumId] });
+      await queryClient.invalidateQueries({ queryKey: ["vehicles", "history-entries", activeCondominiumId] });
     },
   });
 
@@ -446,9 +495,13 @@ function VehiclesPage() {
     event.preventDefault();
     if (submitting || !activeCondominiumId) return;
 
-    const plate = normalizePlate(form.placa);
-    if (!form.tipoUsuario || !plate || !form.vehicleTypeId) {
-      warning("Completa los campos obligatorios: Tipo de usuario, Placa y Tipo de vehiculo.");
+    const plate = form.tienePlaca ? normalizePlate(form.placa) : null;
+    if (!form.tipoUsuario || !form.vehicleTypeId || (form.tienePlaca && !plate)) {
+      warning(
+        form.tienePlaca
+          ? "Completa los campos obligatorios: Tipo de usuario, ¿Tiene placa?, Placa y Tipo de vehiculo."
+          : "Completa los campos obligatorios: Tipo de usuario, ¿Tiene placa? y Tipo de vehiculo."
+      );
       return;
     }
 
@@ -502,6 +555,7 @@ function VehiclesPage() {
 
   const loadingInit = initialQuery.isLoading;
   const loadingActive = activeEntriesQuery.isLoading;
+  const loadingHistory = historyEntriesQuery.isLoading;
 
   return (
     <div className="w-full">
@@ -609,8 +663,17 @@ function VehiclesPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <FieldLabel>Placa del vehículo</FieldLabel>
-                  <input name="placa" value={form.placa} onChange={handleChange} placeholder="ABC-123" className={`${inputBase} mt-2`} />
+                  <FieldLabel>¿Tiene placa?</FieldLabel>
+                  <label className={`${inputBase} mt-2 flex items-center gap-3`}>
+                    <input
+                      name="tienePlaca"
+                      type="checkbox"
+                      checked={form.tienePlaca}
+                      onChange={handleChange}
+                      className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-200"
+                    />
+                    <span>{form.tienePlaca ? "Sí, tiene placa" : "No tiene placa"}</span>
+                  </label>
                 </div>
 
                 <div>
@@ -620,11 +683,24 @@ function VehiclesPage() {
                     value={form.vehicleTypeId}
                     options={vehicleTypeOptions}
                     placeholder="Seleccionar tipo..."
-                    searchPlaceholder="Buscar tipo de vehículo..."
+                    searchPlaceholder="Buscar tipo de veh?culo..."
                     onChange={(value) => setForm((prev) => ({ ...prev, vehicleTypeId: String(value) }))}
                   />
                 </div>
               </div>
+
+              {form.tienePlaca ? (
+                <div>
+                  <FieldLabel>Placa del vehículo</FieldLabel>
+                  <input
+                    name="placa"
+                    value={form.placa}
+                    onChange={handleChange}
+                    placeholder="ABC-123"
+                    className={`${inputBase} mt-2`}
+                  />
+                </div>
+              ) : null}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -713,34 +789,76 @@ function VehiclesPage() {
           <Card>
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">CONTROL EN TIEMPO REAL</p>
+                <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">VISUALIZAR VEHICULOS</p>
                 <h2 className="mt-1 text-lg font-bold text-slate-900">
-                  Vehículos actuales ({activeEntriesPagination.total})
+                  {activeTab === "actuales"
+                    ? `Vehículos actuales (${activeEntriesPagination.total})`
+                    : `Historial de vehículos (${historyEntriesPagination.total})`}
                 </h2>
-                <p className="mt-1 text-sm text-slate-500">Registra la salida para mantener el control del parqueadero.</p>
+                <p className="mt-1 text-sm text-slate-500">
+                  {activeTab === "actuales"
+                    ? "Registra la salida para mantener el control del parqueadero."
+                    : "Consulta los registros de ingreso y salida del parqueadero."}
+                </p>
               </div>
 
               <button
                 type="button"
-                onClick={() => activeEntriesQuery.refetch()}
+                onClick={() =>
+                  activeTab === "actuales" ? activeEntriesQuery.refetch() : historyEntriesQuery.refetch()
+                }
                 className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-xs font-extrabold text-slate-800 hover:bg-slate-50"
               >
                 Actualizar
               </button>
             </div>
 
+            <div className="mt-6 rounded-2xl bg-slate-100 p-2">
+              <div className="grid grid-cols-2 gap-2 text-xs font-semibold sm:text-sm">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("actuales")}
+                  className={[
+                    "rounded-xl py-2 transition",
+                    activeTab === "actuales" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:bg-white/60",
+                  ].join(" ")}
+                >
+                  Actuales
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("historial")}
+                  className={[
+                    "rounded-xl py-2 transition",
+                    activeTab === "historial" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:bg-white/60",
+                  ].join(" ")}
+                >
+                  Historial
+                </button>
+              </div>
+            </div>
+
             <div className="mt-6 space-y-3">
-              {loadingActive ? (
+              {activeTab === "actuales" && loadingActive ? (
                 <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-600">
                   Cargando vehículos activos...
                 </div>
-              ) : !activeEntries.length ? (
+              ) : activeTab === "historial" && loadingHistory ? (
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-600">
+                  Cargando historial de vehículos...
+                </div>
+              ) : activeTab === "actuales" && !activeEntries.length ? (
                 <EmptyState
                   title="Sin vehículos activos"
-                  subtitle="Cuando registres ingresos, aparecerán aquí para controlar la salida."
+                  subtitle="Cuando registres ingresos, aparecerén aquí para controlar la salida."
+                />
+              ) : activeTab === "historial" && !historyEntries.length ? (
+                <EmptyState
+                  title="Sin historial de vehículos"
+                  subtitle="Todav?a no hay salidas registradas."
                 />
               ) : (
-                activeEntries.map((entry) => {
+                (activeTab === "actuales" ? activeEntries : historyEntries).map((entry) => {
                   const plate = entry?.vehicle?.plate || "-";
                   const ownerType = entry?.vehicle?.owner_type || "-";
                   const vehicleImage = buildStorageUrl(
@@ -759,6 +877,7 @@ function VehiclesPage() {
                   const unit =
                     entry?.vehicle?.apartment?.number || entry?.vehicle?.apartment_id || entry?.vehicle?.apartmentId || "-";
                   const createdAt = entry?.check_in_at || entry?.created_at || "";
+                  const checkoutAt = entry?.check_out_at || entry?.updated_at || "";
 
                   return (
                     <div
@@ -768,7 +887,7 @@ function VehiclesPage() {
                       <div className="flex items-center gap-3 min-w-0">
                         <PropertyLogo
                           src={vehicleImage}
-                          alt={`Vehículo ${plate}`}
+                          alt={`Veh?culo ${plate}`}
                           size={44}
                           variant="squircle"
                           className="shrink-0"
@@ -779,36 +898,56 @@ function VehiclesPage() {
                           <p className="truncate text-[11px] font-semibold text-slate-500">{`Tipo: ${ownerType} - Unidad: ${unit}`}</p>
                           {createdAt ? (
                             <p className="truncate text-[11px] font-semibold text-slate-400">
-                              {String(createdAt).slice(0, 19).replace("T", " ")}
+                              Entr?: {String(createdAt).slice(0, 19).replace("T", " ")}
+                            </p>
+                          ) : null}
+                          {activeTab === "historial" && checkoutAt ? (
+                            <p className="truncate text-[11px] font-semibold text-slate-400">
+                              Sali?: {String(checkoutAt).slice(0, 19).replace("T", " ")}
                             </p>
                           ) : null}
                         </div>
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={() => onCheckoutEntry(entry)}
-                        className="rounded-xl bg-rose-50 px-3 py-2 text-xs font-extrabold text-rose-700 border border-rose-200 hover:bg-rose-100 transition"
-                      >
-                        Registrar salida
-                      </button>
+                      {activeTab === "actuales" ? (
+                        <button
+                          type="button"
+                          onClick={() => onCheckoutEntry(entry)}
+                          className="rounded-xl bg-rose-50 px-3 py-2 text-xs font-extrabold text-rose-700 border border-rose-200 hover:bg-rose-100 transition"
+                        >
+                          Registrar salida
+                        </button>
+                      ) : (
+                        <span className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-extrabold text-emerald-700">
+                          Salida registrada
+                        </span>
+                      )}
                     </div>
                   );
                 })
               )}
             </div>
 
-            {activeEntriesPagination.lastPage > 1 ? (
+            {(activeTab === "actuales" ? activeEntriesPagination.lastPage : historyEntriesPagination.lastPage) > 1 ? (
               <div className="mt-6 flex flex-col items-center justify-between gap-3 border-t border-slate-100 pt-4 sm:flex-row">
                 <p className="text-xs font-semibold text-slate-500">
-                  Página {activeEntriesPagination.currentPage} de {activeEntriesPagination.lastPage}
+                  P?gina {activeTab === "actuales" ? activeEntriesPagination.currentPage : historyEntriesPagination.currentPage} de {activeTab === "actuales" ? activeEntriesPagination.lastPage : historyEntriesPagination.lastPage}
                 </p>
 
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    onClick={() => setActiveEntriesPage((prev) => Math.max(1, prev - 1))}
-                    disabled={loadingActive || activeEntriesPagination.currentPage <= 1}
+                    onClick={() =>
+                      activeTab === "actuales"
+                        ? setActiveEntriesPage((prev) => Math.max(1, prev - 1))
+                        : setHistoryEntriesPage((prev) => Math.max(1, prev - 1))
+                    }
+                    disabled={
+                      (activeTab === "actuales" ? loadingActive : loadingHistory) ||
+                      (activeTab === "actuales"
+                        ? activeEntriesPagination.currentPage <= 1
+                        : historyEntriesPagination.currentPage <= 1)
+                    }
                     className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     Anterior
@@ -816,9 +955,16 @@ function VehiclesPage() {
                   <button
                     type="button"
                     onClick={() =>
-                      setActiveEntriesPage((prev) => Math.min(activeEntriesPagination.lastPage, prev + 1))
+                      activeTab === "actuales"
+                        ? setActiveEntriesPage((prev) => Math.min(activeEntriesPagination.lastPage, prev + 1))
+                        : setHistoryEntriesPage((prev) => Math.min(historyEntriesPagination.lastPage, prev + 1))
                     }
-                    disabled={loadingActive || activeEntriesPagination.currentPage >= activeEntriesPagination.lastPage}
+                    disabled={
+                      (activeTab === "actuales" ? loadingActive : loadingHistory) ||
+                      (activeTab === "actuales"
+                        ? activeEntriesPagination.currentPage >= activeEntriesPagination.lastPage
+                        : historyEntriesPagination.currentPage >= historyEntriesPagination.lastPage)
+                    }
                     className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     Siguiente

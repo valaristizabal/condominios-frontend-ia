@@ -1,21 +1,23 @@
 import apiClient from "../../../services/apiClient";
 
-export async function getProducts(requestConfig, inventoryId) {
+export async function getProducts(requestConfig, inventoryId, options = {}) {
   const response = await apiClient.get("/products", {
     ...(requestConfig || {}),
     params: {
       inventory_id: inventoryId,
+      ...(options.isActive !== undefined ? { is_active: options.isActive ? 1 : 0 } : {}),
     },
   });
   return toRows(response.data);
 }
 
 
-export async function getProductsWithMovements(requestConfig, inventoryId, page = 1, perPage = 10) {
+export async function getProductsWithMovements(requestConfig, inventoryId, page = 1, perPage = 10, options = {}) {
   const response = await apiClient.get("/inventory/products-with-movements", {
     ...(requestConfig || {}),
     params: {
       inventory_id: inventoryId,
+      ...(options.isActive !== undefined ? { is_active: options.isActive ? 1 : 0 } : {}),
       page,
       per_page: perPage,
     },
@@ -76,8 +78,28 @@ export async function createProduct(payload, requestConfig) {
   return response.data;
 }
 
+export async function importProductsCsv(file, requestConfig) {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await apiClient.post("/products/import", formData, {
+    ...(requestConfig || {}),
+    headers: {
+      ...(requestConfig?.headers || {}),
+      "Content-Type": "multipart/form-data",
+    },
+  });
+
+  return response.data;
+}
+
 export async function updateProduct(productId, payload, requestConfig) {
   const response = await apiClient.put(`/products/${productId}`, payload, requestConfig);
+  return response.data;
+}
+
+export async function deleteProduct(productId, requestConfig) {
+  const response = await apiClient.delete(`/products/${productId}`, requestConfig);
   return response.data;
 }
 

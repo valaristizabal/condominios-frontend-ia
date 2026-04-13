@@ -3,6 +3,7 @@ import { Ban, Pencil, Trash } from "lucide-react";
 function ProductTable({
   products,
   onEdit,
+  onDelete,
   onDeactivate,
   saving = false,
   canEdit = true,
@@ -49,7 +50,7 @@ function ProductTable({
                     </span>
                   </td>
                   <td className="px-4 py-3 text-gray-700">{product.category || "-"}</td>
-                  <td className="px-4 py-3 text-gray-700">{product.location || "-"}</td>
+                  <td className="px-4 py-3 text-gray-700">{product.location || product.inventory?.name || "-"}</td>
                   <td className="px-4 py-3 text-gray-700">{product.supplier?.name || "-"}</td>
                   <td className="px-4 py-3 font-semibold text-gray-800">{product.stock_actual ?? product.stock ?? 0}</td>
                   <td className="px-4 py-3 font-semibold text-gray-800">{formatCurrency(product.unit_cost)}</td>
@@ -68,9 +69,17 @@ function ProductTable({
                         >
                           <Pencil className="h-4 w-4" />
                         </button>
-                        <button type="button" className="rounded-lg bg-gray-100 p-2" disabled>
-                          <Trash className="h-4 w-4" />
-                        </button>
+                        {product.type !== "asset" ? (
+                          <button
+                            type="button"
+                            className="rounded-lg bg-gray-100 p-2"
+                            disabled={!onDelete || saving}
+                            onClick={() => onDelete?.(product)}
+                            title="Desactivar producto"
+                          >
+                            <Trash className="h-4 w-4" />
+                          </button>
+                        ) : null}
                         {canDeactivate && product.type === "asset" && !product.dado_de_baja ? (
                           <button
                             type="button"
@@ -122,6 +131,10 @@ function ProductTable({
 }
 
 function resolveStockStatus(product) {
+  if (!product?.is_active) {
+    return { label: "Inactivo", className: "bg-slate-100 text-slate-700" };
+  }
+
   if (product?.type === "asset") {
     if (product?.dado_de_baja) {
       return { label: "INACTIVO", className: "bg-red-100 text-red-700" };
@@ -137,7 +150,7 @@ function resolveStockStatus(product) {
   if (stock <= minimum) {
     return { label: "Bajo", className: "bg-amber-100 text-amber-700" };
   }
-  return { label: "Correcto", className: "bg-emerald-100 text-emerald-700" };
+  return { label: "Activo", className: "bg-emerald-100 text-emerald-700" };
 }
 
 function formatCurrency(value) {

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import VisitFormModal from "../components/VisitFormModal";
 import VisitTable from "../components/VisitTable";
 import { useVisits } from "../hooks/useVisits";
@@ -16,9 +17,23 @@ function ActivityIcon({ className = "" }) {
 }
 
 export default function VisitsPage() {
-  const { unitTypes, apartments, visits, loading, registerVisit, checkout, currentPage, pagination, setCurrentPage } =
-    useVisits();
+  const {
+    unitTypes,
+    apartments,
+    activeVisits,
+    historyVisits,
+    loading,
+    registerVisit,
+    checkout,
+    activePage,
+    historyPage,
+    activePagination,
+    historyPagination,
+    setActivePage,
+    setHistoryPage,
+  } = useVisits();
   const { success, error } = useNotification();
+  const [activeTab, setActiveTab] = useState("actuales");
 
   const handleRegisterVisit = async (values) => {
     try {
@@ -63,18 +78,64 @@ export default function VisitsPage() {
           <div>
             <div className="mb-6 flex items-center gap-3">
               <ActivityIcon className="h-[18px] w-[18px] text-indigo-600" />
-              <h2 className="text-lg font-semibold text-slate-800">Visitantes en tiempo real</h2>
+              <h2 className="text-lg font-semibold text-slate-800">Visualizar visitantes</h2>
             </div>
 
-            <VisitTable
-              visits={visits}
-              onCheckout={handleCheckout}
-              loading={loading}
-              currentPage={currentPage}
-              totalPages={pagination.lastPage}
-              totalItems={pagination.total}
-              onPageChange={setCurrentPage}
-            />
+            <div className="mb-4 rounded-2xl bg-slate-100 p-2">
+              <div className="grid grid-cols-2 gap-2 text-xs font-semibold sm:text-sm">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("actuales")}
+                  className={[
+                    "rounded-xl py-2 transition",
+                    activeTab === "actuales" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:bg-white/60",
+                  ].join(" ")}
+                >
+                  Actuales
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("historial")}
+                  className={[
+                    "rounded-xl py-2 transition",
+                    activeTab === "historial" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:bg-white/60",
+                  ].join(" ")}
+                >
+                  Historial
+                </button>
+              </div>
+            </div>
+
+            {activeTab === "actuales" ? (
+              <VisitTable
+                visits={activeVisits}
+                onCheckout={handleCheckout}
+                loading={loading}
+                currentPage={activePage}
+                totalPages={activePagination.lastPage}
+                totalItems={activePagination.total}
+                onPageChange={setActivePage}
+                title="Visitantes actuales"
+                subtitle="Control en tiempo real"
+                description="Registra la salida para mantener el control del acceso."
+                emptyTitle="Sin visitantes activos"
+                emptyDescription="Cuando registres ingresos, apareceran aqui para controlar la salida."
+              />
+            ) : (
+              <VisitTable
+                visits={historyVisits}
+                loading={loading}
+                currentPage={historyPage}
+                totalPages={historyPagination.lastPage}
+                totalItems={historyPagination.total}
+                onPageChange={setHistoryPage}
+                title="Historial de visitantes"
+                subtitle="Registro de salidas"
+                description="Consulta las visitas finalizadas de la propiedad activa."
+                emptyTitle="Sin historial de visitantes"
+                emptyDescription="Todavia no hay salidas registradas."
+              />
+            )}
           </div>
         </div>
       </div>
