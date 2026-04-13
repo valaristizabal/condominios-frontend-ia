@@ -9,12 +9,22 @@ const ICON_OPTIONS = [
   { value: "Phone", label: "Telefono" },
 ];
 
-function EmergencyContactFormModal({ open, initialValues, loading, onCancel, onSubmit }) {
+function EmergencyContactFormModal({
+  open,
+  initialValues,
+  emergencyTypes = [],
+  existingContacts = [],
+  loading,
+  onCancel,
+  onSubmit,
+}) {
   const [name, setName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
+  const [emergencyTypeId, setEmergencyTypeId] = useState("");
   const [icon, setIcon] = useState("Shield");
   const [isActive, setIsActive] = useState(true);
   const [error, setError] = useState("");
+  const [warning, setWarning] = useState("");
 
   const isEditing = useMemo(() => Boolean(initialValues), [initialValues]);
 
@@ -23,10 +33,32 @@ function EmergencyContactFormModal({ open, initialValues, loading, onCancel, onS
 
     setName(initialValues?.name ?? "");
     setPhoneNumber(initialValues?.phone_number ?? "");
+    setEmergencyTypeId(initialValues?.emergency_type_id ? String(initialValues.emergency_type_id) : "");
     setIcon(initialValues?.icon ?? "Shield");
     setIsActive(typeof initialValues?.is_active === "boolean" ? Boolean(initialValues.is_active) : true);
     setError("");
+    setWarning("");
   }, [initialValues, open]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const normalizedPhone = phoneNumber.trim();
+    if (!normalizedPhone) {
+      setWarning("");
+      return;
+    }
+
+    const duplicateExists = existingContacts.some(
+      (item) =>
+        String(item?.id || "") !== String(initialValues?.id || "") &&
+        String(item?.phone_number || "").trim() === normalizedPhone
+    );
+
+    setWarning(
+      duplicateExists ? "Advertencia: este numero telefonico ya esta asociado a otro contacto de emergencia." : ""
+    );
+  }, [existingContacts, initialValues?.id, open, phoneNumber]);
 
   if (!open) return null;
 
@@ -43,7 +75,7 @@ function EmergencyContactFormModal({ open, initialValues, loading, onCancel, onS
     }
 
     if (!cleanPhone) {
-      setError("El número telefónico es obligatorio.");
+      setError("El numero telefonico es obligatorio.");
       return;
     }
 
@@ -51,6 +83,7 @@ function EmergencyContactFormModal({ open, initialValues, loading, onCancel, onS
       await onSubmit({
         name: cleanName,
         phone_number: cleanPhone,
+        emergency_type_id: emergencyTypeId ? Number(emergencyTypeId) : null,
         icon: icon || null,
         is_active: isActive,
       });
@@ -81,7 +114,7 @@ function EmergencyContactFormModal({ open, initialValues, loading, onCancel, onS
           </label>
 
           <label className="block">
-            <span className="mb-1.5 block text-sm font-semibold text-slate-700">Número telefónico</span>
+            <span className="mb-1.5 block text-sm font-semibold text-slate-700">Numero telefonico</span>
             <input
               value={phoneNumber}
               onChange={(event) => setPhoneNumber(event.target.value)}
@@ -90,6 +123,22 @@ function EmergencyContactFormModal({ open, initialValues, loading, onCancel, onS
               placeholder="Ej: 119"
               required
             />
+          </label>
+
+          <label className="block">
+            <span className="mb-1.5 block text-sm font-semibold text-slate-700">Tipo de emergencia asociado</span>
+            <select
+              value={emergencyTypeId}
+              onChange={(event) => setEmergencyTypeId(event.target.value)}
+              className="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+            >
+              <option value="">Sin asociar</option>
+              {emergencyTypes.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.name}
+                </option>
+              ))}
+            </select>
           </label>
 
           <label className="block">
@@ -119,6 +168,10 @@ function EmergencyContactFormModal({ open, initialValues, loading, onCancel, onS
 
           {error ? (
             <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
+          ) : null}
+
+          {warning ? (
+            <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">{warning}</p>
           ) : null}
 
           <div className="flex gap-3">
@@ -158,33 +211,12 @@ function normalizeApiError(err, fallbackMessage) {
   }
 
   const rawMessage = String(responseData?.message || err?.message || fallbackMessage || "");
-  const normalizedMessage = rawMessage.toLowerCase();
-
-  if (
-    normalizedMessage.includes("duplicate entry") ||
-    normalizedMessage.includes("integrity constraint violation") ||
-    normalizedMessage.includes("already exists")
-  ) {
-    const keyMatch = rawMessage.match(/for key ['"]?([^'"]+)['"]?/i);
-    const keyName = String(keyMatch?.[1] || "");
-    const normalizedKey = keyName.split(".").pop()?.replace(/_unique$/i, "") || "";
-    const fieldName = normalizedKey.split("_").filter(Boolean).pop() || "";
-    const fieldLabel = resolveFieldLabel(fieldName);
-
-    if (fieldLabel) {
-      return "Ya existe un registro con ese " + fieldLabel + ".";
-    }
-
-    return "Ya existe un registro con esos datos.";
-  }
-
   return rawMessage || fallbackMessage;
 }
 
 function translateValidationMessage(message) {
   const rawMessage = String(message || "");
   const trimmedMessage = rawMessage.trim();
-  const lowerMessage = trimmedMessage.toLowerCase();
 
   const takenMatch = trimmedMessage.match(/^the\s+(.+?)\s+has already been taken\.?$/i);
   if (takenMatch) {
@@ -202,14 +234,6 @@ function translateValidationMessage(message) {
       : "Este campo es obligatorio.";
   }
 
-  const emailMatch = trimmedMessage.match(/^the\s+(.+?)\s+must be a valid email address\.?$/i);
-  if (emailMatch) {
-    const fieldLabel = resolveFieldLabel(emailMatch[1]);
-    return fieldLabel
-      ? "El campo " + fieldLabel + " debe ser un correo valido."
-      : "Debes ingresar un correo valido.";
-  }
-
   return rawMessage;
 }
 
@@ -218,15 +242,8 @@ function resolveFieldLabel(fieldName) {
 
   const labels = {
     name: "nombre",
-    email: "correo",
-    phone: "telefono",
-    mobile: "telefono",
-    number: "numero",
-    code: "codigo",
-    asset_code: "codigo",
-    tower: "torre",
-    plate: "placa",
-    description: "descripcion",
+    phone_number: "numero telefonico",
+    emergency_type_id: "tipo de emergencia",
   };
 
   const cleanField = normalizedField.replace(/_/g, " ").trim();

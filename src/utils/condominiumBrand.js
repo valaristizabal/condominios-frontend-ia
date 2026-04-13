@@ -3,7 +3,7 @@ function getApiOrigin() {
   return String(baseUrl).replace(/\/api\/?$/, "");
 }
 
-function buildStorageUrl(path) {
+export function buildStorageUrl(path) {
   if (!path) return null;
   if (/^(https?:\/\/|data:image)/i.test(path)) return path;
   return `${getApiOrigin()}/storage/${String(path).replace(/^\/+/, "")}`;

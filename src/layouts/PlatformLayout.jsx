@@ -1,14 +1,12 @@
 import { NavLink } from "react-router-dom";
-import { Building2, LogOut } from "lucide-react";
-import { useAuthContext } from "../context/useAuthContext";
+import { Building2 } from "lucide-react";
+import UserMenu from "../components/common/UserMenu";
 
 const platformModules = [
   { to: "/condominiums", label: "Propiedades" },
 ];
 
 function PlatformLayout({ children }) {
-  const { logout } = useAuthContext();
-
   return (
     <div className="min-h-screen bg-white lg:grid lg:grid-cols-[320px_1fr]">
       <aside className="flex flex-col border-r border-slate-200 bg-white">
@@ -59,20 +57,16 @@ function PlatformLayout({ children }) {
             ))}
           </div>
         </nav>
-
-        <div className="border-t border-slate-200 px-5 py-4">
-          <button
-            type="button"
-            onClick={logout}
-            className="group flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
-          >
-            <LogOut className="h-4 w-4 text-slate-400 transition group-hover:text-slate-600" />
-            Cerrar sesión
-          </button>
-        </div>
       </aside>
 
-      <main className="bg-slate-50 p-4 lg:p-6">{children}</main>
+      <div className="flex min-h-screen flex-col bg-slate-50">
+        <header className="sticky top-0 z-40 border-b border-slate-200 bg-slate-50/95 px-4 py-4 backdrop-blur lg:px-6">
+          <div className="flex items-center justify-end gap-3">
+            <UserMenu />
+          </div>
+        </header>
+        <main className="flex-1 p-4 lg:p-6">{children}</main>
+      </div>
     </div>
   );
 }

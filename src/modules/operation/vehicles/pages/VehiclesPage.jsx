@@ -5,7 +5,9 @@ import { useActiveCondominium } from "../../../../context/useActiveCondominium";
 import apiClient from "../../../../services/apiClient";
 import BackButton from "../../../../components/common/BackButton";
 import ImageUploadPrompt from "../../../../components/common/ImageUploadPrompt";
+import PropertyLogo from "../../../../components/common/PropertyLogo";
 import { normalizeRoleName } from "../../../../utils/roles";
+import { buildStorageUrl } from "../../../../utils/condominiumBrand";
 import { useNotification } from "../../../../hooks/useNotification";
 
 const Card = ({ children, className = "" }) => (
@@ -26,6 +28,37 @@ const FieldLabel = ({ children }) => (
 
 const inputBase =
   "w-full h-12 rounded-2xl bg-white border border-slate-200 px-4 text-slate-900 outline-none focus:ring-2 focus:ring-blue-200";
+
+function toVehicleFormData(payload, includeMethodOverride = false) {
+  const formData = new FormData();
+
+  if (includeMethodOverride) {
+    formData.append("_method", "PUT");
+  }
+
+  Object.entries(payload || {}).forEach(([key, value]) => {
+    if (value === undefined) return;
+
+    if (value === null) {
+      formData.append(key, "");
+      return;
+    }
+
+    if (typeof File !== "undefined" && value instanceof File) {
+      formData.append(key, value);
+      return;
+    }
+
+    if (typeof value === "boolean") {
+      formData.append(key, value ? "1" : "0");
+      return;
+    }
+
+    formData.append(key, String(value));
+  });
+
+  return formData;
+}
 
 function SearchableSelect({
   value,
@@ -355,20 +388,36 @@ function VehiclesPage() {
       const vehiclesRes = await apiClient.get(`/vehicles?plate=${encodeURIComponent(plate)}`, requestConfig);
       const vehicles = Array.isArray(vehiclesRes.data) ? vehiclesRes.data : [];
       let vehicle = vehicles.find((row) => String(row?.plate || "").toUpperCase() === plate);
+      const baseVehiclePayload = {
+        vehicle_type_id: Number(payload.vehicleTypeId),
+        apartment_id: payload.apartmentId ? Number(payload.apartmentId) : null,
+        plate,
+        owner_type: ownerTypeMap[payload.tipoUsuario],
+        is_active: true,
+      };
+
+      const hasPhoto = typeof File !== "undefined" && payload.evidenceFile instanceof File;
 
       if (!vehicle) {
-        const newVehicleRes = await apiClient.post(
-          "/vehicles",
-          {
-            vehicle_type_id: Number(payload.vehicleTypeId),
-            apartment_id: payload.apartmentId ? Number(payload.apartmentId) : null,
-            plate,
-            owner_type: ownerTypeMap[payload.tipoUsuario],
-            is_active: true,
-          },
-          requestConfig
-        );
+        const createPayload = hasPhoto ? { ...baseVehiclePayload, photo: payload.evidenceFile } : baseVehiclePayload;
+        const newVehicleRes = hasPhoto
+          ? await apiClient.post("/vehicles", toVehicleFormData(createPayload), {
+              ...requestConfig,
+              headers: { ...(requestConfig?.headers || {}), "Content-Type": "multipart/form-data" },
+            })
+          : await apiClient.post("/vehicles", createPayload, requestConfig);
         vehicle = newVehicleRes.data;
+      } else if (hasPhoto) {
+        const updatePayload = {
+          ...baseVehiclePayload,
+          photo: payload.evidenceFile,
+        };
+
+        const updateVehicleRes = await apiClient.put(`/vehicles/${vehicle.id}`, toVehicleFormData(updatePayload), {
+          ...requestConfig,
+          headers: { ...(requestConfig?.headers || {}), "Content-Type": "multipart/form-data" },
+        });
+        vehicle = updateVehicleRes.data;
       }
 
       await apiClient.post(
@@ -407,7 +456,7 @@ function VehiclesPage() {
     setGlobalError("");
 
     try {
-      await registerEntryMutation.mutateAsync({ ...form, placa: plate });
+      await registerEntryMutation.mutateAsync({ ...form, placa: plate, evidenceFile });
       resetForm();
       success("Ingreso registrado correctamente.");
     } catch (err) {
@@ -694,6 +743,19 @@ function VehiclesPage() {
                 activeEntries.map((entry) => {
                   const plate = entry?.vehicle?.plate || "-";
                   const ownerType = entry?.vehicle?.owner_type || "-";
+                  const vehicleImage = buildStorageUrl(
+                    entry?.vehicle?.photo_path ||
+                      entry?.vehicle?.photoPath ||
+                      entry?.vehicle?.image_path ||
+                      entry?.vehicle?.imagePath ||
+                      entry?.vehicle?.image_url ||
+                      entry?.vehicle?.imageUrl ||
+                      entry?.vehicle?.photo_url ||
+                      entry?.vehicle?.photoUrl ||
+                      entry?.vehicle?.vehicleType?.image_url ||
+                      entry?.vehicle?.vehicleType?.imageUrl ||
+                      ""
+                  );
                   const unit =
                     entry?.vehicle?.apartment?.number || entry?.vehicle?.apartment_id || entry?.vehicle?.apartmentId || "-";
                   const createdAt = entry?.check_in_at || entry?.created_at || "";
@@ -704,9 +766,13 @@ function VehiclesPage() {
                       className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-4"
                     >
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className="h-11 w-11 rounded-2xl bg-slate-100 border border-slate-200 flex items-center justify-center">
-                          {"CAR"}
-                        </div>
+                        <PropertyLogo
+                          src={vehicleImage}
+                          alt={`Vehículo ${plate}`}
+                          size={44}
+                          variant="squircle"
+                          className="shrink-0"
+                        />
 
                         <div className="min-w-0">
                           <p className="truncate text-sm font-extrabold text-slate-900">{plate}</p>

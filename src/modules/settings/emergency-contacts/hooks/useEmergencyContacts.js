@@ -5,9 +5,11 @@ import apiClient from "../../../../services/apiClient";
 export function useEmergencyContacts() {
   const { activeCondominiumId } = useActiveCondominium();
   const [items, setItems] = useState([]);
+  const [emergencyTypes, setEmergencyTypes] = useState([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [warning, setWarning] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState({
     currentPage: 1,
@@ -29,11 +31,13 @@ export function useEmergencyContacts() {
   );
 
   const fetchEmergencyContacts = useCallback(
-    async ({ page = 1, query = "", status = "all" } = {}) => {
+    async ({ page = 1, query = "", status = "all", emergencyTypeId = "" } = {}) => {
       if (!activeCondominiumId) {
         setItems([]);
+        setEmergencyTypes([]);
         setLoading(false);
         setError("");
+        setWarning("");
         setCurrentPage(1);
         setPagination({
           currentPage: 1,
@@ -55,6 +59,7 @@ export function useEmergencyContacts() {
             per_page: 6,
             q: String(query || "").trim() || undefined,
             status: status || "all",
+            emergency_type_id: emergencyTypeId || undefined,
           },
         });
 
@@ -64,7 +69,7 @@ export function useEmergencyContacts() {
         const nextLastPage = Math.max(1, Number(payload?.last_page || 1));
 
         if (nextCurrentPage > nextLastPage) {
-          await fetchEmergencyContacts({ page: nextLastPage, query, status });
+          await fetchEmergencyContacts({ page: nextLastPage, query, status, emergencyTypeId });
           return;
         }
 
@@ -93,15 +98,31 @@ export function useEmergencyContacts() {
     [activeCondominiumId, requestConfig]
   );
 
+  const fetchEmergencyTypes = useCallback(async () => {
+    if (!activeCondominiumId) {
+      setEmergencyTypes([]);
+      return;
+    }
+
+    try {
+      const response = await apiClient.get("/emergency-types", requestConfig);
+      setEmergencyTypes(Array.isArray(response.data) ? response.data : []);
+    } catch (_err) {
+      setEmergencyTypes([]);
+    }
+  }, [activeCondominiumId, requestConfig]);
+
   const createEmergencyContact = useCallback(
-    async (payload, filters = { query: "", status: "all" }) => {
+    async (payload, filters = { query: "", status: "all", emergencyTypeId: "" }) => {
       setSaving(true);
       setError("");
+      setWarning("");
 
       try {
         const response = await apiClient.post("/emergency-contacts", payload, requestConfig);
         await fetchEmergencyContacts({ page: currentPage, ...filters });
-        return response.data;
+        setWarning(String(response?.data?.warning || ""));
+        return response.data?.data ?? response.data;
       } catch (err) {
         setError(normalizeApiError(err, "No fue posible crear el contacto de emergencia."));
         throw err;
@@ -113,14 +134,16 @@ export function useEmergencyContacts() {
   );
 
   const updateEmergencyContact = useCallback(
-    async (id, payload, filters = { query: "", status: "all" }) => {
+    async (id, payload, filters = { query: "", status: "all", emergencyTypeId: "" }) => {
       setSaving(true);
       setError("");
+      setWarning("");
 
       try {
         const response = await apiClient.put(`/emergency-contacts/${id}`, payload, requestConfig);
         await fetchEmergencyContacts({ page: currentPage, ...filters });
-        return response.data;
+        setWarning(String(response?.data?.warning || ""));
+        return response.data?.data ?? response.data;
       } catch (err) {
         setError(normalizeApiError(err, "No fue posible actualizar el contacto de emergencia."));
         throw err;
@@ -132,7 +155,7 @@ export function useEmergencyContacts() {
   );
 
   const toggleEmergencyContact = useCallback(
-    async (id, filters = { query: "", status: "all" }) => {
+    async (id, filters = { query: "", status: "all", emergencyTypeId: "" }) => {
       setSaving(true);
       setError("");
 
@@ -154,15 +177,18 @@ export function useEmergencyContacts() {
 
   return {
     emergencyContacts: items,
+    emergencyTypes,
     loading,
     saving,
     error,
+    warning,
     currentPage,
     pagination,
     hasTenantContext,
     activeCondominiumId,
     setCurrentPage,
     fetchEmergencyContacts,
+    fetchEmergencyTypes,
     createEmergencyContact,
     updateEmergencyContact,
     toggleEmergencyContact,

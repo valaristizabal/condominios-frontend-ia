@@ -17,6 +17,7 @@ import {
 import { ActiveCondominiumContext } from "../context/ActiveCondominiumContext";
 import { useAuthContext } from "../context/useAuthContext";
 import PropertyLogo from "../components/common/PropertyLogo";
+import UserMenu from "../components/common/UserMenu";
 import apiClient from "../services/apiClient";
 import { resolveCondominiumLogo } from "../utils/condominiumBrand";
 import { hasModuleAccess, isSuperUser } from "../utils/roles";
@@ -36,7 +37,7 @@ function getSidebarSections(basePath, permissions) {
         { label: "Ingreso de personal", to: resolvePath("/employee-entries"), enabled: permissions.employeeEntries },
         { label: "Correspondencia", to: resolvePath("/correspondence"), enabled: permissions.correspondences },
         { label: "Emergencias", to: resolvePath("/emergencies"), enabled: permissions.emergencies },
-        { label: "Aseo", to: resolvePath("/cleaning"), enabled: permissions.cleaning },
+        { label: "Aseo y mantenimiento", to: resolvePath("/cleaning"), enabled: permissions.cleaning },
         { label: "Inventario", to: resolvePath("/inventory"), enabled: permissions.inventory },
       ],
     },
@@ -162,7 +163,12 @@ function TenantLayout({ children }) {
         </button>
 
         <div className="flex min-h-screen flex-col bg-slate-50 lg:pl-80">
-          <main className="flex-1 p-4 pb-24 pt-20 lg:p-6 lg:pb-8 lg:pt-6">{children}</main>
+          <header className="sticky top-0 z-40 border-b border-slate-200 bg-slate-50/95 px-4 py-4 backdrop-blur lg:px-6">
+            <div className="flex items-center justify-end gap-3 pr-16 lg:pr-0">
+              <UserMenu />
+            </div>
+          </header>
+          <main className="flex-1 p-4 pb-24 pt-6 lg:p-6 lg:pb-8">{children}</main>
         </div>
       </div>
     </ActiveCondominiumContext.Provider>
@@ -293,7 +299,7 @@ function iconByLabel(label) {
     "Ingreso de personal": <UserCheck className={className} />,
     Correspondencia: <ClipboardList className={className} />,
     Emergencias: <Bell className={className} />,
-    Aseo: <Sparkles className={className} />,
+    "Aseo y mantenimiento": <Sparkles className={className} />,
     Inventario: <Package className={className} />,
     Ajustes: <Settings className={className} />,
   };

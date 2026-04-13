@@ -4,17 +4,29 @@ import { setAuthToken } from "../services/apiClient";
 import { AuthContext } from "./authContextInstance";
 
 export function AuthProvider({ children }) {
-  const { login: loginRequest, getMe } = useAuth();
+  const { login: loginRequest, logout: logoutRequest, getMe } = useAuth();
   const [token, setToken] = useState(() => localStorage.getItem("auth_token"));
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
 
-  const logout = useCallback(() => {
+  const clearSession = useCallback(() => {
     localStorage.removeItem("auth_token");
     setAuthToken(null);
     setToken(null);
     setUser(null);
   }, []);
+
+  const logout = useCallback(async () => {
+    try {
+      if (token) {
+        await logoutRequest();
+      }
+    } catch {
+      // Ignore API logout errors and clear local state to avoid a broken session.
+    } finally {
+      clearSession();
+    }
+  }, [clearSession, logoutRequest, token]);
 
   const login = useCallback(
     async (email, password) => {
@@ -54,7 +66,7 @@ export function AuthProvider({ children }) {
         }
       } catch {
         if (!cancelled) {
-          logout();
+          clearSession();
         }
       } finally {
         if (!cancelled) {
@@ -68,7 +80,7 @@ export function AuthProvider({ children }) {
     return () => {
       cancelled = true;
     };
-  }, [getMe, logout, token]);
+  }, [clearSession, getMe, token]);
 
   const value = useMemo(
     () => ({

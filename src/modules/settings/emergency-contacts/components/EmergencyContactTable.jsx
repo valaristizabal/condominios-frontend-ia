@@ -13,7 +13,8 @@ function EmergencyContactTable({ rows, busy, onEdit, onToggle }) {
         <thead className="bg-slate-50 text-left text-xs uppercase tracking-wider text-slate-500">
           <tr>
             <th className="px-4 py-3">Servicio</th>
-            <th className="px-4 py-3">Número</th>
+            <th className="px-4 py-3">Tipo</th>
+            <th className="px-4 py-3">Numero</th>
             <th className="px-4 py-3">Icono</th>
             <th className="px-4 py-3">Estado</th>
             <th className="px-4 py-3 text-right">Acciones</th>
@@ -23,6 +24,7 @@ function EmergencyContactTable({ rows, busy, onEdit, onToggle }) {
           {rows.map((item) => (
             <tr key={item.id} className="border-t border-slate-100">
               <td className="px-4 py-3 font-semibold text-slate-800">{item.name || "-"}</td>
+              <td className="px-4 py-3 text-slate-700">{item.emergency_type?.name || "-"}</td>
               <td className="px-4 py-3 text-slate-700">{item.phone_number || "-"}</td>
               <td className="px-4 py-3 text-slate-600">{item.icon || "-"}</td>
               <td className="px-4 py-3">

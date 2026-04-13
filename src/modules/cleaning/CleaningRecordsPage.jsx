@@ -71,7 +71,8 @@ function CleaningRecordsPage() {
       return;
     }
 
-    setSelectedRecordId(records[0].id);
+    const todayRecord = records.find((record) => isTodayCleaningRecord(record));
+    setSelectedRecordId(todayRecord?.id || null);
   }, [records, selectedRecordId]);
 
   const selectedRecord = useMemo(
@@ -389,6 +390,12 @@ function CleaningRecordsPage() {
               </div>
             )}
           </Card>
+        ) : hasTenantContext && !loading ? (
+          <Card>
+            <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-500">
+              No hay una limpieza creada para hoy. Crea el registro del día para iniciar el checklist en estado pendiente.
+            </div>
+          </Card>
         ) : null}
       </div>
     </div>
@@ -422,6 +429,15 @@ function resolveCleaningAreaName(record, areaNameById) {
   if (id === null || id === undefined) return "";
 
   return String(areaNameById?.get(String(id)) || "").trim();
+}
+
+function isTodayCleaningRecord(record) {
+  const cleaningDate = String(record?.cleaning_date || "").slice(0, 10);
+  if (!cleaningDate) return false;
+
+  const now = new Date();
+  const localToday = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+  return cleaningDate === localToday;
 }
 
 

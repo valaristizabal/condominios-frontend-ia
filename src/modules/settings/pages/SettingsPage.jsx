@@ -214,7 +214,7 @@ export default function SettingsPage() {
               onClick={() => navigate(`${basePath}/settings/emergency-types`)}
             />
             <ItemRow
-              title="Emergencias"
+              title="Contactos de emergencia"
               description="Configura contactos y números de emergencia por propiedad"
               onClick={() => navigate(`${basePath}/settings/emergency-contacts`)}
             />

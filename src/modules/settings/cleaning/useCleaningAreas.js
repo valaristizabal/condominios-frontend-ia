@@ -5,31 +5,22 @@ import apiClient from "../../../services/apiClient";
 export function useCleaningAreas() {
   const { activeCondominiumId } = useActiveCondominium();
   const [areas, setAreas] = useState([]);
+  const [operatives, setOperatives] = useState([]);
   const [schedules, setSchedules] = useState([]);
   const [checklistsByArea, setChecklistsByArea] = useState({});
   const [loading, setLoading] = useState(false);
   const [schedulesLoading, setSchedulesLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [scheduleSaving, setScheduleSaving] = useState(false);
   const [checklistLoading, setChecklistLoading] = useState(false);
   const [checklistSaving, setChecklistSaving] = useState(false);
   const [error, setError] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [pagination, setPagination] = useState({
-    currentPage: 1,
-    lastPage: 1,
-    perPage: 12,
-    total: 0,
-  });
+  const [pagination, setPagination] = useState({ currentPage: 1, lastPage: 1, perPage: 12, total: 0 });
 
   const requestConfig = useMemo(
     () =>
       activeCondominiumId
-        ? {
-            headers: {
-              "X-Active-Condominium-Id": String(activeCondominiumId),
-            },
-          }
+        ? { headers: { "X-Active-Condominium-Id": String(activeCondominiumId) } }
         : undefined,
     [activeCondominiumId]
   );
@@ -40,12 +31,7 @@ export function useCleaningAreas() {
         setAreas([]);
         setLoading(false);
         setCurrentPage(1);
-        setPagination({
-          currentPage: 1,
-          lastPage: 1,
-          perPage: 12,
-          total: 0,
-        });
+        setPagination({ currentPage: 1, lastPage: 1, perPage: 12, total: 0 });
         return;
       }
 
@@ -53,14 +39,7 @@ export function useCleaningAreas() {
       setError("");
 
       try {
-        const response = await apiClient.get("/cleaning-areas", {
-          ...(requestConfig || {}),
-          params: {
-            page,
-            per_page: 12,
-          },
-        });
-
+        const response = await apiClient.get("/cleaning-areas", { ...(requestConfig || {}), params: { page, per_page: 12 } });
         const payload = response?.data || {};
         const rows = Array.isArray(payload?.data) ? payload.data : [];
         const nextCurrentPage = Number(payload?.current_page || page || 1);
@@ -83,18 +62,28 @@ export function useCleaningAreas() {
         setError(normalizeApiError(err, "No fue posible cargar areas de aseo."));
         setAreas([]);
         setCurrentPage(1);
-        setPagination({
-          currentPage: 1,
-          lastPage: 1,
-          perPage: 12,
-          total: 0,
-        });
+        setPagination({ currentPage: 1, lastPage: 1, perPage: 12, total: 0 });
       } finally {
         setLoading(false);
       }
     },
     [activeCondominiumId, requestConfig]
   );
+
+  const fetchCleaningOperatives = useCallback(async () => {
+    if (!activeCondominiumId) {
+      setOperatives([]);
+      return;
+    }
+
+    try {
+      const response = await apiClient.get("/cleaning/bootstrap-data", requestConfig);
+      const rows = Array.isArray(response?.data?.operatives) ? response.data.operatives : [];
+      setOperatives(rows);
+    } catch (_err) {
+      setOperatives([]);
+    }
+  }, [activeCondominiumId, requestConfig]);
 
   const fetchCleaningSchedules = useCallback(async () => {
     if (!activeCondominiumId) {
@@ -120,7 +109,6 @@ export function useCleaningAreas() {
     async (payload) => {
       setSaving(true);
       setError("");
-
       try {
         const response = await apiClient.post("/cleaning-areas", payload, requestConfig);
         await fetchCleaningAreas({ page: currentPage });
@@ -139,7 +127,6 @@ export function useCleaningAreas() {
     async (id, payload) => {
       setSaving(true);
       setError("");
-
       try {
         const response = await apiClient.put(`/cleaning-areas/${id}`, payload, requestConfig);
         await fetchCleaningAreas({ page: currentPage });
@@ -158,7 +145,6 @@ export function useCleaningAreas() {
     async (id) => {
       setSaving(true);
       setError("");
-
       try {
         const response = await apiClient.patch(`/cleaning-areas/${id}/toggle`, {}, requestConfig);
         await fetchCleaningAreas({ page: currentPage });
@@ -177,14 +163,10 @@ export function useCleaningAreas() {
     async (areaId) => {
       setChecklistLoading(true);
       setError("");
-
       try {
         const response = await apiClient.get(`/cleaning-areas/${areaId}/checklist`, requestConfig);
         const items = Array.isArray(response.data) ? response.data : [];
-        setChecklistsByArea((prev) => ({
-          ...prev,
-          [areaId]: items,
-        }));
+        setChecklistsByArea((prev) => ({ ...prev, [areaId]: items }));
         return items;
       } catch (err) {
         setError(normalizeApiError(err, "No fue posible cargar el checklist del area."));
@@ -200,10 +182,9 @@ export function useCleaningAreas() {
     async (areaId, payload) => {
       setChecklistSaving(true);
       setError("");
-
       try {
         const response = await apiClient.post(`/cleaning-areas/${areaId}/checklist`, payload, requestConfig);
-        await fetchChecklistByArea(areaId);
+        await Promise.all([fetchChecklistByArea(areaId), fetchCleaningSchedules()]);
         return response.data;
       } catch (err) {
         setError(normalizeApiError(err, "No fue posible agregar el item de checklist."));
@@ -212,17 +193,34 @@ export function useCleaningAreas() {
         setChecklistSaving(false);
       }
     },
-    [fetchChecklistByArea, requestConfig]
+    [fetchChecklistByArea, fetchCleaningSchedules, requestConfig]
+  );
+
+  const updateChecklistItem = useCallback(
+    async (areaId, itemId, payload) => {
+      setChecklistSaving(true);
+      setError("");
+      try {
+        const response = await apiClient.put(`/cleaning-areas/${areaId}/checklist/${itemId}`, payload, requestConfig);
+        await Promise.all([fetchChecklistByArea(areaId), fetchCleaningSchedules()]);
+        return response.data;
+      } catch (err) {
+        setError(normalizeApiError(err, "No fue posible actualizar el item de checklist."));
+        throw err;
+      } finally {
+        setChecklistSaving(false);
+      }
+    },
+    [fetchChecklistByArea, fetchCleaningSchedules, requestConfig]
   );
 
   const removeChecklistItem = useCallback(
     async (areaId, itemId) => {
       setChecklistSaving(true);
       setError("");
-
       try {
         const response = await apiClient.delete(`/cleaning-areas/${areaId}/checklist/${itemId}`, requestConfig);
-        await fetchChecklistByArea(areaId);
+        await Promise.all([fetchChecklistByArea(areaId), fetchCleaningSchedules()]);
         return response.data;
       } catch (err) {
         setError(normalizeApiError(err, "No fue posible eliminar el item de checklist."));
@@ -231,64 +229,7 @@ export function useCleaningAreas() {
         setChecklistSaving(false);
       }
     },
-    [fetchChecklistByArea, requestConfig]
-  );
-
-  const createCleaningSchedule = useCallback(
-    async (payload) => {
-      setScheduleSaving(true);
-      setError("");
-
-      try {
-        const response = await apiClient.post("/cleaning-schedules", payload, requestConfig);
-        await fetchCleaningSchedules();
-        return response.data;
-      } catch (err) {
-        setError(normalizeApiError(err, "No fue posible crear la programacion de aseo."));
-        throw err;
-      } finally {
-        setScheduleSaving(false);
-      }
-    },
-    [fetchCleaningSchedules, requestConfig]
-  );
-
-  const updateCleaningSchedule = useCallback(
-    async (id, payload) => {
-      setScheduleSaving(true);
-      setError("");
-
-      try {
-        const response = await apiClient.put(`/cleaning-schedules/${id}`, payload, requestConfig);
-        await fetchCleaningSchedules();
-        return response.data;
-      } catch (err) {
-        setError(normalizeApiError(err, "No fue posible actualizar la programacion de aseo."));
-        throw err;
-      } finally {
-        setScheduleSaving(false);
-      }
-    },
-    [fetchCleaningSchedules, requestConfig]
-  );
-
-  const removeCleaningSchedule = useCallback(
-    async (id) => {
-      setScheduleSaving(true);
-      setError("");
-
-      try {
-        const response = await apiClient.delete(`/cleaning-schedules/${id}`, requestConfig);
-        await fetchCleaningSchedules();
-        return response.data;
-      } catch (err) {
-        setError(normalizeApiError(err, "No fue posible eliminar la programacion de aseo."));
-        throw err;
-      } finally {
-        setScheduleSaving(false);
-      }
-    },
-    [fetchCleaningSchedules, requestConfig]
+    [fetchChecklistByArea, fetchCleaningSchedules, requestConfig]
   );
 
   useEffect(() => {
@@ -299,35 +240,32 @@ export function useCleaningAreas() {
     fetchCleaningSchedules();
   }, [fetchCleaningSchedules]);
 
-  const hasTenantContext = useMemo(() => Boolean(activeCondominiumId), [activeCondominiumId]);
+  useEffect(() => {
+    fetchCleaningOperatives();
+  }, [fetchCleaningOperatives]);
 
   return {
     cleaningAreas: areas,
+    cleaningOperatives: operatives,
     cleaningSchedules: schedules,
     checklistsByArea,
     loading,
     schedulesLoading,
     saving,
-    scheduleSaving,
     checklistLoading,
     checklistSaving,
     error,
     currentPage,
     pagination,
-    hasTenantContext,
-    activeCondominiumId,
+    hasTenantContext: Boolean(activeCondominiumId),
     setCurrentPage,
-    fetchCleaningAreas,
     createCleaningArea,
     updateCleaningArea,
     toggleCleaningArea,
     fetchChecklistByArea,
     addChecklistItem,
+    updateChecklistItem,
     removeChecklistItem,
-    fetchCleaningSchedules,
-    createCleaningSchedule,
-    updateCleaningSchedule,
-    removeCleaningSchedule,
   };
 }
 
@@ -336,9 +274,7 @@ function normalizeApiError(err, fallbackMessage) {
   const errors = responseData?.errors;
 
   if (errors && typeof errors === "object") {
-    const firstFieldErrors = Object.values(errors).find(
-      (fieldErrors) => Array.isArray(fieldErrors) && fieldErrors.length > 0
-    );
+    const firstFieldErrors = Object.values(errors).find((fieldErrors) => Array.isArray(fieldErrors) && fieldErrors.length > 0);
     if (firstFieldErrors) {
       return String(firstFieldErrors[0]);
     }

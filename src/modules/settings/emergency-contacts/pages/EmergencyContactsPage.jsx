@@ -9,15 +9,18 @@ function EmergencyContactsPage() {
   const { success } = useNotification();
   const {
     emergencyContacts,
+    emergencyTypes,
     loading,
     saving,
     error,
+    warning,
     currentPage,
     pagination,
     hasTenantContext,
     activeCondominiumId,
     setCurrentPage,
     fetchEmergencyContacts,
+    fetchEmergencyTypes,
     createEmergencyContact,
     updateEmergencyContact,
     toggleEmergencyContact,
@@ -25,17 +28,23 @@ function EmergencyContactsPage() {
 
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("all");
+  const [emergencyTypeId, setEmergencyTypeId] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
 
   useEffect(() => {
     if (!activeCondominiumId) return;
-    fetchEmergencyContacts({ page: currentPage, query, status });
-  }, [activeCondominiumId, currentPage, fetchEmergencyContacts, query, status]);
+    fetchEmergencyContacts({ page: currentPage, query, status, emergencyTypeId });
+  }, [activeCondominiumId, currentPage, emergencyTypeId, fetchEmergencyContacts, query, status]);
+
+  useEffect(() => {
+    if (!activeCondominiumId) return;
+    fetchEmergencyTypes();
+  }, [activeCondominiumId, fetchEmergencyTypes]);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [query, status, activeCondominiumId, setCurrentPage]);
+  }, [query, status, emergencyTypeId, activeCondominiumId, setCurrentPage]);
 
   const openCreate = () => {
     setEditing(null);
@@ -54,7 +63,7 @@ function EmergencyContactsPage() {
   };
 
   const handleSubmit = async (payload) => {
-    const filters = { query, status };
+    const filters = { query, status, emergencyTypeId };
     if (editing) {
       await updateEmergencyContact(editing.id, payload, filters);
       success("Contacto de emergencia actualizado correctamente.");
@@ -66,7 +75,7 @@ function EmergencyContactsPage() {
   };
 
   const handleToggle = async (item) => {
-    await toggleEmergencyContact(item.id, { query, status });
+    await toggleEmergencyContact(item.id, { query, status, emergencyTypeId });
     success(item.is_active ? "Contacto de emergencia desactivado correctamente." : "Contacto de emergencia activado correctamente.");
   };
 
@@ -99,6 +108,10 @@ function EmergencyContactsPage() {
         <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>
       ) : null}
 
+      {warning ? (
+        <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">{warning}</p>
+      ) : null}
+
       <section className="mb-4 grid grid-cols-1 gap-3 rounded-xl border border-slate-200 bg-white p-4 sm:grid-cols-3">
         <Field label="Buscar" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Nombre o numero" />
 
@@ -110,6 +123,16 @@ function EmergencyContactsPage() {
             { value: "all", label: "Todos" },
             { value: "active", label: "Activos" },
             { value: "inactive", label: "Inactivos" },
+          ]}
+        />
+
+        <Select
+          label="Tipo de emergencia"
+          value={emergencyTypeId}
+          onChange={(event) => setEmergencyTypeId(event.target.value)}
+          options={[
+            { value: "", label: "Todos" },
+            ...emergencyTypes.map((item) => ({ value: String(item.id), label: item.name })),
           ]}
         />
       </section>
@@ -153,6 +176,8 @@ function EmergencyContactsPage() {
           key={editing ? `edit-ec-${editing.id}` : "create-ec"}
           open={modalOpen}
           initialValues={editing}
+          emergencyTypes={emergencyTypes}
+          existingContacts={emergencyContacts}
           loading={saving}
           onCancel={closeModal}
           onSubmit={handleSubmit}

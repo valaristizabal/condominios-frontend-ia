@@ -21,7 +21,7 @@ function SectionTitle({ icon, title }) {
   );
 }
 
-function EmergencyContactCard({ icon, title, phoneNumber }) {
+function EmergencyContactCard({ icon, title, phoneNumber, emergencyType }) {
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
       <div className="flex items-start gap-3">
@@ -29,6 +29,7 @@ function EmergencyContactCard({ icon, title, phoneNumber }) {
         <div className="min-w-0 flex-1">
           <p className="truncate text-xs font-bold uppercase tracking-widest text-slate-500">{title}</p>
           <p className="truncate text-base font-extrabold text-slate-900">{phoneNumber}</p>
+          {emergencyType ? <p className="mt-1 truncate text-xs font-semibold text-slate-500">{emergencyType}</p> : null}
         </div>
       </div>
 
@@ -249,6 +250,7 @@ export default function EmergenciesPage() {
                     icon={resolveEmergencyIcon(contact.icon)}
                     title={contact.name || "Servicio"}
                     phoneNumber={contact.phone_number || "-"}
+                    emergencyType={contact.emergency_type?.name || ""}
                   />
                 ))
               ) : (

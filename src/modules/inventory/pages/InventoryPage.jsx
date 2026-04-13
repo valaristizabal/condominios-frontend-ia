@@ -292,6 +292,14 @@ function InventoryPage({ allowProductManagement = false, showOperationTools = tr
   const savingProduct = createProductMutation.isPending || updateProductMutation.isPending;
   const isEditing = Boolean(editingProductId);
   const canManageProducts = allowProductManagement && canAccessInventorySettings(user);
+  const missingProductDependencies = useMemo(() => {
+    const missing = [];
+    if (inventories.length === 0) missing.push("ubicaciones");
+    if (categories.length === 0) missing.push("categorias");
+    if (suppliers.length === 0) missing.push("proveedores");
+    return missing;
+  }, [categories.length, inventories.length, suppliers.length]);
+  const canCreateProducts = canManageProducts && missingProductDependencies.length === 0;
 
   const stats = useMemo(() => {
     const consumables = products.filter((p) => p.type !== "asset").length;
@@ -398,6 +406,13 @@ function InventoryPage({ allowProductManagement = false, showOperationTools = tr
   };
 
   const handleSaveProduct = async () => {
+    if (missingProductDependencies.length > 0) {
+      const message = `Antes de crear productos debes configurar: ${missingProductDependencies.join(", ")}.`;
+      setError(message);
+      warning(message);
+      return;
+    }
+
     if (!productForm.name.trim()) {
       warning("El nombre del producto es obligatorio.");
       return;
@@ -482,7 +497,7 @@ function InventoryPage({ allowProductManagement = false, showOperationTools = tr
             type="button"
             onClick={openCreateProduct}
             className="rounded-2xl bg-blue-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-blue-700"
-            disabled={!resolvedCondominiumId || !selectedInventoryId}
+            disabled={!resolvedCondominiumId || !selectedInventoryId || !canCreateProducts}
           >
             <PlusCircle className="mr-2 inline h-5 w-5" />
             Añadir producto
@@ -515,11 +530,17 @@ function InventoryPage({ allowProductManagement = false, showOperationTools = tr
         </div>
       ) : null}
 
+      {canManageProducts && missingProductDependencies.length > 0 ? (
+        <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700">
+          Antes de crear productos debes configurar: {missingProductDependencies.join(", ")}.
+        </div>
+      ) : null}
+
       {error ? (
         <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">{error}</div>
       ) : null}
 
-      {showAddProduct && canManageProducts ? (
+      {showAddProduct && canCreateProducts ? (
         <section className="mt-6 rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
           <h2 className="text-xl font-bold text-gray-800">{isEditing ? "Editar producto" : "Nuevo producto"}</h2>
           <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">

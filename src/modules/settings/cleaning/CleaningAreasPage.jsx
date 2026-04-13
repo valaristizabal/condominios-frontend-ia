@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { PlusCircle } from "lucide-react";
 import BackButton from "../../../components/common/BackButton";
 import { useNotification } from "../../../hooks/useNotification";
@@ -24,6 +24,12 @@ const WEEK_DAYS = [
   { value: 0, label: "Domingo" },
 ];
 
+const STATUS_OPTIONS = [
+  { value: "pending", label: "Pendiente" },
+  { value: "in_progress", label: "En proceso" },
+  { value: "completed", label: "Completada" },
+];
+
 const Label = ({ children }) => <label className="text-sm font-semibold text-slate-700">{children}</label>;
 
 const Badge = ({ active }) => (
@@ -36,30 +42,28 @@ const Badge = ({ active }) => (
   </span>
 );
 
-const todayISO = () => {
-  const d = new Date();
-  return d.toISOString().split("T")[0];
-};
+const todayISO = () => new Date().toISOString().split("T")[0];
 
-const defaultTaskSchedule = {
-  enabled: true,
+const defaultTaskDraft = {
+  item_name: "",
+  assigned_user_id: "",
   frequency_type: "weekly",
   repeat_interval: 1,
   days_of_week: [1],
   start_date: todayISO(),
   end_date: "",
-  is_active: true,
+  status: "pending",
 };
 
 function CleaningAreasPage() {
   const { success: notifySuccess } = useNotification();
   const {
     cleaningAreas,
+    cleaningOperatives,
     cleaningSchedules,
     checklistsByArea,
     loading,
     saving,
-    scheduleSaving,
     checklistSaving,
     error,
     currentPage,
@@ -71,9 +75,8 @@ function CleaningAreasPage() {
     toggleCleaningArea,
     fetchChecklistByArea,
     addChecklistItem,
+    updateChecklistItem,
     removeChecklistItem,
-    createCleaningSchedule,
-    removeCleaningSchedule,
   } = useCleaningAreas();
 
   const [newAreaName, setNewAreaName] = useState("");
@@ -81,15 +84,12 @@ function CleaningAreasPage() {
   const [editingAreaId, setEditingAreaId] = useState(null);
   const [editingName, setEditingName] = useState("");
   const [checklistAreaId, setChecklistAreaId] = useState(null);
-  const [newTaskTextByArea, setNewTaskTextByArea] = useState({});
-  const [taskScheduleByArea, setTaskScheduleByArea] = useState({});
+  const [newTaskByArea, setNewTaskByArea] = useState({});
+  const [editingTaskByArea, setEditingTaskByArea] = useState({});
   const [localError, setLocalError] = useState("");
   const newAreaInputRef = useRef(null);
 
-  const checklist = useMemo(() => {
-    if (!checklistAreaId) return [];
-    return checklistsByArea[checklistAreaId] || [];
-  }, [checklistAreaId, checklistsByArea]);
+  const checklist = useMemo(() => (checklistAreaId ? checklistsByArea[checklistAreaId] || [] : []), [checklistAreaId, checklistsByArea]);
 
   const linkedScheduleByChecklistItemId = useMemo(() => {
     const scheduleMap = {};
@@ -97,21 +97,47 @@ function CleaningAreasPage() {
 
     (cleaningSchedules || []).forEach((schedule) => {
       if (Number(schedule.cleaning_area_id) !== Number(checklistAreaId)) return;
-      const description = String(schedule.description || "");
-      const match = description.match(pattern);
+      const match = String(schedule.description || "").match(pattern);
       if (!match) return;
-      const checklistItemId = Number(match[1]);
-      if (!Number.isFinite(checklistItemId)) return;
-      scheduleMap[checklistItemId] = schedule;
+      scheduleMap[Number(match[1])] = schedule;
     });
 
     return scheduleMap;
-  }, [cleaningSchedules, checklistAreaId]);
+  }, [checklistAreaId, cleaningSchedules]);
+
+  const operativeOptions = useMemo(
+    () =>
+      (cleaningOperatives || [])
+        .filter((operative) => operative?.user_id || operative?.user?.id)
+        .map((operative) => ({
+          value: String(operative.user_id || operative.user?.id),
+          label: operative.user?.full_name || operative.full_name || operative.position || "Operario",
+        })),
+    [cleaningOperatives]
+  );
 
   useEffect(() => {
     if (!checklistAreaId) return;
     fetchChecklistByArea(checklistAreaId).catch(() => undefined);
   }, [checklistAreaId, fetchChecklistByArea]);
+
+  const setTaskDraftField = (areaId, field, value, editing = false) => {
+    const setter = editing ? setEditingTaskByArea : setNewTaskByArea;
+    setter((prev) => ({
+      ...prev,
+      [areaId]: {
+        ...(prev[areaId] || defaultTaskDraft),
+        [field]: value,
+      },
+    }));
+  };
+
+  const toggleTaskDay = (areaId, dayValue, editing = false) => {
+    const current = (editing ? editingTaskByArea[areaId] : newTaskByArea[areaId]) || defaultTaskDraft;
+    const days = Array.isArray(current.days_of_week) ? current.days_of_week : [];
+    const nextDays = days.includes(dayValue) ? days.filter((day) => day !== dayValue) : [...days, dayValue];
+    setTaskDraftField(areaId, "days_of_week", nextDays.sort((a, b) => a - b), editing);
+  };
 
   const onCreateArea = async () => {
     const cleanName = String(newAreaName || "").trim();
@@ -125,124 +151,140 @@ function CleaningAreasPage() {
       setShowCreateAreaForm(false);
       notifySuccess("Area creada correctamente.");
     } catch (err) {
-      setLocalError(normalizeApiError(err, "No fue posible crear el Área."));
+      setLocalError(normalizeApiError(err, "No fue posible crear el área."));
     }
   };
 
-  const startEdit = (area) => {
+  const startEditArea = (area) => {
     setEditingAreaId(area.id);
     setEditingName(area.name || "");
     setLocalError("");
   };
 
-  const cancelEdit = () => {
+  const cancelEditArea = () => {
     setEditingAreaId(null);
     setEditingName("");
   };
 
-  const saveEdit = async () => {
+  const saveEditArea = async () => {
     if (!editingAreaId || !String(editingName || "").trim()) return;
 
     setLocalError("");
 
     try {
-      await updateCleaningArea(editingAreaId, {
-        name: String(editingName).trim(),
-      });
-      cancelEdit();
+      await updateCleaningArea(editingAreaId, { name: String(editingName).trim() });
+      cancelEditArea();
       notifySuccess("Area actualizada correctamente.");
     } catch (err) {
-      setLocalError(normalizeApiError(err, "No fue posible actualizar el Área."));
+      setLocalError(normalizeApiError(err, "No fue posible actualizar el área."));
     }
   };
 
-  const onToggleActive = async (area) => {
+  const onToggleArea = async (area) => {
     setLocalError("");
 
     try {
       await toggleCleaningArea(area.id);
       notifySuccess(area.is_active ? "Area desactivada correctamente." : "Area activada correctamente.");
     } catch (err) {
-      setLocalError(normalizeApiError(err, "No fue posible cambiar estado del Área."));
+      setLocalError(normalizeApiError(err, "No fue posible cambiar estado del área."));
     }
   };
 
-  const openChecklist = async (areaId) => {
+  const openChecklist = (areaId) => {
     if (checklistAreaId === areaId) {
       setChecklistAreaId(null);
       return;
     }
 
     setChecklistAreaId(areaId);
-    setTaskScheduleByArea((prev) => ({
+    setNewTaskByArea((prev) => ({
       ...prev,
-      [areaId]: prev[areaId] || defaultTaskSchedule,
+      [areaId]: prev[areaId] || defaultTaskDraft,
     }));
-  };
-
-  const setTaskScheduleField = (areaId, field, value) => {
-    setTaskScheduleByArea((prev) => ({
-      ...prev,
-      [areaId]: {
-        ...(prev[areaId] || defaultTaskSchedule),
-        [field]: value,
-      },
-    }));
-  };
-
-  const toggleTaskScheduleDay = (areaId, dayValue) => {
-    const current = taskScheduleByArea[areaId] || defaultTaskSchedule;
-    const exists = current.days_of_week.includes(dayValue);
-    const nextDays = exists
-      ? current.days_of_week.filter((day) => day !== dayValue)
-      : [...current.days_of_week, dayValue];
-
-    setTaskScheduleField(
-      areaId,
-      "days_of_week",
-      nextDays.sort((a, b) => a - b)
-    );
   };
 
   const addTask = async (areaId) => {
-    const cleanTask = String(newTaskTextByArea[areaId] || "").trim();
-    if (!cleanTask) return;
-
-    const scheduleConfig = taskScheduleByArea[areaId] || defaultTaskSchedule;
-
-    if (scheduleConfig.enabled && !scheduleConfig.start_date) {
-      setLocalError("Debes seleccionar fecha de inicio para programar la tarea.");
+    const draft = newTaskByArea[areaId] || defaultTaskDraft;
+    if (!String(draft.item_name || "").trim()) {
+      setLocalError("Debes ingresar el nombre de la tarea.");
       return;
     }
-
-    if (scheduleConfig.enabled && scheduleConfig.frequency_type === "weekly" && !scheduleConfig.days_of_week.length) {
-      setLocalError("Debes seleccionar al menos un dÍa para frecuencia semanal.");
+    if (!draft.start_date) {
+      setLocalError("Debes seleccionar fecha de inicio.");
+      return;
+    }
+    if (draft.frequency_type === "weekly" && !(draft.days_of_week || []).length) {
+      setLocalError("Debes seleccionar al menos un día para frecuencia semanal.");
       return;
     }
 
     setLocalError("");
 
     try {
-      const createdTask = await addChecklistItem(areaId, { item_name: cleanTask });
-
-      if (scheduleConfig.enabled) {
-        await createCleaningSchedule({
-          cleaning_area_id: Number(areaId),
-          name: cleanTask,
-          description: `[checklist_item:${createdTask?.id}]`,
-          frequency_type: scheduleConfig.frequency_type,
-          repeat_interval: Number(scheduleConfig.repeat_interval || 1),
-          days_of_week: scheduleConfig.frequency_type === "weekly" ? scheduleConfig.days_of_week : null,
-          start_date: scheduleConfig.start_date,
-          end_date: scheduleConfig.end_date || null,
-          is_active: Boolean(scheduleConfig.is_active),
-        });
-      }
-
-      setNewTaskTextByArea((prev) => ({ ...prev, [areaId]: "" }));
+      await addChecklistItem(areaId, {
+        item_name: String(draft.item_name).trim(),
+        assigned_user_id: draft.assigned_user_id ? Number(draft.assigned_user_id) : null,
+        frequency_type: draft.frequency_type,
+        repeat_interval: Number(draft.repeat_interval || 1),
+        days_of_week: draft.frequency_type === "weekly" ? draft.days_of_week : null,
+        start_date: draft.start_date,
+        end_date: draft.end_date || null,
+        status: draft.status,
+      });
+      setNewTaskByArea((prev) => ({ ...prev, [areaId]: defaultTaskDraft }));
       notifySuccess("Tarea agregada al checklist.");
     } catch (err) {
       setLocalError(normalizeApiError(err, "No fue posible agregar tarea."));
+    }
+  };
+
+  const startEditTask = (areaId, item) => {
+    setEditingTaskByArea((prev) => ({
+      ...prev,
+      [areaId]: {
+        id: item.id,
+        item_name: item.item_name || "",
+        assigned_user_id: item.assigned_user_id ? String(item.assigned_user_id) : "",
+        frequency_type: item.frequency_type || "weekly",
+        repeat_interval: item.repeat_interval || 1,
+        days_of_week: Array.isArray(item.days_of_week) ? item.days_of_week : [1],
+        start_date: item.start_date || todayISO(),
+        end_date: item.end_date || "",
+        status: item.status || "pending",
+      },
+    }));
+  };
+
+  const cancelEditTask = (areaId) => {
+    setEditingTaskByArea((prev) => {
+      const next = { ...prev };
+      delete next[areaId];
+      return next;
+    });
+  };
+
+  const saveEditTask = async (areaId) => {
+    const draft = editingTaskByArea[areaId];
+    if (!draft?.id || !String(draft.item_name || "").trim()) return;
+
+    setLocalError("");
+
+    try {
+      await updateChecklistItem(areaId, draft.id, {
+        item_name: String(draft.item_name).trim(),
+        assigned_user_id: draft.assigned_user_id ? Number(draft.assigned_user_id) : null,
+        frequency_type: draft.frequency_type,
+        repeat_interval: Number(draft.repeat_interval || 1),
+        days_of_week: draft.frequency_type === "weekly" ? draft.days_of_week : null,
+        start_date: draft.start_date,
+        end_date: draft.end_date || null,
+        status: draft.status,
+      });
+      cancelEditTask(areaId);
+      notifySuccess("Tarea actualizada correctamente.");
+    } catch (err) {
+      setLocalError(normalizeApiError(err, "No fue posible actualizar tarea."));
     }
   };
 
@@ -250,26 +292,11 @@ function CleaningAreasPage() {
     setLocalError("");
 
     try {
-      const linkedSchedule = linkedScheduleByChecklistItemId[taskId];
-      if (linkedSchedule?.id) {
-        await removeCleaningSchedule(linkedSchedule.id);
-      }
-
       await removeChecklistItem(areaId, taskId);
       notifySuccess("Tarea eliminada del checklist.");
     } catch (err) {
       setLocalError(normalizeApiError(err, "No fue posible eliminar tarea."));
     }
-  };
-
-  const frequencyLabelByValue = useMemo(
-    () => Object.fromEntries(FREQUENCY_OPTIONS.map((item) => [item.value, item.label])),
-    []
-  );
-
-  const handleShowCreateAreaForm = () => {
-    setShowCreateAreaForm(true);
-    window.setTimeout(() => newAreaInputRef.current?.focus(), 0);
   };
 
   return (
@@ -284,7 +311,10 @@ function CleaningAreasPage() {
         </div>
         <button
           type="button"
-          onClick={handleShowCreateAreaForm}
+          onClick={() => {
+            setShowCreateAreaForm(true);
+            window.setTimeout(() => newAreaInputRef.current?.focus(), 0);
+          }}
           className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-indigo-700 disabled:opacity-70"
           disabled={!hasTenantContext || saving || showCreateAreaForm}
         >
@@ -303,7 +333,6 @@ function CleaningAreasPage() {
           {localError || error}
         </p>
       ) : null}
-
 
       {showCreateAreaForm ? (
         <section className="mb-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
@@ -363,15 +392,15 @@ function CleaningAreasPage() {
         ) : (
           <div className="divide-y divide-slate-100">
             {cleaningAreas.map((area) => {
-              const isEditing = editingAreaId === area.id;
-              const currentTaskText = newTaskTextByArea[area.id] || "";
-              const scheduleConfig = taskScheduleByArea[area.id] || defaultTaskSchedule;
+              const isEditingArea = editingAreaId === area.id;
+              const newTaskDraft = newTaskByArea[area.id] || defaultTaskDraft;
+              const editingTask = editingTaskByArea[area.id] || null;
 
               return (
                 <article key={area.id} className="py-4 first:pt-0 last:pb-0">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
-                      {isEditing ? (
+                      {isEditingArea ? (
                         <div className="space-y-2">
                           <Label>Nombre</Label>
                           <input
@@ -383,7 +412,7 @@ function CleaningAreasPage() {
                           <div className="flex flex-wrap gap-2">
                             <button
                               type="button"
-                              onClick={saveEdit}
+                              onClick={saveEditArea}
                               disabled={saving}
                               className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-bold text-white hover:bg-indigo-700 disabled:opacity-70"
                             >
@@ -391,7 +420,7 @@ function CleaningAreasPage() {
                             </button>
                             <button
                               type="button"
-                              onClick={cancelEdit}
+                              onClick={cancelEditArea}
                               disabled={saving}
                               className="rounded-lg bg-slate-100 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-200 disabled:opacity-70"
                             >
@@ -407,7 +436,7 @@ function CleaningAreasPage() {
                       )}
                     </div>
 
-                    {!isEditing ? (
+                    {!isEditingArea ? (
                       <div className="flex flex-wrap gap-2">
                         <button
                           type="button"
@@ -419,7 +448,7 @@ function CleaningAreasPage() {
                         </button>
                         <button
                           type="button"
-                          onClick={() => startEdit(area)}
+                          onClick={() => startEditArea(area)}
                           disabled={saving}
                           className="rounded-lg bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 disabled:opacity-60"
                         >
@@ -427,7 +456,7 @@ function CleaningAreasPage() {
                         </button>
                         <button
                           type="button"
-                          onClick={() => onToggleActive(area)}
+                          onClick={() => onToggleArea(area)}
                           disabled={saving}
                           className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200 disabled:opacity-60"
                         >
@@ -437,153 +466,91 @@ function CleaningAreasPage() {
                     ) : null}
                   </div>
 
-                  {!isEditing && checklistAreaId === area.id ? (
+                  {!isEditingArea && checklistAreaId === area.id ? (
                     <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3 sm:p-4">
                       {!checklist.length ? (
                         <p className="mb-3 text-sm text-slate-500">No hay tareas configuradas.</p>
                       ) : null}
 
                       {checklist.map((item) => {
+                        const isEditingTask = editingTask?.id === item.id;
                         const linkedSchedule = linkedScheduleByChecklistItemId[item.id];
+
                         return (
                           <div key={item.id} className="mb-2 rounded-lg border border-slate-200 bg-white p-3 last:mb-0">
-                            <div className="flex flex-wrap items-center justify-between gap-2">
-                              <span className="text-sm text-slate-800">{item.item_name}</span>
-                              <button
-                                type="button"
-                                onClick={() => deleteTask(area.id, item.id)}
-                                disabled={checklistSaving || scheduleSaving}
-                                className="rounded-lg bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700 hover:bg-red-100 disabled:opacity-70"
-                              >
-                                Eliminar
-                              </button>
-                            </div>
-
-                            {linkedSchedule ? (
-                              <p className="mt-2 text-xs text-slate-500">
-                                Programada:{" "}
-                                {frequencyLabelByValue[linkedSchedule.frequency_type] || linkedSchedule.frequency_type}
-                                {Number(linkedSchedule.repeat_interval || 1) > 1
-                                  ? ` (cada ${linkedSchedule.repeat_interval})`
-                                  : ""}
-                                {" - "}
-                                {linkedSchedule.start_date}
-                                {linkedSchedule.end_date ? ` al ${linkedSchedule.end_date}` : ""}
-                              </p>
+                            {isEditingTask ? (
+                              <TaskEditor
+                                draft={editingTask}
+                                operativeOptions={operativeOptions}
+                                onFieldChange={(field, value) => setTaskDraftField(area.id, field, value, true)}
+                                onToggleDay={(day) => toggleTaskDay(area.id, day, true)}
+                                onSave={() => saveEditTask(area.id)}
+                                onCancel={() => cancelEditTask(area.id)}
+                                busy={checklistSaving}
+                              />
                             ) : (
-                              <p className="mt-2 text-xs text-amber-600">Sin programación (solo manual).</p>
+                              <>
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                  <div>
+                                    <p className="text-sm font-semibold text-slate-800">{item.item_name}</p>
+                                    <p className="mt-1 text-xs text-slate-500">
+                                      Responsable: {item.assigned_user?.full_name || "Sin asignar"} | Estado: {statusLabel(item.status)}
+                                    </p>
+                                  </div>
+                                  <div className="flex flex-wrap gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => startEditTask(area.id, item)}
+                                      disabled={checklistSaving}
+                                      className="rounded-lg bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 disabled:opacity-70"
+                                    >
+                                      Editar
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => deleteTask(area.id, item.id)}
+                                      disabled={checklistSaving}
+                                      className="rounded-lg bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700 hover:bg-red-100 disabled:opacity-70"
+                                    >
+                                      Eliminar
+                                    </button>
+                                  </div>
+                                </div>
+
+                                <p className="mt-2 text-xs text-slate-500">
+                                  Programada: {frequencyLabel(item.frequency_type)}
+                                  {Number(item.repeat_interval || 1) > 1 ? ` (cada ${item.repeat_interval})` : ""}
+                                  {" - "}
+                                  {item.start_date || "-"}
+                                  {item.end_date ? ` al ${item.end_date}` : ""}
+                                </p>
+                                <p className="mt-1 text-xs text-slate-500">
+                                  Última ejecución:{" "}
+                                  {item.last_executed_at
+                                    ? `${formatDateTime(item.last_executed_at)} por ${item.last_executed_by?.full_name || "sistema"}`
+                                    : "Sin ejecuciones registradas"}
+                                </p>
+                                {linkedSchedule ? (
+                                  <p className="mt-1 text-[11px] text-slate-400">Calendario sincronizado #{linkedSchedule.id}</p>
+                                ) : null}
+                              </>
                             )}
                           </div>
                         );
                       })}
 
                       <div className="mt-3 space-y-3 rounded-xl border border-blue-100 bg-blue-50/40 p-3">
-                        <p className="text-sm font-extrabold text-blue-700">Nueva tarea + calendario</p>
-
-                        <input
-                          className={inputBase}
-                          value={currentTaskText}
-                          onChange={(event) =>
-                            setNewTaskTextByArea((prev) => ({
-                              ...prev,
-                              [area.id]: event.target.value,
-                            }))
-                          }
-                          placeholder="Nueva tarea..."
-                          disabled={checklistSaving || scheduleSaving}
+                        <p className="text-sm font-extrabold text-blue-700">Nueva tarea</p>
+                        <TaskEditor
+                          draft={newTaskDraft}
+                          operativeOptions={operativeOptions}
+                          onFieldChange={(field, value) => setTaskDraftField(area.id, field, value)}
+                          onToggleDay={(day) => toggleTaskDay(area.id, day)}
+                          onSave={() => addTask(area.id)}
+                          onCancel={() => setNewTaskByArea((prev) => ({ ...prev, [area.id]: defaultTaskDraft }))}
+                          busy={checklistSaving}
+                          createMode
                         />
-
-                        <label className="inline-flex items-center gap-2 text-sm font-semibold text-slate-700">
-                          <input
-                            type="checkbox"
-                            checked={Boolean(scheduleConfig.enabled)}
-                            onChange={(event) => setTaskScheduleField(area.id, "enabled", event.target.checked)}
-                            className="h-4 w-4 accent-indigo-600"
-                            disabled={checklistSaving || scheduleSaving}
-                          />
-                          Programar con calendario
-                        </label>
-
-                        {scheduleConfig.enabled ? (
-                          <>
-                            <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
-                              <select
-                                className={inputBase}
-                                value={scheduleConfig.frequency_type}
-                                onChange={(event) => setTaskScheduleField(area.id, "frequency_type", event.target.value)}
-                                disabled={checklistSaving || scheduleSaving}
-                              >
-                                {FREQUENCY_OPTIONS.map((option) => (
-                                  <option key={option.value} value={option.value}>
-                                    {option.label}
-                                  </option>
-                                ))}
-                              </select>
-
-                              <input
-                                type="number"
-                                min="1"
-                                max="365"
-                                className={inputBase}
-                                value={scheduleConfig.repeat_interval}
-                                onChange={(event) => setTaskScheduleField(area.id, "repeat_interval", event.target.value)}
-                                disabled={checklistSaving || scheduleSaving}
-                              />
-                            </div>
-
-                            {scheduleConfig.frequency_type === "weekly" ? (
-                              <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
-                                {WEEK_DAYS.map((day) => {
-                                  const checked = scheduleConfig.days_of_week.includes(day.value);
-                                  return (
-                                    <button
-                                      key={day.value}
-                                      type="button"
-                                      onClick={() => toggleTaskScheduleDay(area.id, day.value)}
-                                      className={[
-                                        "rounded-lg px-3 py-2 text-xs font-bold transition",
-                                        checked
-                                          ? "border border-indigo-600 bg-indigo-600 text-white"
-                                          : "border border-slate-300 bg-white text-slate-700 hover:border-indigo-400",
-                                      ].join(" ")}
-                                      disabled={checklistSaving || scheduleSaving}
-                                    >
-                                      {day.label}
-                                    </button>
-                                  );
-                                })}
-                              </div>
-                            ) : null}
-
-                            <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
-                              <input
-                                type="date"
-                                className={inputBase}
-                                value={scheduleConfig.start_date}
-                                onChange={(event) => setTaskScheduleField(area.id, "start_date", event.target.value)}
-                                disabled={checklistSaving || scheduleSaving}
-                              />
-
-                              <input
-                                type="date"
-                                className={inputBase}
-                                value={scheduleConfig.end_date}
-                                onChange={(event) => setTaskScheduleField(area.id, "end_date", event.target.value)}
-                                disabled={checklistSaving || scheduleSaving}
-                              />
-                            </div>
-                          </>
-                        ) : null}
-
-                        <button
-                          type="button"
-                          onClick={() => addTask(area.id)}
-                          disabled={checklistSaving || scheduleSaving}
-                          className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-indigo-700 disabled:opacity-70 sm:w-auto"
-                        >
-                          <PlusCircle className="h-4 w-4" />
-                          Crear tarea
-                        </button>
                       </div>
                     </div>
                   ) : null}
@@ -623,6 +590,141 @@ function CleaningAreasPage() {
   );
 }
 
+function TaskEditor({ draft, operativeOptions, onFieldChange, onToggleDay, onSave, onCancel, busy, createMode = false }) {
+  return (
+    <div className="space-y-3">
+      <input
+        className={inputBase}
+        value={draft.item_name || ""}
+        onChange={(event) => onFieldChange("item_name", event.target.value)}
+        placeholder="Nombre de la tarea"
+        disabled={busy}
+      />
+      <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+        <select
+          className={inputBase}
+          value={draft.assigned_user_id || ""}
+          onChange={(event) => onFieldChange("assigned_user_id", event.target.value)}
+          disabled={busy}
+        >
+          <option value="">Sin responsable</option>
+          {operativeOptions.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+        <select
+          className={inputBase}
+          value={draft.status || "pending"}
+          onChange={(event) => onFieldChange("status", event.target.value)}
+          disabled={busy}
+        >
+          {STATUS_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+        <select
+          className={inputBase}
+          value={draft.frequency_type || "weekly"}
+          onChange={(event) => onFieldChange("frequency_type", event.target.value)}
+          disabled={busy}
+        >
+          {FREQUENCY_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+        <input
+          type="number"
+          min="1"
+          max="365"
+          className={inputBase}
+          value={draft.repeat_interval || 1}
+          onChange={(event) => onFieldChange("repeat_interval", event.target.value)}
+          disabled={busy}
+        />
+      </div>
+      {draft.frequency_type === "weekly" ? (
+        <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+          {WEEK_DAYS.map((day) => {
+            const checked = (draft.days_of_week || []).includes(day.value);
+            return (
+              <button
+                key={day.value}
+                type="button"
+                onClick={() => onToggleDay(day.value)}
+                className={[
+                  "rounded-lg px-3 py-2 text-xs font-bold transition",
+                  checked
+                    ? "border border-indigo-600 bg-indigo-600 text-white"
+                    : "border border-slate-300 bg-white text-slate-700 hover:border-indigo-400",
+                ].join(" ")}
+                disabled={busy}
+              >
+                {day.label}
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+      <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+        <input
+          type="date"
+          className={inputBase}
+          value={draft.start_date || ""}
+          onChange={(event) => onFieldChange("start_date", event.target.value)}
+          disabled={busy}
+        />
+        <input
+          type="date"
+          className={inputBase}
+          value={draft.end_date || ""}
+          onChange={(event) => onFieldChange("end_date", event.target.value)}
+          disabled={busy}
+        />
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={onSave}
+          disabled={busy}
+          className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-bold text-white hover:bg-indigo-700 disabled:opacity-70"
+        >
+          {createMode ? "Crear tarea" : "Guardar tarea"}
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          disabled={busy}
+          className="rounded-lg bg-slate-100 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-200 disabled:opacity-70"
+        >
+          Cancelar
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function frequencyLabel(value) {
+  return FREQUENCY_OPTIONS.find((item) => item.value === value)?.label || value || "-";
+}
+
+function statusLabel(value) {
+  return STATUS_OPTIONS.find((item) => item.value === value)?.label || value || "-";
+}
+
+function formatDateTime(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString("es-CO");
+}
+
 function normalizeApiError(err, fallbackMessage) {
   const responseData = err?.response?.data;
   const errors = responseData?.errors;
@@ -640,4 +742,3 @@ function normalizeApiError(err, fallbackMessage) {
 }
 
 export default CleaningAreasPage;
-

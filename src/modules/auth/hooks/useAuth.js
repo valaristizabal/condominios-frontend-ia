@@ -7,10 +7,15 @@ export function useAuth() {
     return response.data;
   }, []);
 
+  const logout = useCallback(async () => {
+    const response = await apiClient.post("/logout");
+    return response.data;
+  }, []);
+
   const getMe = useCallback(async () => {
     const response = await apiClient.get("/me");
     return response.data;
   }, []);
 
-  return { login, getMe };
+  return { login, logout, getMe };
 }
