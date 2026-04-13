@@ -5,6 +5,7 @@ import CorrespondenceTable from "../components/CorrespondenceTable";
 import DeliveryModal from "../components/DeliveryModal";
 import { useCorrespondence } from "../hooks/useCorrespondence";
 import { useNotification } from "../../../../hooks/useNotification";
+import { normalizeRoleName } from "../../../../utils/roles";
 
 const Title = ({ children }) => (
   <h1 className="mt-2 text-2xl font-extrabold text-slate-900 leading-tight">
@@ -17,6 +18,7 @@ export default function CorrespondencePage() {
   const {
     apartments,
     residents,
+    operatives,
     correspondences,
     currentPage,
     pagination,
@@ -55,6 +57,7 @@ export default function CorrespondencePage() {
     unitId: "",
     packageType: "documento",
     receiverType: "seguridad",
+    securityUserId: "",
     receiverName: "",
     notes: "",
   });
@@ -133,12 +136,26 @@ export default function CorrespondencePage() {
     [residents]
   );
 
+  const securityUserOptions = useMemo(
+    () =>
+      (operatives || [])
+        .filter((operative) => isSecurityOperative(operative))
+        .map((operative) => operative?.user)
+        .filter((user) => user?.id)
+        .map((user) => ({
+          value: String(user.id),
+          label: user.full_name || "Sin nombre",
+        })),
+    [operatives]
+  );
+
   const canSubmit =
     form.courier &&
     (form.courier !== "Otro" || String(form.courierOther || "").trim()) &&
     form.unitTypeId &&
     form.unitId &&
-    form.packageType;
+    form.packageType &&
+    form.securityUserId;
 
   const onPickPhoto = (file) => {
     setPhotoFile(file || null);
@@ -216,6 +233,7 @@ export default function CorrespondencePage() {
         courier_company: resolvedCourierCompany,
         package_type: form.packageType,
         apartment_id: Number(form.unitId),
+        received_by_id: Number(form.securityUserId),
         evidence_photo: photoFile,
         digital_signature: form.receiverType === "dueno" ? signatureDataUrl || null : null,
         deliver_immediately: form.receiverType === "dueno",
@@ -228,6 +246,7 @@ export default function CorrespondencePage() {
         unitId: "",
         packageType: "documento",
         receiverType: "seguridad",
+        securityUserId: "",
         receiverName: "",
         notes: "",
       });
@@ -332,6 +351,11 @@ export default function CorrespondencePage() {
                 setSignatureDataUrl("");
               }
             }}
+            securityUsers={securityUserOptions}
+            onSecurityUserChange={(value) => {
+              setForm((prev) => ({ ...prev, securityUserId: String(value) }));
+              clearFieldError("received_by_id");
+            }}
             onSubmit={handleSubmit}
             onSignatureChange={(nextValue) => {
               setSignatureDataUrl(nextValue || "");
@@ -376,6 +400,18 @@ export default function CorrespondencePage() {
         clearFieldError={clearDeliveryFieldError}
       />
     </div>
+  );
+}
+
+function isSecurityOperative(operative) {
+  const roleName = normalizeRoleName(operative?.role?.name || "");
+  const positionName = normalizeRoleName(operative?.position || "");
+  const searchable = `${roleName} ${positionName}`.trim();
+
+  return (
+    searchable.includes("seguridad") ||
+    searchable.includes("vigilante") ||
+    searchable.includes("porteria")
   );
 }
 

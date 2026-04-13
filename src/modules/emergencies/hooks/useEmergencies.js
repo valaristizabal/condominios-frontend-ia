@@ -7,7 +7,15 @@ export function useEmergencies() {
   const [emergencies, setEmergencies] = useState([]);
   const [emergencyTypes, setEmergencyTypes] = useState([]);
   const [areas, setAreas] = useState([]);
+  const [apartments, setApartments] = useState([]);
   const [emergencyContacts, setEmergencyContacts] = useState([]);
+  const [emergenciesPage, setEmergenciesPage] = useState(1);
+  const [emergenciesPagination, setEmergenciesPagination] = useState({
+    currentPage: 1,
+    lastPage: 1,
+    perPage: 10,
+    total: 0,
+  });
   const [contactsPage, setContactsPage] = useState(1);
   const [contactsPagination, setContactsPagination] = useState({
     currentPage: 1,
@@ -65,6 +73,21 @@ export function useEmergencies() {
     }
   }, [activeCondominiumId, requestConfig]);
 
+  const fetchApartments = useCallback(async () => {
+    if (!activeCondominiumId) {
+      setApartments([]);
+      return;
+    }
+
+    try {
+      const rows = await loadAllRows("/apartments", requestConfig);
+      setApartments(rows);
+    } catch (err) {
+      setError(normalizeApiError(err, "No fue posible cargar las unidades."));
+      setApartments([]);
+    }
+  }, [activeCondominiumId, requestConfig]);
+
   const fetchEmergencyContacts = useCallback(async (page = contactsPage) => {
     if (!activeCondominiumId) {
       setEmergencyContacts([]);
@@ -118,9 +141,15 @@ export function useEmergencies() {
     }
   }, [activeCondominiumId, contactsPage, requestConfig]);
 
-  const fetchEmergencies = useCallback(async () => {
+  const fetchEmergencies = useCallback(async (page = emergenciesPage) => {
     if (!activeCondominiumId) {
       setEmergencies([]);
+      setEmergenciesPagination({
+        currentPage: 1,
+        lastPage: 1,
+        perPage: 10,
+        total: 0,
+      });
       setLoading(false);
       return;
     }
@@ -129,15 +158,36 @@ export function useEmergencies() {
     setError("");
 
     try {
-      const response = await apiClient.get("/emergencies", requestConfig);
-      setEmergencies(Array.isArray(response.data) ? response.data : []);
+      const response = await apiClient.get("/emergencies", {
+        ...(requestConfig || {}),
+        params: {
+          page,
+          per_page: 10,
+        },
+      });
+      const payload = response?.data || {};
+      const rows = Array.isArray(payload?.data) ? payload.data : [];
+      setEmergencies(rows);
+      setEmergenciesPagination({
+        currentPage: Number(payload?.current_page || page || 1),
+        lastPage: Math.max(1, Number(payload?.last_page || 1)),
+        perPage: Number(payload?.per_page || 10),
+        total: Number(payload?.total || rows.length),
+      });
+      setEmergenciesPage(Number(payload?.current_page || page || 1));
     } catch (err) {
       setError(normalizeApiError(err, "No fue posible cargar emergencias."));
       setEmergencies([]);
+      setEmergenciesPagination({
+        currentPage: 1,
+        lastPage: 1,
+        perPage: 10,
+        total: 0,
+      });
     } finally {
       setLoading(false);
     }
-  }, [activeCondominiumId, requestConfig]);
+  }, [activeCondominiumId, emergenciesPage, requestConfig]);
 
   const createEmergency = useCallback(
     async (payload) => {
@@ -147,7 +197,7 @@ export function useEmergencies() {
 
       try {
         const response = await apiClient.post("/emergencies", payload, requestConfig);
-        await fetchEmergencies();
+        await fetchEmergencies(1);
         return response.data;
       } catch (err) {
         setFieldErrors(extractFieldErrors(err));
@@ -168,7 +218,7 @@ export function useEmergencies() {
 
       try {
         await apiClient.patch(`/emergencies/${id}/progress`, {}, requestConfig);
-        await fetchEmergencies();
+        await fetchEmergencies(emergenciesPage);
       } catch (err) {
         setError(normalizeApiError(err, "No fue posible actualizar la emergencia."));
         throw err;
@@ -176,7 +226,7 @@ export function useEmergencies() {
         setActingIds((prev) => ({ ...prev, [id]: false }));
       }
     },
-    [fetchEmergencies, requestConfig]
+    [emergenciesPage, fetchEmergencies, requestConfig]
   );
 
   const closeEmergency = useCallback(
@@ -187,7 +237,7 @@ export function useEmergencies() {
 
       try {
         await apiClient.patch(`/emergencies/${id}/close`, {}, requestConfig);
-        await fetchEmergencies();
+        await fetchEmergencies(emergenciesPage);
       } catch (err) {
         setError(normalizeApiError(err, "No fue posible cerrar la emergencia."));
         throw err;
@@ -195,7 +245,7 @@ export function useEmergencies() {
         setActingIds((prev) => ({ ...prev, [id]: false }));
       }
     },
-    [fetchEmergencies, requestConfig]
+    [emergenciesPage, fetchEmergencies, requestConfig]
   );
 
   const clearFieldError = useCallback((field) => {
@@ -210,8 +260,12 @@ export function useEmergencies() {
   useEffect(() => {
     fetchEmergencyTypes();
     fetchAreas();
-    fetchEmergencies();
-  }, [fetchEmergencyTypes, fetchAreas, fetchEmergencies]);
+    fetchApartments();
+  }, [fetchEmergencyTypes, fetchAreas, fetchApartments]);
+
+  useEffect(() => {
+    fetchEmergencies(emergenciesPage);
+  }, [emergenciesPage, fetchEmergencies]);
 
   useEffect(() => {
     fetchEmergencyContacts(contactsPage);
@@ -221,7 +275,10 @@ export function useEmergencies() {
     emergencies,
     emergencyTypes,
     areas,
+    apartments,
     emergencyContacts,
+    emergenciesPage,
+    emergenciesPagination,
     contactsPage,
     contactsPagination,
     loading,
@@ -231,12 +288,37 @@ export function useEmergencies() {
     fieldErrors,
     activeCondominiumId,
     fetchEmergencies,
+    setEmergenciesPage,
     setContactsPage,
     createEmergency,
     markInProgress,
     closeEmergency,
     clearFieldError,
   };
+}
+
+async function loadAllRows(endpoint, requestConfig) {
+  const rows = [];
+  let page = 1;
+  let lastPage = 1;
+
+  do {
+    const response = await apiClient.get(endpoint, {
+      ...(requestConfig || {}),
+      params: {
+        page,
+        per_page: 10,
+      },
+    });
+
+    const payload = response?.data || {};
+    const pageRows = Array.isArray(payload?.data) ? payload.data : Array.isArray(payload) ? payload : [];
+    rows.push(...pageRows);
+    lastPage = Math.max(1, Number(payload?.last_page || 1));
+    page += 1;
+  } while (page <= lastPage);
+
+  return rows;
 }
 
 function extractFieldErrors(err) {

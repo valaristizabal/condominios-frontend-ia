@@ -160,6 +160,7 @@ export default function CorrespondenceFormModal({
   apartments = [],
   unitTypes = [],
   couriers = [],
+  securityUsers = [],
   form,
   fileRef,
   photoPreview,
@@ -175,6 +176,7 @@ export default function CorrespondenceFormModal({
   onClearPhoto,
   onPackageTypeChange,
   onReceiverTypeChange,
+  onSecurityUserChange,
   onSubmit,
   onSignatureChange,
   signatureValue = "",
@@ -432,6 +434,18 @@ export default function CorrespondenceFormModal({
             />
             <FieldError message={fieldErrors.apartment_id} />
           </div>
+        </div>
+
+        <div>
+          <Label>Persona en turno</Label>
+          <SearchableSelect
+            value={form.securityUserId}
+            options={securityUsers}
+            placeholder="Seleccione responsable"
+            searchPlaceholder="Buscar vigilante..."
+            onChange={onSecurityUserChange}
+          />
+          <FieldError message={fieldErrors.received_by_id} />
         </div>
 
         <div>

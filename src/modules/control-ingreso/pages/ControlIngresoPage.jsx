@@ -55,6 +55,8 @@ function Segmented({ value, onChange }) {
 
 function RowItem({ name, role, place, time, status = "active" }) {
   const isActive = status === "active";
+  const isCancelled = status === "cancelled";
+  const statusLabel = isActive ? time : isCancelled ? "Cancelado" : time;
 
   return (
     <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-3 py-3">
@@ -70,10 +72,14 @@ function RowItem({ name, role, place, time, status = "active" }) {
       <span
         className={[
           "rounded-xl px-3 py-1 text-xs font-extrabold",
-          isActive ? "bg-emerald-50 text-emerald-700" : "bg-slate-200 text-slate-700",
+          isActive
+            ? "bg-emerald-50 text-emerald-700"
+            : isCancelled
+              ? "bg-rose-50 text-rose-700"
+              : "bg-slate-200 text-slate-700",
         ].join(" ")}
       >
-        {time}
+        {statusLabel}
       </span>
     </div>
   );
@@ -289,6 +295,7 @@ export default function ControlIngresoPage() {
           observations: observations.trim() || null,
         });
         setObservations("");
+        setSelectedId("");
         success("Ingreso registrado correctamente.");
       }
     } catch (requestError) {
@@ -519,8 +526,8 @@ export default function ControlIngresoPage() {
                             name={resolveEntryName(entry)}
                             role={resolveEntryRole(entry)}
                             place={resolveEntryPlace(entry)}
-                            time={formatDateTime(entry?.check_out_at)}
-                            status="completed"
+                            time={formatDateTime(entry?.check_out_at || entry?.updated_at)}
+                            status={entry?.status === "cancelled" ? "cancelled" : "completed"}
                           />
                         ))}
                         {historyEntriesPagination.lastPage > 1 ? (

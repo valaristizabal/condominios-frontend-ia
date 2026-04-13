@@ -6,6 +6,7 @@ export function useCorrespondence() {
   const { activeCondominiumId } = useActiveCondominium();
   const [apartments, setApartments] = useState([]);
   const [residents, setResidents] = useState([]);
+  const [operatives, setOperatives] = useState([]);
   const [items, setItems] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState({
@@ -76,6 +77,7 @@ export function useCorrespondence() {
     if (!activeCondominiumId) {
       setApartments([]);
       setResidents([]);
+      setOperatives([]);
       setItems([]);
       setPagination({
         currentPage: 1,
@@ -95,10 +97,12 @@ export function useCorrespondence() {
 
       setApartments(Array.isArray(payload?.apartments) ? payload.apartments : []);
       setResidents(Array.isArray(payload?.residents) ? payload.residents : []);
+      setOperatives(Array.isArray(payload?.operatives) ? payload.operatives : []);
     } catch (err) {
       setError(normalizeApiError(err, "No fue posible cargar correspondencia."));
       setApartments([]);
       setResidents([]);
+      setOperatives([]);
       setItems([]);
       setPagination({
         currentPage: 1,
@@ -130,6 +134,9 @@ export function useCorrespondence() {
         }
         if (payload.resident_receiver_id) {
           formData.append("resident_receiver_id", String(payload.resident_receiver_id));
+        }
+        if (payload.received_by_id) {
+          formData.append("received_by_id", String(payload.received_by_id));
         }
         if (payload.deliver_immediately) {
           formData.append("deliver_immediately", "1");
@@ -230,6 +237,7 @@ export function useCorrespondence() {
   return {
     apartments,
     residents,
+    operatives,
     correspondences: items,
     currentPage,
     pagination,

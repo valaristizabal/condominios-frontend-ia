@@ -79,7 +79,8 @@ export default function SearchableSelect({
                 <button
                   key={String(option.value)}
                   type="button"
-                  onClick={() => {
+                  onMouseDown={(event) => {
+                    event.preventDefault();
                     onChange?.(option.value);
                     setOpen(false);
                   }}

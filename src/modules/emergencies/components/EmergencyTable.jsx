@@ -1,4 +1,15 @@
-function EmergencyTable({ rows = [], loading = false, actingIds = {}, onProgress, onClose, onRefresh }) {
+function EmergencyTable({
+  rows = [],
+  loading = false,
+  actingIds = {},
+  onProgress,
+  onClose,
+  onRefresh,
+  currentPage = 1,
+  totalPages = 1,
+  totalItems = 0,
+  onPageChange,
+}) {
   if (loading) {
     return (
       <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-slate-500">
@@ -6,6 +17,9 @@ function EmergencyTable({ rows = [], loading = false, actingIds = {}, onProgress
       </div>
     );
   }
+
+  const canGoPrev = currentPage > 1;
+  const canGoNext = currentPage < totalPages;
 
   return (
     <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -26,22 +40,28 @@ function EmergencyTable({ rows = [], loading = false, actingIds = {}, onProgress
         <table className="min-w-full text-sm">
           <thead className="bg-slate-50 text-left text-xs uppercase tracking-wider text-slate-500">
             <tr>
-              <th className="px-4 py-3">Tipo de emergencia</th>
-              <th className="px-4 py-3">Ubicacion</th>
               <th className="px-4 py-3">Fecha</th>
+              <th className="px-4 py-3">Tipo de emergencia</th>
+              <th className="px-4 py-3">Descripcion</th>
+              <th className="px-4 py-3">Ubicacion</th>
+              <th className="px-4 py-3">Unidad</th>
               <th className="px-4 py-3">Estado</th>
-              <th className="px-4 py-3 text-right">Acción</th>
+              <th className="px-4 py-3 text-right">Accion</th>
             </tr>
           </thead>
           <tbody>
             {rows.map((item) => (
-              <tr key={item.id} className="border-t border-slate-100">
+              <tr key={item.id} className="border-t border-slate-100 align-top">
+                <td className="px-4 py-3 text-slate-700">{formatDate(item.event_date)}</td>
                 <td className="px-4 py-3 text-slate-800">
                   <p className="font-semibold">{item?.emergency_type?.name || item?.emergencyType?.name || "-"}</p>
                   <p className="text-xs text-slate-500">{item.event_type || "-"}</p>
                 </td>
+                <td className="px-4 py-3 text-slate-700">
+                  <p className="max-w-[260px] whitespace-pre-wrap break-words">{item.description || "-"}</p>
+                </td>
                 <td className="px-4 py-3 text-slate-700">{item.event_location || "-"}</td>
-                <td className="px-4 py-3 text-slate-700">{formatDate(item.event_date)}</td>
+                <td className="px-4 py-3 text-slate-700">{formatApartment(item.apartment)}</td>
                 <td className="px-4 py-3">
                   <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${statusBadgeClass(item.status)}`}>
                     {statusLabel(item.status)}
@@ -79,6 +99,32 @@ function EmergencyTable({ rows = [], loading = false, actingIds = {}, onProgress
           </tbody>
         </table>
       )}
+
+      {totalPages > 1 ? (
+        <div className="flex items-center justify-between border-t border-slate-200 px-4 py-3">
+          <p className="text-xs font-semibold text-slate-500">
+            Pagina {currentPage} de {totalPages} ({totalItems} registros)
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => canGoPrev && onPageChange?.(currentPage - 1)}
+              disabled={!canGoPrev}
+              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Anterior
+            </button>
+            <button
+              type="button"
+              onClick={() => canGoNext && onPageChange?.(currentPage + 1)}
+              disabled={!canGoNext}
+              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Siguiente
+            </button>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -111,6 +157,15 @@ function statusBadgeClass(status) {
   if (normalized === "IN_PROGRESS") return "bg-amber-100 text-amber-700";
   if (normalized === "CLOSED") return "bg-emerald-100 text-emerald-700";
   return "bg-slate-100 text-slate-700";
+}
+
+function formatApartment(apartment) {
+  if (!apartment) return "-";
+
+  const unitTypeName = apartment?.unit_type?.name || apartment?.unitType?.name || "";
+  const number = apartment?.number || "";
+
+  return [unitTypeName, number].filter(Boolean).join(" ") || number || unitTypeName || "-";
 }
 
 export default EmergencyTable;

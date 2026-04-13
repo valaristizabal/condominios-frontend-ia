@@ -3,6 +3,7 @@ import { Ambulance, Building2, Flame, Phone, Shield, Siren } from "lucide-react"
 import BackButton from "../../../components/common/BackButton";
 import SearchableSelect from "../../../components/common/SearchableSelect";
 import { useNotification } from "../../../hooks/useNotification";
+import EmergencyTable from "../components/EmergencyTable";
 import { useEmergencies } from "../hooks/useEmergencies";
 
 const inputBase =
@@ -48,16 +49,6 @@ function FieldError({ message }) {
   return <p className="mt-2 text-xs font-semibold text-red-600">{message}</p>;
 }
 
-function formatNow() {
-  const d = new Date();
-  const date = d.toLocaleDateString("es-CO");
-  const time = d.toLocaleTimeString("es-CO", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-  return `${date}, ${time} (Automático)`;
-}
-
 function localDatetimeNow() {
   return new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
 }
@@ -67,25 +58,38 @@ export default function EmergenciesPage() {
   const {
     emergencyTypes,
     areas,
+    apartments,
+    emergencies,
+    emergenciesPage,
+    emergenciesPagination,
     emergencyContacts,
     contactsPage,
     contactsPagination,
+    loading,
     saving,
+    actingIds,
     error,
     fieldErrors,
     activeCondominiumId,
     createEmergency,
+    fetchEmergencies,
+    setEmergenciesPage,
+    markInProgress,
+    closeEmergency,
     setContactsPage,
     clearFieldError,
   } = useEmergencies();
 
   const [form, setForm] = useState({
     emergency_type_id: "",
+    unitTypeId: "",
+    apartment_id: "",
     event_location: "",
     description: "",
     event_date: localDatetimeNow(),
   });
   const [localError, setLocalError] = useState("");
+  const [localFieldErrors, setLocalFieldErrors] = useState({});
 
   const hasTypes = useMemo(() => emergencyTypes.length > 0, [emergencyTypes]);
 
@@ -99,8 +103,35 @@ export default function EmergenciesPage() {
     [areas]
   );
 
+  const unitTypeOptions = useMemo(() => {
+    const map = new Map();
+    apartments.forEach((apartment) => {
+      const id = String(apartment?.unit_type_id || "");
+      const name = apartment?.unit_type?.name || apartment?.unitType?.name || "";
+      if (id && name && !map.has(id)) {
+        map.set(id, { value: id, label: name });
+      }
+    });
+    return Array.from(map.values());
+  }, [apartments]);
+
+  const filteredApartmentOptions = useMemo(() => {
+    if (!form.unitTypeId) return [];
+    return apartments
+      .filter((apartment) => String(apartment?.unit_type_id || "") === String(form.unitTypeId))
+      .map((apartment) => ({
+        value: String(apartment.id),
+        label: apartment.name || apartment.number || `Unidad ${apartment.id}`,
+      }));
+  }, [apartments, form.unitTypeId]);
+
   const setField = (name, value) => {
-    setForm((prev) => ({ ...prev, [name]: value }));
+    setForm((prev) => ({
+      ...prev,
+      [name]: value,
+      ...(name === "unitTypeId" ? { apartment_id: "" } : {}),
+    }));
+    setLocalFieldErrors((prev) => ({ ...prev, [name]: "", ...(name === "unitTypeId" ? { apartment_id: "" } : {}) }));
     clearFieldError?.(name);
     setLocalError("");
   };
@@ -116,8 +147,16 @@ export default function EmergenciesPage() {
       return;
     }
 
-    if (!form.emergency_type_id || !form.event_date) {
-      const message = "Completa tipo de emergencia y fecha.";
+    const nextLocalFieldErrors = {};
+    if (!form.unitTypeId) nextLocalFieldErrors.unitTypeId = "Selecciona el tipo de unidad.";
+    if (!form.apartment_id) nextLocalFieldErrors.apartment_id = "Selecciona el numero de unidad.";
+    if (!form.emergency_type_id) nextLocalFieldErrors.emergency_type_id = "Selecciona el tipo de emergencia.";
+    if (!form.description.trim()) nextLocalFieldErrors.description = "Describe la emergencia.";
+
+    setLocalFieldErrors(nextLocalFieldErrors);
+
+    if (Object.keys(nextLocalFieldErrors).length > 0) {
+      const message = "Completa tipo de unidad, numero de unidad, tipo de emergencia y descripcion.";
       setLocalError(message);
       warning(message);
       return;
@@ -126,6 +165,7 @@ export default function EmergenciesPage() {
     try {
       await createEmergency({
         emergency_type_id: Number(form.emergency_type_id),
+        apartment_id: Number(form.apartment_id),
         event_type: resolveEventType(form.emergency_type_id, emergencyTypes),
         event_location: form.event_location.trim(),
         description: form.description.trim(),
@@ -134,10 +174,13 @@ export default function EmergenciesPage() {
 
       setForm(() => ({
         emergency_type_id: "",
+        unitTypeId: "",
+        apartment_id: "",
         event_location: "",
         description: "",
         event_date: localDatetimeNow(),
       }));
+      setLocalFieldErrors({});
       success("Emergencia registrada correctamente.");
     } catch (requestError) {
       notifyError(normalizeEmergencyError(requestError, "No fue posible registrar la emergencia."));
@@ -187,7 +230,35 @@ export default function EmergenciesPage() {
                   searchPlaceholder="Buscar tipo de emergencia..."
                   disabled={!hasTypes}
                 />
-                <FieldError message={fieldErrors.emergency_type_id} />
+                <FieldError message={fieldErrors.emergency_type_id || localFieldErrors.emergency_type_id} />
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-slate-700">Tipo de unidad</label>
+                  <SearchableSelect
+                    value={form.unitTypeId}
+                    onChange={(value) => setField("unitTypeId", String(value))}
+                    options={unitTypeOptions}
+                    placeholder={unitTypeOptions.length ? "Seleccione tipo..." : "Sin tipos disponibles"}
+                    searchPlaceholder="Buscar tipo de unidad..."
+                    disabled={!unitTypeOptions.length}
+                  />
+                  <FieldError message={localFieldErrors.unitTypeId} />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-slate-700">Numero de unidad</label>
+                  <SearchableSelect
+                    value={form.apartment_id}
+                    onChange={(value) => setField("apartment_id", String(value))}
+                    options={filteredApartmentOptions}
+                    placeholder={!form.unitTypeId ? "Primero seleccione tipo" : "Seleccione unidad..."}
+                    searchPlaceholder="Buscar unidad..."
+                    disabled={!form.unitTypeId}
+                  />
+                  <FieldError message={fieldErrors.apartment_id || localFieldErrors.apartment_id} />
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -211,17 +282,7 @@ export default function EmergenciesPage() {
                   value={form.description}
                   onChange={(event) => setField("description", event.target.value)}
                 />
-                <FieldError message={fieldErrors.description} />
-              </div>
-
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-                <div className="flex items-center gap-2">
-                  <ClockIcon />
-                  {formatDateLabel(form.event_date)}
-                </div>
-                <p className="mt-1 text-xs font-semibold text-slate-500">
-                  Hora de registro: {formatRegistrationHour(form.event_date)}
-                </p>
+                <FieldError message={fieldErrors.description || localFieldErrors.description} />
               </div>
 
               <button
@@ -235,6 +296,19 @@ export default function EmergenciesPage() {
               </button>
             </form>
           </Card>
+
+          <EmergencyTable
+            rows={emergencies}
+            loading={loading}
+            actingIds={actingIds}
+            onProgress={markInProgress}
+            onClose={closeEmergency}
+            onRefresh={() => fetchEmergencies(emergenciesPage)}
+            currentPage={emergenciesPagination.currentPage}
+            totalPages={emergenciesPagination.lastPage}
+            totalItems={emergenciesPagination.total}
+            onPageChange={setEmergenciesPage}
+          />
 
           <Card>
             <div className="mb-4">
@@ -299,39 +373,6 @@ function AlertIcon() {
       <path d="M12 3 1.8 20h20.4L12 3Zm1 13h-2v2h2v-2Zm0-7h-2v5h2V9Z" />
     </svg>
   );
-}
-
-function ClockIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current text-slate-500" aria-hidden="true">
-      <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Zm1 10.59 3.3 3.3-1.42 1.41L11 13V7h2v5.59Z" />
-    </svg>
-  );
-}
-
-function formatDateLabel(datetimeValue) {
-  if (!datetimeValue) return formatNow();
-  const date = new Date(datetimeValue);
-  if (Number.isNaN(date.getTime())) return formatNow();
-
-  const datePart = date.toLocaleDateString("es-CO");
-  const timePart = date.toLocaleTimeString("es-CO", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-  return `${datePart}, ${timePart} (Automático)`;
-}
-
-function formatRegistrationHour(datetimeValue) {
-  const date = datetimeValue ? new Date(datetimeValue) : new Date();
-  if (Number.isNaN(date.getTime())) {
-    return new Date().toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" });
-  }
-
-  return date.toLocaleTimeString("es-CO", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
 }
 
 function resolveEventType(typeId, emergencyTypes = []) {

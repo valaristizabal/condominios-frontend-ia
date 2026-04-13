@@ -443,9 +443,6 @@ function InventoryPage({ allowProductManagement = false, showOperationTools = tr
     const { name, value } = event.target;
     setMovementForm((prev) => {
       const next = { ...prev, [name]: value };
-      if (name === "type") {
-        next.product_id = "";
-      }
       if (name === "product_id") {
         const selectedProduct = products.find((product) => String(product.id) === String(value));
         if (selectedProduct?.type === "asset") {
