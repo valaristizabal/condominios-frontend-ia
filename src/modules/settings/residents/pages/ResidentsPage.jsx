@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import BackButton from "../../../../components/common/BackButton";
 import ChangeUserPasswordModal from "../../../../components/common/ChangeUserPasswordModal";
 import { useAuthContext } from "../../../../context/useAuthContext";
@@ -9,6 +9,7 @@ import { useResidents } from "../hooks/useResidents";
 import { isSuperUser, isTenantAdminRole } from "../../../../utils/roles";
 
 function ResidentsPage() {
+  const fileInputRef = useRef(null);
   const { user } = useAuthContext();
   const { success: notifySuccess } = useNotification();
   const [query, setQuery] = useState("");
@@ -30,8 +31,11 @@ function ResidentsPage() {
     hasTenantContext,
     createResident,
     updateResident,
+    importResidentsCsv,
     changeUserPassword,
   } = useResidents(filters);
+  const [success, setSuccess] = useState("");
+  const [importResult, setImportResult] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [passwordModalTarget, setPasswordModalTarget] = useState(null);
@@ -52,6 +56,8 @@ function ResidentsPage() {
   }, [residents]);
 
   const clearFilters = () => {
+    setSuccess("");
+    setImportResult(null);
     setQuery("");
     setStatus("all");
     setResidentType("all");
@@ -59,18 +65,46 @@ function ResidentsPage() {
   };
 
   const openCreate = () => {
+    setSuccess("");
+    setImportResult(null);
     setEditing(null);
     setModalOpen(true);
   };
 
   const openEdit = (item) => {
+    setSuccess("");
+    setImportResult(null);
     setEditing(item);
     setModalOpen(true);
   };
 
   const openPasswordModal = (item) => {
     if (!canChangePassword) return;
+    setSuccess("");
+    setImportResult(null);
     setPasswordModalTarget(item);
+  };
+
+  const openCsvPicker = () => {
+    if (!hasTenantContext || saving) return;
+    fileInputRef.current?.click();
+  };
+
+  const handleCsvChange = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+
+    if (!file) return;
+
+    try {
+      const result = await importResidentsCsv(file);
+      setImportResult(result);
+      setSuccess(
+        `Importacion finalizada. Creados: ${Number(result?.created || 0)}. Actualizados: ${Number(result?.updated || 0)}. Fallidos: ${Number(result?.failed || 0)}.`
+      );
+    } catch {
+      setImportResult(null);
+    }
   };
 
   const closeModal = () => {
@@ -88,9 +122,11 @@ function ResidentsPage() {
     if (editing) {
       await updateResident(editing.id, payload);
       notifySuccess("Residente actualizado correctamente.");
+      setSuccess("Residente actualizado correctamente.");
     } else {
       await createResident(payload);
       notifySuccess("Residente creado correctamente.");
+      setSuccess("Residente creado correctamente.");
     }
     closeModal();
   };
@@ -103,6 +139,7 @@ function ResidentsPage() {
 
     await changeUserPassword(targetUserId, payload);
     notifySuccess("Contrase?a actualizada correctamente.");
+    setSuccess("Contrasena actualizada correctamente.");
     closePasswordModal();
   };
 
@@ -115,14 +152,31 @@ function ResidentsPage() {
         <div>
           <h1 className="text-2xl font-extrabold text-slate-900">Residentes</h1>
         </div>
-        <button
-          type="button"
-          onClick={openCreate}
-          className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-indigo-700 disabled:opacity-70"
-          disabled={!hasTenantContext || saving}
-        >
-          + Nuevo residente
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".csv"
+            onChange={handleCsvChange}
+            className="hidden"
+          />
+          <button
+            type="button"
+            onClick={openCsvPicker}
+            className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-70"
+            disabled={!hasTenantContext || saving}
+          >
+            Cargar CSV
+          </button>
+          <button
+            type="button"
+            onClick={openCreate}
+            className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-indigo-700 disabled:opacity-70"
+            disabled={!hasTenantContext || saving}
+          >
+            + Nuevo residente
+          </button>
+        </div>
       </header>
 
       {!hasTenantContext ? (
@@ -136,6 +190,33 @@ function ResidentsPage() {
         <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}
         </p>
+      ) : null}
+
+      {success ? (
+        <p className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+          {success}
+        </p>
+      ) : null}
+
+      {importResult ? (
+        <section className="mb-4 rounded-xl border border-slate-200 bg-white p-4">
+          <p className="text-sm font-bold text-slate-900">
+            Creados: <span className="text-emerald-700">{Number(importResult.created || 0)}</span>
+            {" | "}
+            Actualizados: <span className="text-indigo-700">{Number(importResult.updated || 0)}</span>
+            {" | "}
+            Fallidos: <span className="text-rose-700">{Number(importResult.failed || 0)}</span>
+          </p>
+          {Array.isArray(importResult.errors) && importResult.errors.length > 0 ? (
+            <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-rose-700">
+              {importResult.errors.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-2 text-sm text-slate-600">No se encontraron errores en la importacion.</p>
+          )}
+        </section>
       ) : null}
 
       <section className="mb-4 grid grid-cols-1 gap-3 rounded-xl border border-slate-200 bg-white p-4 sm:grid-cols-4">

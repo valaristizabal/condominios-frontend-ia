@@ -131,6 +131,34 @@ export function useResidents(filters = {}) {
     }
   }, [currentPage, loadResidents, requestConfig]);
 
+  const importResidentsCsv = useCallback(async (file) => {
+    setSaving(true);
+    setError("");
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await apiClient.post("/residents/import", formData, {
+        ...(requestConfig || {}),
+        headers: {
+          ...(requestConfig?.headers || {}),
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      setCurrentPage(1);
+      await loadResidents(1);
+      return response.data;
+    } catch (err) {
+      const message = normalizeApiError(err, "No fue posible importar el archivo CSV.");
+      setError(message);
+      throw err;
+    } finally {
+      setSaving(false);
+    }
+  }, [loadResidents, requestConfig]);
+
   const changeUserPassword = useCallback(async (userId, payload) => {
     setSaving(true);
     setError("");
@@ -169,6 +197,7 @@ export function useResidents(filters = {}) {
     loadResidents,
     createResident,
     updateResident,
+    importResidentsCsv,
     changeUserPassword,
   };
 }
