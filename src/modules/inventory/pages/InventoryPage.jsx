@@ -404,6 +404,9 @@ function InventoryPage({ allowProductManagement = false, showOperationTools = tr
 
   const openCreateProduct = () => {
     setError("");
+    if (canQuery) {
+      void inventoriesAndCategoriesQuery.refetch();
+    }
     setEditingProductId(null);
     setProductForm(buildEmptyProductForm(selectedInventoryId));
     setProductFormTouched(false);
@@ -412,6 +415,9 @@ function InventoryPage({ allowProductManagement = false, showOperationTools = tr
 
   const openEditProduct = (product) => {
     setError("");
+    if (canQuery) {
+      void inventoriesAndCategoriesQuery.refetch();
+    }
     setEditingProductId(product.id);
     setProductForm({
       inventory_id: String(product.inventory_id ?? selectedInventoryId ?? ""),
