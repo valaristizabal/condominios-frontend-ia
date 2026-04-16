@@ -256,6 +256,7 @@ function OperativeFormModal({ open, initialValues, roles = [], loading, onCancel
                 value={form.account_number ?? ""}
                 onChange={handleChange}
               />
+              <FieldError message={fieldErrors.account_number} />
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2">
