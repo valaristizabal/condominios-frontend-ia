@@ -10,6 +10,13 @@ const EMPTY_FORM = {
   birth_date: "",
   apartment_id: "",
   type: "propietario",
+  administration_fee: "",
+  administration_maturity: "",
+  property_owner_full_name: "",
+  property_owner_document_number: "",
+  property_owner_email: "",
+  property_owner_phone: "",
+  property_owner_birth_date: "",
   is_active: true,
 };
 
@@ -123,6 +130,21 @@ function ResidentFormModal({ open, initialValues, loading, onCancel, onSubmit })
   const handleChange = (event) => {
     const { name, value, type, checked } = event.target;
 
+    if (name === "type" && value === "propietario") {
+      setForm((prev) => ({
+        ...prev,
+        type: value,
+        property_owner_full_name: "",
+        property_owner_document_number: "",
+        property_owner_email: "",
+        property_owner_phone: "",
+        property_owner_birth_date: "",
+      }));
+
+      if (error) setError("");
+      return;
+    }
+
     setForm((prev) => ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
@@ -150,6 +172,17 @@ function ResidentFormModal({ open, initialValues, loading, onCancel, onSubmit })
       return;
     }
 
+    if (form.type === "arrendatario") {
+      const ownerFullName = String(form.property_owner_full_name || "").trim();
+      const ownerDocumentNumber = String(form.property_owner_document_number || "").trim();
+      const ownerEmail = String(form.property_owner_email || "").trim();
+
+      if (!ownerFullName || !ownerDocumentNumber || !ownerEmail) {
+        setError("Para arrendatarios debes completar nombre, documento y correo del propietario.");
+        return;
+      }
+    }
+
     const apartmentExists = primaryApartments.some((item) => Number(item.id) === apartmentId);
     if (!apartmentExists) {
       setError("Solo se pueden registrar residentes en inmuebles cuyo tipo permita residentes directos.");
@@ -165,6 +198,21 @@ function ResidentFormModal({ open, initialValues, loading, onCancel, onSubmit })
         birth_date: form.birth_date || null,
         apartment_id: apartmentId,
         type: form.type,
+        administration_fee:
+          String(form.administration_fee || "").trim() === ""
+            ? null
+            : Number(form.administration_fee),
+        administration_maturity: form.administration_maturity || null,
+        property_owner_full_name:
+          form.type === "arrendatario" ? String(form.property_owner_full_name || "").trim() || null : null,
+        property_owner_document_number:
+          form.type === "arrendatario" ? String(form.property_owner_document_number || "").trim() || null : null,
+        property_owner_email:
+          form.type === "arrendatario" ? String(form.property_owner_email || "").trim() || null : null,
+        property_owner_phone:
+          form.type === "arrendatario" ? String(form.property_owner_phone || "").trim() || null : null,
+        property_owner_birth_date:
+          form.type === "arrendatario" ? form.property_owner_birth_date || null : null,
         is_active: Boolean(form.is_active),
       };
 
@@ -181,7 +229,9 @@ function ResidentFormModal({ open, initialValues, loading, onCancel, onSubmit })
         <h3 className="text-lg font-extrabold text-slate-900">
           {isEditing ? "Editar residente" : "Nuevo residente"}
         </h3>
-
+        <span className="mt-1 text-sm text-slate-600">
+          Ingrese los datos de la persona que habita el inmueble. 
+          Si el residente es arrendatario, complete más abajo la información del propietario.</span>
         <form className="mt-4 space-y-4" onSubmit={handleSubmit}>
           <div className="grid gap-3 sm:grid-cols-2">
             <Field
@@ -224,6 +274,25 @@ function ResidentFormModal({ open, initialValues, loading, onCancel, onSubmit })
             value={form.birth_date ?? ""}
             onChange={handleChange}
           />
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field
+              label="Valor administracion"
+              name="administration_fee"
+              type="number"
+              min="0"
+              step="0.01"
+              value={form.administration_fee ?? ""}
+              onChange={handleChange}
+            />
+            <Field
+              label="Vencimiento administracion"
+              name="administration_maturity"
+              type="date"
+              value={form.administration_maturity ?? ""}
+              onChange={handleChange}
+            />
+          </div>
 
           <label className="block">
             <span className="mb-1.5 block text-sm font-semibold text-slate-700">Inmueble principal</span>
@@ -273,6 +342,51 @@ function ResidentFormModal({ open, initialValues, loading, onCancel, onSubmit })
               <option value="arrendatario">arrendatario</option>
             </select>
           </label>
+
+          {form.type === "arrendatario" ? (
+            <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <p className="text-sm font-semibold text-slate-700">Datos del propietario</p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Field
+                  label="Nombre propietario"
+                  name="property_owner_full_name"
+                  value={form.property_owner_full_name ?? ""}
+                  onChange={handleChange}
+                  required
+                />
+                <Field
+                  label="Documento propietario"
+                  name="property_owner_document_number"
+                  value={form.property_owner_document_number ?? ""}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Field
+                  label="Email propietario"
+                  name="property_owner_email"
+                  type="email"
+                  value={form.property_owner_email ?? ""}
+                  onChange={handleChange}
+                  required
+                />
+                <Field
+                  label="Telefono propietario"
+                  name="property_owner_phone"
+                  value={form.property_owner_phone ?? ""}
+                  onChange={handleChange}
+                />
+              </div>
+              <Field
+                label="Fecha nacimiento propietario"
+                name="property_owner_birth_date"
+                type="date"
+                value={form.property_owner_birth_date ?? ""}
+                onChange={handleChange}
+              />
+            </div>
+          ) : null}
 
           <label className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3">
             <span className="text-sm font-semibold text-slate-700">Activo</span>
@@ -338,6 +452,20 @@ function buildInitialForm(initialValues) {
       : "",
     apartment_id: initialValues.apartment_id ? String(initialValues.apartment_id) : "",
     type: initialValues.type ?? "propietario",
+    administration_fee:
+      initialValues.administration_fee !== null && initialValues.administration_fee !== undefined
+        ? String(initialValues.administration_fee)
+        : "",
+    administration_maturity: initialValues.administration_maturity
+      ? String(initialValues.administration_maturity).slice(0, 10)
+      : "",
+    property_owner_full_name: initialValues.property_owner_full_name ?? "",
+    property_owner_document_number: initialValues.property_owner_document_number ?? "",
+    property_owner_email: initialValues.property_owner_email ?? "",
+    property_owner_phone: initialValues.property_owner_phone ?? "",
+    property_owner_birth_date: initialValues.property_owner_birth_date
+      ? String(initialValues.property_owner_birth_date).slice(0, 10)
+      : "",
     is_active: Boolean(initialValues.is_active),
   };
 }

@@ -41,6 +41,17 @@ En `Settings > Residentes`:
 
 - solo se muestran como seleccionables los inmuebles cuyo tipo tenga `allows_residents = true`
 - las unidades hijas se muestran como relacionadas al inmueble principal
+- el formulario incluye:
+  - `administration_fee`
+  - `administration_maturity`
+- si el tipo es `arrendatario`, se habilitan campos del propietario:
+  - `property_owner_full_name`
+  - `property_owner_document_number`
+  - `property_owner_email`
+  - `property_owner_phone`
+  - `property_owner_birth_date`
+- si el tipo cambia a `propietario`, los datos `property_owner_*` se limpian automaticamente
+- el listado de residentes muestra `administration_fee` y referencia de propietario cuando exista
 
 ## Ejemplo de uso
 

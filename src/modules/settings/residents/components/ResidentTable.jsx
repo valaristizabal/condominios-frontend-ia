@@ -30,6 +30,8 @@ function ResidentTable({
             <th className="px-4 py-3">Tipo inmueble</th>
             <th className="px-4 py-3">Inmueble</th>
             <th className="px-4 py-3">Tipo residente</th>
+            <th className="px-4 py-3">Administracion</th>
+            <th className="px-4 py-3">Propietario (ref)</th>
             <th className="px-4 py-3">Estado</th>
             <th className="px-4 py-3 text-right">Acciones</th>
           </tr>
@@ -61,6 +63,10 @@ function ResidentTable({
                 ) : null}
               </td>
               <td className="px-4 py-3 text-slate-600">{formatResidentType(item.type)}</td>
+              <td className="px-4 py-3 text-slate-600">{formatCurrency(item.administration_fee)}</td>
+              <td className="px-4 py-3 text-slate-600">
+                {item.property_owner_full_name || item.property_owner_name || "-"}
+              </td>
               <td className="px-4 py-3">
                 <span
                   className={`rounded-full px-2.5 py-1 text-xs font-bold ${
@@ -138,6 +144,18 @@ function formatResidentType(type) {
   if (type === "propietario") return "Propietario";
   if (type === "arrendatario") return "Arrendatario";
   return type || "-";
+}
+
+function formatCurrency(value) {
+  if (value === null || value === undefined || value === "") return "-";
+  const amount = Number(value);
+  if (!Number.isFinite(amount)) return "-";
+  return new Intl.NumberFormat("es-CO", {
+    style: "currency",
+    currency: "COP",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount);
 }
 
 export default ResidentTable;

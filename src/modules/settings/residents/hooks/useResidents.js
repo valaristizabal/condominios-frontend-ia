@@ -67,7 +67,21 @@ export function useResidents(filters = {}) {
       });
 
       const payload = response?.data || {};
-      const rows = Array.isArray(payload?.data) ? payload.data : [];
+      const rows = Array.isArray(payload?.data)
+        ? payload.data.map((item) => ({
+            ...item,
+            administration_fee: item?.administration_fee ?? item?.administrationFee ?? null,
+            administration_maturity: item?.administration_maturity ?? item?.administrationMaturity ?? null,
+            property_owner_full_name:
+              item?.property_owner_full_name ?? item?.propertyOwnerFullName ?? null,
+            property_owner_document_number:
+              item?.property_owner_document_number ?? item?.propertyOwnerDocumentNumber ?? null,
+            property_owner_email: item?.property_owner_email ?? item?.propertyOwnerEmail ?? null,
+            property_owner_phone: item?.property_owner_phone ?? item?.propertyOwnerPhone ?? null,
+            property_owner_birth_date:
+              item?.property_owner_birth_date ?? item?.propertyOwnerBirthDate ?? null,
+          }))
+        : [];
       const nextCurrentPage = Number(payload?.current_page || page || 1);
       const nextLastPage = Number(payload?.last_page || 1);
       const normalizedLastPage = nextLastPage > 0 ? nextLastPage : 1;
