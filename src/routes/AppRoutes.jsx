@@ -17,6 +17,7 @@ import VisitsPage from "../modules/operation/visits/pages/VisitsPage";
 import VehiclesPage from "../modules/operation/vehicles/pages/VehiclesPage";
 import VehicleIncidentsPage from "../modules/operation/vehicle-incidents/pages/VehicleIncidentsPage";
 import CorrespondencePage from "../modules/operation/correspondence/pages/CorrespondencePage";
+import RecaudoCarteraPage from "../modules/operation/revenue-portfolio/pages/RecaudoCarteraPage";
 import ControlIngresoPage from "../modules/control-ingreso/pages/ControlIngresoPage";
 import CleaningRecordsPage from "../modules/cleaning/CleaningRecordsPage";
 import InventoryPage from "../modules/inventory/pages/InventoryPage";
@@ -116,6 +117,16 @@ function AppRoutes() {
           <TenantRoute>
             <TenantLayout>
               <CorrespondencePage />
+            </TenantLayout>
+          </TenantRoute>
+        }
+      />
+      <Route
+        path="/recaudo-cartera"
+        element={
+          <TenantRoute>
+            <TenantLayout>
+              <RecaudoCarteraPage />
             </TenantLayout>
           </TenantRoute>
         }
@@ -393,6 +404,18 @@ function AppRoutes() {
             <SuperAdminRoute>
               <TenantLayout>
                 <CorrespondencePage />
+              </TenantLayout>
+            </SuperAdminRoute>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/condominio/:id/recaudo-cartera"
+        element={
+          <ProtectedRoute>
+            <SuperAdminRoute>
+              <TenantLayout>
+                <RecaudoCarteraPage />
               </TenantLayout>
             </SuperAdminRoute>
           </ProtectedRoute>

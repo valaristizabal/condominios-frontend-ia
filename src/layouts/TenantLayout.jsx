@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   ArrowLeft,
   Bell,
+  CircleDollarSign,
   ClipboardList,
   LayoutDashboard,
   Menu,
@@ -39,6 +40,7 @@ function getSidebarSections(basePath, permissions) {
         { label: "Emergencias", to: resolvePath("/emergencies"), enabled: permissions.emergencies },
         { label: "Aseo y mantenimiento", to: resolvePath("/cleaning"), enabled: permissions.cleaning },
         { label: "Inventario", to: resolvePath("/inventory"), enabled: permissions.inventory },
+        { label: "Recaudo y Cartera", to: resolvePath("/recaudo-cartera"), enabled: true },
       ],
     },
     {
@@ -301,6 +303,7 @@ function iconByLabel(label) {
     Emergencias: <Bell className={className} />,
     "Aseo y mantenimiento": <Sparkles className={className} />,
     Inventario: <Package className={className} />,
+    "Recaudo y Cartera": <CircleDollarSign className={className} />,
     Ajustes: <Settings className={className} />,
   };
 
