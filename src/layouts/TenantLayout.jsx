@@ -6,6 +6,7 @@ import {
   Bell,
   CircleDollarSign,
   ClipboardList,
+  HandCoins,
   LayoutDashboard,
   Menu,
   Package,
@@ -41,6 +42,7 @@ function getSidebarSections(basePath, permissions) {
         { label: "Aseo y mantenimiento", to: resolvePath("/cleaning"), enabled: permissions.cleaning },
         { label: "Inventario", to: resolvePath("/inventory"), enabled: permissions.inventory },
         { label: "Recaudo y Cartera", to: resolvePath("/recaudo-cartera"), enabled: true },
+        { label: "Gastos Administrativos", to: resolvePath("/gastos-administrativos"), enabled: true },
       ],
     },
     {
@@ -300,6 +302,7 @@ function iconByLabel(label) {
     Vehículos: <Car className={className} />,
     "Ingreso de personal": <UserCheck className={className} />,
     Correspondencia: <ClipboardList className={className} />,
+    "Gastos Administrativos": <HandCoins className={className} />,
     Emergencias: <Bell className={className} />,
     "Aseo y mantenimiento": <Sparkles className={className} />,
     Inventario: <Package className={className} />,
