@@ -1,13 +1,14 @@
-import { useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import BackButton from "../../../../components/common/BackButton";
 import ExpenseFormCard from "../components/ExpenseFormCard";
 import ExpenseFiltersBar from "../components/ExpenseFiltersBar";
 import ExpenseSummaryCards from "../components/ExpenseSummaryCards";
 import AdministrativeExpensesTable from "../components/AdministrativeExpensesTable";
+import { useActiveCondominium } from "../../../../context/useActiveCondominium";
+import { createExpense, getExpenses } from "../services/expensesService";
 import {
   expenseStatusOptions,
   expenseTypeOptions,
-  mockAdministrativeExpenses,
   paymentMethodOptions,
 } from "../data/mockAdministrativeExpenses";
 
@@ -24,17 +25,36 @@ function createInitialFormState() {
 }
 
 function AdministrativeExpensesPage() {
-  const [expenses, setExpenses] = useState(mockAdministrativeExpenses);
+  const { activeCondominiumId } = useActiveCondominium();
+  const [expenses, setExpenses] = useState([]);
+  const [kpis, setKpis] = useState(null);
   const [form, setForm] = useState(createInitialFormState);
   const [filters, setFilters] = useState({
     query: "",
     expenseType: "all",
     paymentMethod: "all",
   });
-  const [selectedExpenseId, setSelectedExpenseId] = useState(mockAdministrativeExpenses[0]?.id || null);
+  const [selectedExpenseId, setSelectedExpenseId] = useState(null);
   const [supportFileName, setSupportFileName] = useState("");
+  const [supportFile, setSupportFile] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
   const fileInputRef = useRef(null);
+  const currentPeriod = useMemo(() => getCurrentPeriod(), []);
+
+  const requestConfig = useMemo(
+    () =>
+      activeCondominiumId
+        ? {
+            headers: {
+              "X-Active-Condominium-Id": String(activeCondominiumId),
+            },
+          }
+        : undefined,
+    [activeCondominiumId]
+  );
 
   const expenseTypeMap = useMemo(
     () => toOptionMap(expenseTypeOptions),
@@ -64,35 +84,12 @@ function AdministrativeExpensesPage() {
     [expenseTypeMap, expenses, paymentMethodMap, statusMap]
   );
 
-  const filteredExpenses = useMemo(() => {
-    const query = String(filters.query || "").trim().toLowerCase();
-
-    return normalizedExpenses.filter((expense) => {
-      if (filters.expenseType !== "all" && expense.expenseType !== filters.expenseType) return false;
-      if (filters.paymentMethod !== "all" && expense.paymentMethod !== filters.paymentMethod) return false;
-
-      if (!query) return true;
-
-      const searchable = [
-        expense.expenseTypeLabel,
-        expense.paymentMethodLabel,
-        expense.registeredBy,
-        expense.observations,
-        expense.statusLabel,
-        expense.supportName,
-      ]
-        .join(" ")
-        .toLowerCase();
-
-      return searchable.includes(query);
-    });
-  }, [filters.expenseType, filters.paymentMethod, filters.query, normalizedExpenses]);
+  const filteredExpenses = normalizedExpenses;
 
   const summaryCards = useMemo(() => {
-    const totalSpent = expenses.reduce((accumulator, expense) => accumulator + Number(expense.amount || 0), 0);
-    const latestExpense = [...expenses].sort(
-      (left, right) => new Date(right.registeredAt) - new Date(left.registeredAt)
-    )[0];
+    const totalSpent = Number(kpis?.totalAmount ?? 0);
+    const totalCount = Number(kpis?.totalCount ?? 0);
+    const lastExpense = Number(kpis?.lastExpense ?? 0);
 
     return [
       {
@@ -103,15 +100,59 @@ function AdministrativeExpensesPage() {
       {
         id: "count",
         label: "Gastos registrados",
-        value: String(expenses.length),
+        value: String(totalCount),
       },
       {
         id: "latest",
         label: "Ultimo gasto",
-        value: latestExpense ? formatCurrency(latestExpense.amount) : "$0",
+        value: formatCurrency(lastExpense),
       },
     ];
-  }, [expenses]);
+  }, [kpis]);
+
+  const loadExpenses = useCallback(async () => {
+    if (!activeCondominiumId) {
+      setExpenses([]);
+      setKpis(null);
+      setError("");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
+    try {
+      const payload = await getExpenses(
+        {
+          period: currentPeriod,
+          ...(filters.expenseType !== "all" ? { expenseType: filters.expenseType } : {}),
+          ...(filters.paymentMethod !== "all" ? { paymentMethod: filters.paymentMethod } : {}),
+          ...(String(filters.query || "").trim() ? { query: String(filters.query || "").trim() } : {}),
+        },
+        requestConfig
+      );
+
+      const rows = Array.isArray(payload?.data) ? payload.data : [];
+      setExpenses(rows);
+      setKpis(payload?.kpis || null);
+    } catch (requestError) {
+      setExpenses([]);
+      setKpis(null);
+      setError(normalizeApiError(requestError, "No fue posible cargar los gastos administrativos."));
+    } finally {
+      setLoading(false);
+    }
+  }, [activeCondominiumId, currentPeriod, filters.expenseType, filters.paymentMethod, filters.query, requestConfig]);
+
+  useEffect(() => {
+    loadExpenses();
+  }, [loadExpenses]);
+
+  useEffect(() => {
+    if (!selectedExpenseId && expenses.length > 0) {
+      setSelectedExpenseId(expenses[0].id);
+    }
+  }, [expenses, selectedExpenseId]);
 
   const handleFormChange = (event) => {
     const { name, value } = event.target;
@@ -135,12 +176,25 @@ function AdministrativeExpensesPage() {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    if (file.size > 5 * 1024 * 1024) {
+      setError("El archivo supera el maximo permitido de 5MB.");
+      setSupportFile(null);
+      setSupportFileName("");
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+      return;
+    }
+
+    setError("");
+    setSupportFile(file);
     setSupportFileName(file.name);
     setForm((prev) => ({ ...prev, supportName: file.name }));
   };
 
   const handleResetForm = () => {
     setForm(createInitialFormState());
+    setSupportFile(null);
     setSupportFileName("");
 
     if (fileInputRef.current) {
@@ -148,28 +202,46 @@ function AdministrativeExpensesPage() {
     }
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
-    const nextExpense = {
-      id: `ga-local-${Date.now()}`,
-      registeredAt: form.registeredAt || getTodayInputValue(),
-      expenseType: form.expenseType || expenseTypeOptions[0].value,
-      amount: Number(form.amount || 0),
-      paymentMethod: form.paymentMethod || paymentMethodOptions[0].value,
-      observations: String(form.observations || "").trim(),
-      supportName: form.supportName || "",
-      registeredBy: String(form.registeredBy || "").trim() || "Sin responsable",
-      status: form.supportName ? "con-soporte" : "pendiente-soporte",
-    };
+    if (!activeCondominiumId) {
+      setError("No hay condominio activo.");
+      return;
+    }
 
-    setExpenses((prev) => [nextExpense, ...prev]);
-    setSelectedExpenseId(nextExpense.id);
-    setForm(createInitialFormState());
-    setSupportFileName("");
+    setSubmitting(true);
+    setError("");
 
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
+    try {
+      const created = await createExpense(
+        {
+          registeredAt: form.registeredAt || getTodayInputValue(),
+          expenseType: form.expenseType || expenseTypeOptions[0].value,
+          amount: Number(form.amount || 0),
+          paymentMethod: form.paymentMethod || paymentMethodOptions[0].value,
+          observations: String(form.observations || "").trim(),
+          registeredBy: String(form.registeredBy || "").trim() || "Sin responsable",
+          status: supportFile ? "con-soporte" : "pendiente-soporte",
+          support: supportFile,
+        },
+        requestConfig
+      );
+
+      await loadExpenses();
+      setSelectedExpenseId(created?.id || null);
+      handleResetForm();
+    } catch (requestError) {
+      setError(normalizeApiError(requestError, "No fue posible registrar el gasto."));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleViewSupport = (row) => {
+    setSelectedExpenseId(row.id);
+    if (row?.supportUrl) {
+      window.open(row.supportUrl, "_blank", "noopener,noreferrer");
     }
   };
 
@@ -189,6 +261,12 @@ function AdministrativeExpensesPage() {
         <ExpenseSummaryCards cards={summaryCards} />
       </div>
 
+      {error ? (
+        <div className="mt-6 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">
+          {error}
+        </div>
+      ) : null}
+
       <div className="mt-8">
         <ExpenseFormCard
           form={form}
@@ -201,6 +279,7 @@ function AdministrativeExpensesPage() {
           onFileChange={handleFileChange}
           onReset={handleResetForm}
           onSubmit={handleSubmit}
+          saving={submitting}
         />
       </div>
 
@@ -215,10 +294,16 @@ function AdministrativeExpensesPage() {
       </div>
 
       <div className="mt-8">
+        {loading ? (
+          <div className="mb-4 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-700">
+            Cargando gastos administrativos...
+          </div>
+        ) : null}
+
         <AdministrativeExpensesTable
           rows={filteredExpenses}
           selectedId={selectedExpenseId}
-          onViewSupport={(row) => setSelectedExpenseId(row.id)}
+          onViewSupport={handleViewSupport}
         />
       </div>
     </div>
@@ -260,6 +345,29 @@ function getTodayInputValue() {
   const month = `${now.getMonth() + 1}`.padStart(2, "0");
   const day = `${now.getDate()}`.padStart(2, "0");
   return `${year}-${month}-${day}`;
+}
+
+function getCurrentPeriod() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = `${now.getMonth() + 1}`.padStart(2, "0");
+  return `${year}-${month}`;
+}
+
+function normalizeApiError(err, fallbackMessage) {
+  const responseData = err?.response?.data;
+  const errors = responseData?.errors;
+
+  if (errors && typeof errors === "object") {
+    const firstFieldErrors = Object.values(errors).find(
+      (fieldErrors) => Array.isArray(fieldErrors) && fieldErrors.length > 0
+    );
+    if (firstFieldErrors) {
+      return String(firstFieldErrors[0]);
+    }
+  }
+
+  return responseData?.message || err?.message || fallbackMessage;
 }
 
 export default AdministrativeExpensesPage;

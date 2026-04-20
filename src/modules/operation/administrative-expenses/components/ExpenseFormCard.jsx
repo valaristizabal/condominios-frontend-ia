@@ -19,6 +19,7 @@ function ExpenseFormCard({
   expenseTypeOptions,
   paymentMethodOptions,
   fileName,
+  saving = false,
   fileInputRef,
   onChange,
   onPickFile,
@@ -160,9 +161,10 @@ function ExpenseFormCard({
 
         <button
           type="submit"
+          disabled={saving}
           className="w-full rounded-2xl bg-blue-600 px-4 py-3.5 text-sm font-extrabold text-white shadow-sm transition hover:bg-blue-700 active:scale-[0.99]"
         >
-          Guardar gasto
+          {saving ? "Guardando..." : "Guardar gasto"}
         </button>
       </form>
     </section>
