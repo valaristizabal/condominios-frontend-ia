@@ -236,6 +236,12 @@ function InventoryPage({ allowProductManagement = false, showOperationTools = tr
     () => productsWithMovementsQuery.data?.products ?? EMPTY_LIST,
     [productsWithMovementsQuery.data?.products]
   );
+
+  useEffect(() => {
+    if (!canQuery) return;
+    void inventoriesAndCategoriesQuery.refetch();
+  }, [canQuery, resolvedCondominiumId]);
+
   const lowStockQuery = useQuery({
     queryKey: ["inventory", "low-stock", resolvedCondominiumId, selectedInventoryId],
     enabled: showOperationTools && canQuery && Boolean(selectedInventoryId),
