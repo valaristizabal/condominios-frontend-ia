@@ -99,15 +99,17 @@ function PortfolioStatusTable({ rows = [], selectedId = null, loading = false })
                     <td className="px-5 py-4 text-sm font-bold text-slate-900">{row?.debtLabel || "$0"}</td>
                     <td className="px-5 py-4 text-sm font-semibold text-slate-600">{row.dueDateLabel}</td>
                     <td className="px-5 py-4 text-sm font-bold text-slate-900">{row.daysOverdueLabel}</td>
-                    <td className="px-5 py-4">
-                      <span
-                        className={[
-                          "inline-flex rounded-full border px-3 py-1 text-xs font-extrabold",
-                          statusStyles[row.status] || statusStyles["Al dia"],
-                        ].join(" ")}
-                      >
-                        {row.status}
-                      </span>
+                    <td className="px-5 py-4 text-center align-middle">
+                      <div className="flex w-full items-center justify-center">
+                        <span
+                          className={[
+                            "inline-flex items-center justify-center rounded-full border px-3 py-1 text-center text-xs font-extrabold",
+                            statusStyles[row.status] || statusStyles["Al dia"],
+                          ].join(" ")}
+                        >
+                          {row.status}
+                        </span>
+                      </div>
                     </td>
                   </tr>
                 );

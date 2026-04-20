@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import apiClient from "../../../../services/apiClient";
 import { useActiveCondominium } from "../../../../context/useActiveCondominium";
 
+const MAX_REVENUE_PORTFOLIO_PER_PAGE = 10;
+
 export function useRevenuePortfolio({ period = "current" } = {}) {
   const { activeCondominiumId } = useActiveCondominium();
 
@@ -10,6 +12,7 @@ export function useRevenuePortfolio({ period = "current" } = {}) {
   const [collections, setCollections] = useState([]);
   const [unitOptions, setUnitOptions] = useState([]);
   const [debtSummary, setDebtSummary] = useState([]);
+  const [portfolioOwnersByApartment, setPortfolioOwnersByApartment] = useState({});
 
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -36,6 +39,7 @@ export function useRevenuePortfolio({ period = "current" } = {}) {
       setCollections([]);
       setUnitOptions([]);
       setDebtSummary([]);
+      setPortfolioOwnersByApartment({});
       return;
     }
 
@@ -43,20 +47,21 @@ export function useRevenuePortfolio({ period = "current" } = {}) {
     setError("");
 
     try {
-      const [statusRes, collectionsRes, unitOptionsRes, debtSummaryRes] = await Promise.all([
+      const [statusRes, collectionsRes, unitOptionsRes, debtSummaryRes, residentsRows] = await Promise.all([
         apiClient.get("/portfolio/portfolio-status", {
           ...(requestConfig || {}),
-          params: { period, page: 1, per_page: 10 },
+          params: { period, page: 1, per_page: MAX_REVENUE_PORTFOLIO_PER_PAGE },
         }),
         apiClient.get("/portfolio/collections", {
           ...(requestConfig || {}),
-          params: { period, page: 1, per_page: 10 },
+          params: { period, page: 1, per_page: MAX_REVENUE_PORTFOLIO_PER_PAGE },
         }),
         apiClient.get("/portfolio/unit-options", {
           ...(requestConfig || {}),
           params: { period },
         }),
         apiClient.get("/residents/debt-summary", requestConfig || {}),
+        loadAllRows("/residents", requestConfig),
       ]);
 
       const statusPayload = statusRes?.data || {};
@@ -69,6 +74,7 @@ export function useRevenuePortfolio({ period = "current" } = {}) {
       setCollections(Array.isArray(collectionsPayload?.data) ? collectionsPayload.data : []);
       setUnitOptions(Array.isArray(unitsPayload) ? unitsPayload : []);
       setDebtSummary(Array.isArray(debtPayload) ? debtPayload : []);
+      setPortfolioOwnersByApartment(buildPortfolioOwnersByApartment(residentsRows));
     } catch (err) {
       setError(normalizeApiError(err, "No fue posible cargar recaudo y cartera."));
       setSummary(null);
@@ -76,6 +82,7 @@ export function useRevenuePortfolio({ period = "current" } = {}) {
       setCollections([]);
       setUnitOptions([]);
       setDebtSummary([]);
+      setPortfolioOwnersByApartment({});
     } finally {
       setLoading(false);
     }
@@ -176,6 +183,7 @@ export function useRevenuePortfolio({ period = "current" } = {}) {
     collections,
     unitOptions,
     debtSummary,
+    portfolioOwnersByApartment,
     loading,
     submitting,
     generating,
@@ -187,6 +195,63 @@ export function useRevenuePortfolio({ period = "current" } = {}) {
     generateCurrentPortfolio,
     clearFieldError,
   };
+}
+
+async function loadAllRows(endpoint, requestConfig) {
+  const rows = [];
+  let page = 1;
+  let lastPage = 1;
+  const perPage = Math.min(MAX_REVENUE_PORTFOLIO_PER_PAGE, 10);
+
+  do {
+    const response = await apiClient.get(endpoint, {
+      ...(requestConfig || {}),
+      params: {
+        page,
+        per_page: perPage,
+      },
+    });
+
+    const payload = response?.data || {};
+    const pageRows = Array.isArray(payload?.data) ? payload.data : [];
+    rows.push(...pageRows);
+
+    const reportedLastPage = Number(payload?.last_page || 1);
+    lastPage = reportedLastPage > 0 ? reportedLastPage : 1;
+    page += 1;
+  } while (page <= lastPage);
+
+  return rows;
+}
+
+function buildPortfolioOwnersByApartment(rows) {
+  return (Array.isArray(rows) ? rows : []).reduce((accumulator, resident) => {
+    const apartmentId = resident?.apartment_id ?? resident?.apartment?.id;
+    if (apartmentId === null || apartmentId === undefined) {
+      return accumulator;
+    }
+
+    const apartmentKey = String(apartmentId);
+    const residentName = String(resident?.user?.full_name || resident?.full_name || "").trim();
+    const ownerReferenceName = String(
+      resident?.property_owner_full_name || resident?.property_owner_name || ""
+    ).trim();
+    const residentType = String(resident?.type || "").trim().toLowerCase();
+
+    const current = accumulator[apartmentKey] || { priority: 0, name: "" };
+    let next = current;
+
+    if (residentType === "propietario" && residentName) {
+      next = { priority: 3, name: residentName };
+    } else if (ownerReferenceName && current.priority < 2) {
+      next = { priority: 2, name: ownerReferenceName };
+    } else if (residentName && current.priority < 1) {
+      next = { priority: 1, name: residentName };
+    }
+
+    accumulator[apartmentKey] = next;
+    return accumulator;
+  }, {});
 }
 
 function extractFieldErrors(err) {

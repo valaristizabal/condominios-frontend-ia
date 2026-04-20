@@ -32,6 +32,7 @@ function RecaudoCarteraPage() {
     collections,
     unitOptions: rawUnitOptions,
     debtSummary,
+    portfolioOwnersByApartment,
     loading,
     submitting,
     generating,
@@ -98,7 +99,7 @@ function RecaudoCarteraPage() {
         return {
         id: row?.id,
         unit,
-        owner: row?.owner || row?.propietario || "-",
+        owner: resolvePortfolioOwner(row, portfolioOwnersByApartment),
         dueDate: row?.due_date || row?.fecha_vencimiento || null,
         debt: debtValue,
         debtLabel: formatCurrency(debtValue),
@@ -112,7 +113,7 @@ function RecaudoCarteraPage() {
       };
       });
     },
-    [debtSummary, portfolioStatusRows]
+    [debtSummary, portfolioOwnersByApartment, portfolioStatusRows]
   );
 
   const summaryCards = useMemo(() => createSummaryCards(summary), [summary]);
@@ -164,7 +165,7 @@ function RecaudoCarteraPage() {
     setForm((prev) => ({
       ...prev,
       unitId: String(value),
-      owner: nextUnit?.owner || prev.owner,
+      owner: resolvePortfolioOwner(nextUnit, portfolioOwnersByApartment) || prev.owner,
     }));
     setErrors((prev) => ({ ...prev, unitId: "", owner: "" }));
   };
@@ -531,6 +532,18 @@ function normalizeApartmentKey(value) {
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/\s+/g, "")
     .trim();
+}
+
+function resolvePortfolioOwner(row, ownersByApartment) {
+  const apartmentId = row?.apartment_id ?? row?.value ?? row?.id;
+  if (apartmentId !== null && apartmentId !== undefined) {
+    const resolvedOwner = ownersByApartment?.[String(apartmentId)]?.name;
+    if (String(resolvedOwner || "").trim()) {
+      return String(resolvedOwner).trim();
+    }
+  }
+
+  return row?.owner || row?.propietario || "-";
 }
 
 export default RecaudoCarteraPage;
