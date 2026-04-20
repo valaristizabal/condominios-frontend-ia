@@ -41,11 +41,7 @@ export function useRevenuePortfolio({ period = "current" } = {}) {
     setError("");
 
     try {
-      const [summaryRes, statusRes, collectionsRes, unitOptionsRes] = await Promise.all([
-        apiClient.get("/portfolio/summary", {
-          ...(requestConfig || {}),
-          params: { period },
-        }),
+      const [statusRes, collectionsRes, unitOptionsRes] = await Promise.all([
         apiClient.get("/portfolio/portfolio-status", {
           ...(requestConfig || {}),
           params: { period, page: 1, per_page: 10 },
@@ -60,12 +56,11 @@ export function useRevenuePortfolio({ period = "current" } = {}) {
         }),
       ]);
 
-      const summaryPayload = summaryRes?.data || null;
       const statusPayload = statusRes?.data || {};
       const collectionsPayload = collectionsRes?.data || {};
       const unitsPayload = unitOptionsRes?.data || [];
 
-      setSummary(summaryPayload);
+      setSummary(statusPayload?.kpis || null);
       setPortfolioStatus(Array.isArray(statusPayload?.data) ? statusPayload.data : []);
       setCollections(Array.isArray(collectionsPayload?.data) ? collectionsPayload.data : []);
       setUnitOptions(Array.isArray(unitsPayload) ? unitsPayload : []);

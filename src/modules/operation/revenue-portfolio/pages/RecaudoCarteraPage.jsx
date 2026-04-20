@@ -16,8 +16,16 @@ function createInitialFormState() {
     collectedAt: getTodayInputValue(),
   };
 }
+function getCurrentPeriod() {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+
+  return `${year}-${month}`
+}
 
 function RecaudoCarteraPage() {
+  const [selectedPeriod, setSelectedPeriod] = useState(getCurrentPeriod());
   const {
     summary,
     portfolioStatus: portfolioStatusRows,
@@ -29,7 +37,7 @@ function RecaudoCarteraPage() {
     error,
     createCollection,
     generateCurrentPortfolio,
-  } = useRevenuePortfolio({ period: "current" });
+  } = useRevenuePortfolio({ period: selectedPeriod });
   const { success: notifySuccess, error: notifyError, warning: notifyWarning } = useNotification();
 
   const [form, setForm] = useState(createInitialFormState);
@@ -278,15 +286,26 @@ function RecaudoCarteraPage() {
             </h1>
           </div>
         </div>
+        <div className="flex flex-wrap items-end gap-3">
+          <label className="flex min-w-[170px] flex-col gap-1">
+            <span className="text-xs font-bold uppercase tracking-wide text-slate-500">Periodo</span>
+            <input
+              type="month"
+              value={selectedPeriod}
+              onChange={(event) => setSelectedPeriod(event.target.value || getCurrentPeriod())}
+              className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            />
+          </label>
 
-        <button
-          type="button"
-          onClick={handleGeneratePortfolio}
-          disabled={generating || loading}
-          className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
-        >
-          {generating ? "Generando..." : "Generar cartera"}
-        </button>
+          <button
+            type="button"
+            onClick={handleGeneratePortfolio}
+            disabled={generating || loading}
+            className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            {generating ? "Generando..." : "Generar cartera"}
+          </button>
+        </div>
       </header>
 
       {error ? (
@@ -371,37 +390,37 @@ function RecaudoCarteraPage() {
 }
 
 function createSummaryCards(summary) {
-  const totalCollected = Number(summary?.total_recaudado ?? summary?.total_collected ?? 0);
-  const pendingPortfolio = Number(summary?.cartera_pendiente ?? summary?.pending_portfolio ?? 0);
-  const overdueUnits = Number(summary?.unidades_en_mora ?? summary?.overdue_units ?? 0);
-  const upcomingDue = Number(summary?.vencimientos_proximos ?? summary?.upcoming_due ?? 0);
+  const totalCharged = Number(summary?.total_charged ?? 0);
+  const totalCollected = Number(summary?.total_collected ?? summary?.total_recaudado ?? 0);
+  const pendingPortfolio = Number(summary?.total_pending ?? summary?.pending_portfolio ?? summary?.cartera_pendiente ?? 0);
+  const collectionRate = Number(summary?.porcentaje_recaudo ?? 0);
 
   return [
     {
-      id: "collected",
-      label: "Total recaudado",
-      value: formatCurrency(totalCollected),
+      id: "charged",
+      label: "Total facturado",
+      value: formatCurrency(totalCharged),
       tone: "blue",
       icon: "wallet",
     },
     {
-      id: "pending",
-      label: "Cartera pendiente",
-      value: formatCurrency(pendingPortfolio),
+      id: "collected",
+      label: "Total recaudado",
+      value: formatCurrency(totalCollected),
       tone: "amber",
       icon: "portfolio",
     },
     {
-      id: "overdue",
-      label: "Unidades en mora",
-      value: String(overdueUnits),
+      id: "pending",
+      label: "Total pendiente",
+      value: formatCurrency(pendingPortfolio),
       tone: "red",
       icon: "overdue",
     },
     {
-      id: "upcoming",
-      label: "Vencimientos proximos",
-      value: String(upcomingDue),
+      id: "rate",
+      label: "Porcentaje recaudo",
+      value: `${collectionRate.toFixed(2)}%`,
       tone: "emerald",
       icon: "calendar",
     },

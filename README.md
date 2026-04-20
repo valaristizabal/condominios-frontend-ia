@@ -60,6 +60,8 @@ En `Operacion > Recaudo y Cartera`:
 - el boton `Generar cartera` ejecuta `POST /api/portfolio/generate-current`
 - el frontend no envia `period`; el mes lo calcula el backend con la fecha del servidor
 - despues de generar, la pantalla refresca resumen, estado de cartera e historial de recaudos
+- el historial usa `evidence_url` para abrir comprobantes con `window.open(...)`
+- si `evidence_url` es nulo, la UI muestra aviso y no intenta abrir ruta interna
 
 ## Ejemplo de uso
 
