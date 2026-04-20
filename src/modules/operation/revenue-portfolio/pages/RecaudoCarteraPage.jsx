@@ -1,16 +1,12 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Plus } from "lucide-react";
 import BackButton from "../../../../components/common/BackButton";
+import { useNotification } from "../../../../hooks/useNotification";
 import CollectionFormCard from "../components/CollectionFormCard";
 import CollectionsTable from "../components/CollectionsTable";
 import PortfolioStatusTable from "../components/PortfolioStatusTable";
 import SummaryCards from "../components/SummaryCards";
-import {
-  collectionUnitOptions,
-  mockCollections,
-  portfolioStatusRecords,
-  revenueSummaryCards,
-} from "../data/mockCollections";
+import { useRevenuePortfolio } from "../hooks/useRevenuePortfolio";
 
 function createInitialFormState() {
   return {
@@ -22,59 +18,95 @@ function createInitialFormState() {
 }
 
 function RecaudoCarteraPage() {
-  const [collections, setCollections] = useState(mockCollections);
+  const {
+    summary,
+    portfolioStatus: portfolioStatusRows,
+    collections,
+    unitOptions: rawUnitOptions,
+    loading,
+    submitting,
+    generating,
+    error,
+    createCollection,
+    generateCurrentPortfolio,
+  } = useRevenuePortfolio({ period: "current" });
+  const { success: notifySuccess, error: notifyError, warning: notifyWarning } = useNotification();
+
   const [form, setForm] = useState(createInitialFormState);
   const [errors, setErrors] = useState({});
   const [fileName, setFileName] = useState("");
   const [fileError, setFileError] = useState("");
-  const [selectedRecordId, setSelectedRecordId] = useState(mockCollections[0]?.id || null);
+  const [evidenceFile, setEvidenceFile] = useState(null);
+  const [selectedRecordId, setSelectedRecordId] = useState(null);
   const [detailMode, setDetailMode] = useState("view");
   const [activeTab, setActiveTab] = useState("estado");
 
   const fileInputRef = useRef(null);
   const formRef = useRef(null);
 
-  const selectedRecord = useMemo(
-    () => collections.find((record) => record.id === selectedRecordId) || null,
-    [collections, selectedRecordId]
-  );
-
   const records = useMemo(
     () =>
       collections.map((record) => ({
-        ...record,
-        amountLabel: formatCurrency(record.amount),
-        dateLabel: formatDate(record.collectedAt),
+        id: record?.id,
+        unit: record?.unit || record?.unidad || "Unidad sin definir",
+        owner: record?.owner || record?.propietario || "-",
+        amount: Number(record?.amount ?? record?.valor ?? 0),
+        collectedAt: record?.payment_date || record?.fecha_recaudo || null,
+        evidenceUrl: record?.evidence_url || null,
+        evidenceName: record?.evidence_name || null,
+        amountLabel: formatCurrency(record?.amount ?? record?.valor ?? 0),
+        dateLabel: formatDate(record?.payment_date || record?.fecha_recaudo),
       })),
     [collections]
   );
 
+  const selectedRecord = useMemo(
+    () => records.find((record) => record.id === selectedRecordId) || null,
+    [records, selectedRecordId]
+  );
+
+  useEffect(() => {
+    if (!selectedRecordId && records.length > 0) {
+      setSelectedRecordId(records[0].id);
+    }
+  }, [records, selectedRecordId]);
+
   const portfolioStatus = useMemo(
     () =>
-      portfolioStatusRecords.map((record) => ({
-        ...record,
-        dueDateLabel: formatDate(record.dueDate),
-        daysOverdueLabel: Number(record.daysOverdue || 0) > 0 ? `${record.daysOverdue} dias` : "-",
+      portfolioStatusRows.map((row) => ({
+        id: row?.id,
+        unit: row?.unit || row?.unidad || "Unidad sin definir",
+        owner: row?.owner || row?.propietario || "-",
+        dueDate: row?.due_date || row?.fecha_vencimiento || null,
+        daysOverdue: Number(row?.days_overdue ?? row?.dias_en_mora ?? 0),
+        status: mapBackendStatusToLabel(row?.status || row?.estado),
+        dueDateLabel: formatDate(row?.due_date || row?.fecha_vencimiento),
+        daysOverdueLabel:
+          Number(row?.days_overdue ?? row?.dias_en_mora ?? 0) > 0
+            ? `${Number(row?.days_overdue ?? row?.dias_en_mora ?? 0)} dias`
+            : "-",
       })),
-    []
+    [portfolioStatusRows]
   );
+
+  const summaryCards = useMemo(() => createSummaryCards(summary), [summary]);
 
   const unitOptions = useMemo(
     () =>
-      collectionUnitOptions.map((option) => ({
+      rawUnitOptions.map((option) => ({
         value: option.value,
         label: option.label,
       })),
-    []
+    [rawUnitOptions]
   );
 
   const unitById = useMemo(
     () =>
-      collectionUnitOptions.reduce((accumulator, option) => {
-        accumulator[option.value] = option;
+      rawUnitOptions.reduce((accumulator, option) => {
+        accumulator[String(option.value)] = option;
         return accumulator;
       }, {}),
-    []
+    [rawUnitOptions]
   );
 
   const handleChange = (event) => {
@@ -84,11 +116,24 @@ function RecaudoCarteraPage() {
       ...prev,
       [name]: value,
     }));
-    setErrors((prev) => ({ ...prev, [name]: "" }));
+
+    setErrors((prev) => {
+      const next = { ...prev };
+      if (name === "unitId") {
+        delete next.unitId;
+      } else if (name === "amount") {
+        delete next.amount;
+      } else if (name === "collectedAt") {
+        delete next.collectedAt;
+      } else if (name === "owner") {
+        delete next.owner;
+      }
+      return next;
+    });
   };
 
   const handleUnitChange = (value) => {
-    const nextUnit = unitById[value];
+    const nextUnit = unitById[String(value)];
 
     setForm((prev) => ({
       ...prev,
@@ -106,12 +151,14 @@ function RecaudoCarteraPage() {
     if (file.size > 5 * 1024 * 1024) {
       setFileError("El archivo supera el maximo permitido de 5MB.");
       setFileName("");
+      setEvidenceFile(null);
       event.target.value = "";
       return;
     }
 
     setFileError("");
     setFileName(file.name);
+    setEvidenceFile(file);
   };
 
   const handleReset = () => {
@@ -119,6 +166,7 @@ function RecaudoCarteraPage() {
     setErrors({});
     setFileError("");
     setFileName("");
+    setEvidenceFile(null);
     setDetailMode("view");
     setSelectedRecordId(null);
 
@@ -132,55 +180,87 @@ function RecaudoCarteraPage() {
     setDetailMode("view");
   };
 
-  const handleSubmit = (event) => {
+  const handleOpenEvidence = (record) => {
+    if (!record?.evidenceUrl) {
+      setFileError("Este recaudo no tiene comprobante disponible.");
+      return;
+    }
+
+    window.open(record.evidenceUrl, "_blank", "noopener,noreferrer");
+  };
+
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
     const nextErrors = {};
 
     if (!form.unitId) nextErrors.unitId = "Selecciona una unidad.";
     if (!String(form.owner || "").trim()) nextErrors.owner = "Ingresa el propietario.";
-    if (!Number(form.amount)) nextErrors.amount = "Ingresa un valor valido.";
+    if (!Number(form.amount) || Number(form.amount) <= 0) nextErrors.amount = "Ingresa un valor valido.";
     if (!form.collectedAt) nextErrors.collectedAt = "Selecciona una fecha.";
+
+    const unitInfo = unitById[String(form.unitId)];
+    if (form.unitId && !unitInfo?.charge_id) {
+      nextErrors.unitId = "La unidad no tiene deuda mensual activa para registrar recaudo.";
+    }
 
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0 || fileError) return;
 
-    const unitInfo = unitById[form.unitId];
-    const normalizedAmount = Number(form.amount);
-    const nextRecord = {
-      id: detailMode === "edit" && selectedRecord ? selectedRecord.id : `rc-local-${Date.now()}`,
-      unitId: form.unitId,
-      unit: unitInfo?.unit || "Unidad sin definir",
-      owner: String(form.owner || "").trim(),
-      amount: normalizedAmount,
-      collectedAt: form.collectedAt,
-      status: detailMode === "edit" && selectedRecord ? selectedRecord.status : "Recaudado",
-      evidenceName: fileName || "sin-adjunto",
-    };
+    try {
+      const created = await createCollection({
+        chargeId: unitInfo?.charge_id,
+        amount: Number(form.amount),
+        paymentDate: form.collectedAt,
+        evidence: evidenceFile || null,
+      });
 
-    setCollections((prev) => {
-      if (detailMode === "edit" && selectedRecord) {
-        return prev.map((item) => (item.id === selectedRecord.id ? nextRecord : item));
+      setSelectedRecordId(created?.id || null);
+      setDetailMode("view");
+      setForm(createInitialFormState());
+      setErrors({});
+      setFileError("");
+      setFileName("");
+      setEvidenceFile(null);
+
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
       }
-
-      return [nextRecord, ...prev];
-    });
-
-    setSelectedRecordId(nextRecord.id);
-    setDetailMode("view");
-    setForm(createInitialFormState());
-    setErrors({});
-    setFileError("");
-    setFileName("");
-
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
+    } catch (err) {
+      setErrors((prev) => ({
+        ...prev,
+        ...mapBackendErrorsToForm(err),
+      }));
     }
   };
 
   const scrollToForm = () => {
     setDetailMode("view");
     formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const handleGeneratePortfolio = async () => {
+    try {
+      const response = await generateCurrentPortfolio();
+      const createdCount = Number(response?.total_creados || 0);
+      const skippedCount = Number(response?.total_omitidos || 0);
+      const responseMessage = String(response?.message || "").trim();
+
+      if (createdCount === 0) {
+        notifyWarning(
+          responseMessage || `La cartera del mes actual ya fue generada. Omitidos: ${skippedCount}.`
+        );
+        return;
+      }
+
+      notifySuccess(
+        responseMessage || `Cartera generada correctamente. Creados: ${createdCount}. Omitidos: ${skippedCount}.`
+      );
+    } catch (requestError) {
+      notifyError(
+        normalizeApiError(requestError, "No fue posible generar la cartera mensual.")
+      );
+    }
   };
 
   return (
@@ -198,10 +278,25 @@ function RecaudoCarteraPage() {
             </h1>
           </div>
         </div>
+
+        <button
+          type="button"
+          onClick={handleGeneratePortfolio}
+          disabled={generating || loading}
+          className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
+        >
+          {generating ? "Generando..." : "Generar cartera"}
+        </button>
       </header>
 
+      {error ? (
+        <div className="mt-6 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">
+          {error}
+        </div>
+      ) : null}
+
       <div className="mt-8">
-        <SummaryCards cards={revenueSummaryCards} />
+        <SummaryCards cards={summaryCards} />
       </div>
 
       <div className="mt-8 space-y-8">
@@ -212,15 +307,7 @@ function RecaudoCarteraPage() {
             errors={errors}
             fileName={fileName}
             fileError={fileError}
-            selectedRecord={
-              selectedRecord
-                ? {
-                    ...selectedRecord,
-                    amountLabel: formatCurrency(selectedRecord.amount),
-                    dateLabel: formatDate(selectedRecord.collectedAt),
-                  }
-                : null
-            }
+            selectedRecord={selectedRecord}
             detailMode={detailMode}
             fileInputRef={fileInputRef}
             onChange={handleChange}
@@ -229,6 +316,7 @@ function RecaudoCarteraPage() {
             onFileChange={handleFileChange}
             onSubmit={handleSubmit}
             onReset={handleReset}
+            saving={submitting}
           />
         </div>
 
@@ -258,16 +346,14 @@ function RecaudoCarteraPage() {
         </section>
 
         {activeTab === "estado" ? (
-          <PortfolioStatusTable
-            rows={portfolioStatus}
-            selectedId={selectedRecordId}
-            onView={handleView}
-          />
+          <PortfolioStatusTable rows={portfolioStatus} selectedId={selectedRecordId} loading={loading} />
         ) : (
           <CollectionsTable
             records={records}
             selectedId={selectedRecordId}
+            loading={loading}
             onView={handleView}
+            onOpenEvidence={handleOpenEvidence}
           />
         )}
       </div>
@@ -282,6 +368,76 @@ function RecaudoCarteraPage() {
       </button>
     </div>
   );
+}
+
+function createSummaryCards(summary) {
+  const totalCollected = Number(summary?.total_recaudado ?? summary?.total_collected ?? 0);
+  const pendingPortfolio = Number(summary?.cartera_pendiente ?? summary?.pending_portfolio ?? 0);
+  const overdueUnits = Number(summary?.unidades_en_mora ?? summary?.overdue_units ?? 0);
+  const upcomingDue = Number(summary?.vencimientos_proximos ?? summary?.upcoming_due ?? 0);
+
+  return [
+    {
+      id: "collected",
+      label: "Total recaudado",
+      value: formatCurrency(totalCollected),
+      tone: "blue",
+      icon: "wallet",
+    },
+    {
+      id: "pending",
+      label: "Cartera pendiente",
+      value: formatCurrency(pendingPortfolio),
+      tone: "amber",
+      icon: "portfolio",
+    },
+    {
+      id: "overdue",
+      label: "Unidades en mora",
+      value: String(overdueUnits),
+      tone: "red",
+      icon: "overdue",
+    },
+    {
+      id: "upcoming",
+      label: "Vencimientos proximos",
+      value: String(upcomingDue),
+      tone: "emerald",
+      icon: "calendar",
+    },
+  ];
+}
+
+function mapBackendStatusToLabel(status) {
+  const normalized = String(status || "").toLowerCase();
+  if (normalized === "en_mora") return "En mora";
+  if (normalized === "proximo_a_vencer") return "Proximo a vencer";
+  return "Al dia";
+}
+
+function mapBackendErrorsToForm(err) {
+  const fieldErrors = err?.response?.data?.errors;
+  if (!fieldErrors || typeof fieldErrors !== "object") return {};
+
+  const next = {};
+
+  if (fieldErrors.charge_id?.[0]) {
+    next.unitId = String(fieldErrors.charge_id[0]);
+  }
+
+  if (fieldErrors.amount?.[0]) {
+    next.amount = String(fieldErrors.amount[0]);
+  }
+
+  if (fieldErrors.payment_date?.[0]) {
+    next.collectedAt = String(fieldErrors.payment_date[0]);
+  }
+
+  if (fieldErrors.evidence?.[0]) {
+    next.file = String(fieldErrors.evidence[0]);
+  }
+
+  return next;
 }
 
 function formatCurrency(value) {
@@ -313,6 +469,22 @@ function getTodayInputValue() {
   const day = `${now.getDate()}`.padStart(2, "0");
 
   return `${year}-${month}-${day}`;
+}
+
+function normalizeApiError(err, fallbackMessage) {
+  const responseData = err?.response?.data;
+  const errors = responseData?.errors;
+
+  if (errors && typeof errors === "object") {
+    const firstFieldErrors = Object.values(errors).find(
+      (fieldErrors) => Array.isArray(fieldErrors) && fieldErrors.length > 0
+    );
+    if (firstFieldErrors) {
+      return String(firstFieldErrors[0]);
+    }
+  }
+
+  return responseData?.message || err?.message || fallbackMessage;
 }
 
 export default RecaudoCarteraPage;

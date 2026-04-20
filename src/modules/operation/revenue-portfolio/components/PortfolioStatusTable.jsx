@@ -13,7 +13,7 @@ const FILTER_OPTIONS = [
   { value: "mora", label: "En mora" },
 ];
 
-function PortfolioStatusTable({ rows = [], selectedId = null }) {
+function PortfolioStatusTable({ rows = [], selectedId = null, loading = false }) {
   const [statusFilter, setStatusFilter] = useState("todos");
 
   const filteredRows = useMemo(() => {
@@ -56,11 +56,19 @@ function PortfolioStatusTable({ rows = [], selectedId = null }) {
       </div>
 
       <div className="mt-6 overflow-hidden rounded-2xl border border-gray-100">
-        {filteredRows.length === 0 ? (
+        {loading ? (
+          <div className="rounded-2xl bg-slate-50 px-4 py-10 text-center text-sm font-semibold text-slate-500">
+            Cargando estado de cartera...
+          </div>
+        ) : null}
+
+        {!loading && filteredRows.length === 0 ? (
           <div className="rounded-2xl bg-slate-50 px-4 py-10 text-center text-sm font-semibold text-slate-500">
             No hay inmuebles con este estado.
           </div>
-        ) : (
+        ) : null}
+
+        {!loading && filteredRows.length > 0 ? (
           <>
         <div className="hidden overflow-x-auto lg:block">
           <table className="min-w-full text-sm">
@@ -68,6 +76,7 @@ function PortfolioStatusTable({ rows = [], selectedId = null }) {
               <tr className="text-left text-xs uppercase tracking-wide text-gray-500">
                 <th className="px-5 py-4">Unidad / Apto</th>
                 <th className="px-5 py-4">Propietario</th>
+                <th className="px-5 py-4">Dia de corte</th>
                 <th className="px-5 py-4">Fecha de vencimiento</th>
                 <th className="px-5 py-4">Dias en mora</th>
                 <th className="px-5 py-4">Estado</th>
@@ -85,6 +94,7 @@ function PortfolioStatusTable({ rows = [], selectedId = null }) {
                   >
                     <td className="px-5 py-4 font-bold text-slate-900">{row.unit}</td>
                     <td className="px-5 py-4 text-sm font-semibold text-slate-600">{row.owner}</td>
+                    <td className="px-5 py-4 text-sm font-bold text-slate-900">{formatCutoffDay(row?.dueDate)}</td>
                     <td className="px-5 py-4 text-sm font-semibold text-slate-600">{row.dueDateLabel}</td>
                     <td className="px-5 py-4 text-sm font-bold text-slate-900">{row.daysOverdueLabel}</td>
                     <td className="px-5 py-4">
@@ -135,6 +145,12 @@ function PortfolioStatusTable({ rows = [], selectedId = null }) {
                 <div className="mt-4 grid grid-cols-2 gap-3 rounded-2xl bg-slate-50 p-3">
                   <div>
                     <p className="text-[11px] font-extrabold uppercase tracking-wide text-slate-400">
+                      Dia de corte
+                    </p>
+                    <p className="mt-1 text-sm font-bold text-slate-900">{formatCutoffDay(row?.dueDate)}</p>
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-extrabold uppercase tracking-wide text-slate-400">
                       Vencimiento
                     </p>
                     <p className="mt-1 text-sm font-bold text-slate-900">{row.dueDateLabel}</p>
@@ -151,7 +167,7 @@ function PortfolioStatusTable({ rows = [], selectedId = null }) {
           })}
         </div>
           </>
-        )}
+        ) : null}
       </div>
     </section>
   );
@@ -224,6 +240,12 @@ function StatusFilterSelect({ value, onChange, options = [], placeholder = "Sele
 }
 
 function normalizePortfolioStatus(row) {
+  const explicitStatus = String(row?.status || "").toLowerCase();
+  if (explicitStatus === "en_mora" || explicitStatus === "en mora") return "En mora";
+  if (explicitStatus === "proximo_a_vencer" || explicitStatus === "proximo a vencer") return "Proximo a vencer";
+  if (explicitStatus === "pagado" || explicitStatus === "pagada") return "Al dia";
+  if (explicitStatus === "al_dia" || explicitStatus === "al dia") return "Al dia";
+
   const dueDate = new Date(`${row?.dueDate || ""}T00:00:00`);
   if (Number.isNaN(dueDate.getTime())) {
     if (row?.status === "En mora") return "En mora";
@@ -238,4 +260,13 @@ function normalizePortfolioStatus(row) {
   if (daysUntilDue < 0) return "En mora";
   if (daysUntilDue <= 7) return "Proximo a vencer";
   return "Al dia";
+}
+
+function formatCutoffDay(value) {
+  if (!value) return "-";
+
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return "-";
+
+  return String(date.getDate());
 }

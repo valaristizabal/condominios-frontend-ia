@@ -31,6 +31,7 @@ function CollectionFormCard({
   onFileChange,
   onSubmit,
   onReset,
+  saving = false,
 }) {
   const isEditing = detailMode === "edit";
 
@@ -94,7 +95,7 @@ function CollectionFormCard({
           />
         </Field>
 
-        <Field label="Evidencia de pago" error={fileError}>
+        <Field label="Evidencia de pago" error={fileError || errors.file}>
           <div className="rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 p-5">
             <input
               ref={fileInputRef}
@@ -133,9 +134,10 @@ function CollectionFormCard({
 
         <button
           type="submit"
+          disabled={saving}
           className="w-full rounded-2xl bg-blue-600 px-4 py-3.5 text-sm font-extrabold text-white shadow-sm transition hover:bg-blue-700 active:scale-[0.99]"
         >
-          {isEditing ? "Actualizar registro" : "Guardar registro"}
+          {saving ? "Guardando..." : isEditing ? "Actualizar registro" : "Guardar registro"}
         </button>
       </form>
     </section>

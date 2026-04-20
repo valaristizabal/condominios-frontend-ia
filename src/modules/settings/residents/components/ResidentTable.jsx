@@ -31,6 +31,7 @@ function ResidentTable({
             <th className="px-4 py-3">Inmueble</th>
             <th className="px-4 py-3">Tipo residente</th>
             <th className="px-4 py-3">Administracion</th>
+            <th className="px-4 py-3">Vence</th>
             <th className="px-4 py-3">Propietario (ref)</th>
             <th className="px-4 py-3">Estado</th>
             <th className="px-4 py-3 text-right">Acciones</th>
@@ -64,6 +65,7 @@ function ResidentTable({
               </td>
               <td className="px-4 py-3 text-slate-600">{formatResidentType(item.type)}</td>
               <td className="px-4 py-3 text-slate-600">{formatCurrency(item.administration_fee)}</td>
+              <td className="px-4 py-3 text-slate-600">{formatDueDay(item.administration_due_day)}</td>
               <td className="px-4 py-3 text-slate-600">
                 {item.property_owner_full_name || item.property_owner_name || "-"}
               </td>
@@ -156,6 +158,13 @@ function formatCurrency(value) {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(amount);
+}
+
+function formatDueDay(value) {
+  if (value === null || value === undefined || value === "") return "-";
+  const day = Number(value);
+  if (!Number.isInteger(day) || day < 1 || day > 31) return "-";
+  return `Dia ${day}`;
 }
 
 export default ResidentTable;

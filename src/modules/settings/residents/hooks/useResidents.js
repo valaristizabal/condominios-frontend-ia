@@ -71,7 +71,7 @@ export function useResidents(filters = {}) {
         ? payload.data.map((item) => ({
             ...item,
             administration_fee: item?.administration_fee ?? item?.administrationFee ?? null,
-            administration_maturity: item?.administration_maturity ?? item?.administrationMaturity ?? null,
+            administration_due_day: item?.administration_due_day ?? item?.administrationDueDay ?? null,
             property_owner_full_name:
               item?.property_owner_full_name ?? item?.propertyOwnerFullName ?? null,
             property_owner_document_number:

@@ -1,6 +1,6 @@
 import { Eye } from "lucide-react";
 
-function CollectionsTable({ records = [], selectedId = null, onView }) {
+function CollectionsTable({ records = [], selectedId = null, onView, onOpenEvidence, loading = false }) {
   return (
     <section className="rounded-3xl border border-gray-100 bg-white p-7 shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -10,7 +10,7 @@ function CollectionsTable({ records = [], selectedId = null, onView }) {
           </p>
           <h2 className="mt-2 text-xl font-bold text-gray-800">Historial de recaudos</h2>
           <p className="mt-1 text-sm text-slate-500">
-            Registros renderizados con datos mock locales para la experiencia visual del modulo.
+            Registros de recaudos aplicados en el periodo seleccionado.
           </p>
         </div>
 
@@ -20,6 +20,20 @@ function CollectionsTable({ records = [], selectedId = null, onView }) {
       </div>
 
       <div className="mt-6 overflow-hidden rounded-2xl border border-gray-100">
+        {loading ? (
+          <div className="rounded-2xl bg-slate-50 px-4 py-10 text-center text-sm font-semibold text-slate-500">
+            Cargando historial de recaudos...
+          </div>
+        ) : null}
+
+        {!loading && records.length === 0 ? (
+          <div className="rounded-2xl bg-slate-50 px-4 py-10 text-center text-sm font-semibold text-slate-500">
+            No hay recaudos registrados.
+          </div>
+        ) : null}
+
+        {!loading && records.length > 0 ? (
+          <>
         <div className="hidden overflow-x-auto lg:block">
           <table className="min-w-full text-sm">
             <thead className="bg-gray-50">
@@ -51,7 +65,10 @@ function CollectionsTable({ records = [], selectedId = null, onView }) {
                       <div className="flex items-center justify-center">
                         <button
                           type="button"
-                          onClick={() => onView?.(record)}
+                          onClick={() => {
+                            onView?.(record);
+                            onOpenEvidence?.(record);
+                          }}
                           className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-extrabold text-slate-700 transition hover:bg-slate-50"
                         >
                           <Eye className="h-3.5 w-3.5" />
@@ -101,7 +118,10 @@ function CollectionsTable({ records = [], selectedId = null, onView }) {
                 <div className="mt-4">
                   <button
                     type="button"
-                    onClick={() => onView?.(record)}
+                    onClick={() => {
+                      onView?.(record);
+                      onOpenEvidence?.(record);
+                    }}
                     className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-extrabold text-slate-700 transition hover:bg-slate-50"
                   >
                     Ver comprobante
@@ -111,6 +131,8 @@ function CollectionsTable({ records = [], selectedId = null, onView }) {
             );
           })}
         </div>
+          </>
+        ) : null}
       </div>
     </section>
   );

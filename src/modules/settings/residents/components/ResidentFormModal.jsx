@@ -11,7 +11,7 @@ const EMPTY_FORM = {
   apartment_id: "",
   type: "propietario",
   administration_fee: "",
-  administration_maturity: "",
+  administration_due_day: "",
   property_owner_full_name: "",
   property_owner_document_number: "",
   property_owner_email: "",
@@ -161,6 +161,9 @@ function ResidentFormModal({ open, initialValues, loading, onCancel, onSubmit })
     const email = String(form.email || "").trim();
     const documentNumber = String(form.document_number || "").trim();
     const apartmentId = Number(form.apartment_id);
+    const administrationDueDayRaw = String(form.administration_due_day || "").trim();
+    const hasAdministrationDueDay = administrationDueDayRaw !== "";
+    const administrationDueDay = hasAdministrationDueDay ? parseInt(administrationDueDayRaw, 10) : null;
 
     if (!fullName || !email || !documentNumber) {
       setError("Nombre, email y documento son obligatorios.");
@@ -169,6 +172,14 @@ function ResidentFormModal({ open, initialValues, loading, onCancel, onSubmit })
 
     if (!apartmentId) {
       setError("Debes seleccionar un inmueble.");
+      return;
+    }
+
+    if (
+      hasAdministrationDueDay &&
+      (!Number.isInteger(administrationDueDay) || administrationDueDay < 1 || administrationDueDay > 31)
+    ) {
+      setError("El día de vencimiento de administración debe estar entre 1 y 31.");
       return;
     }
 
@@ -202,7 +213,7 @@ function ResidentFormModal({ open, initialValues, loading, onCancel, onSubmit })
           String(form.administration_fee || "").trim() === ""
             ? null
             : Number(form.administration_fee),
-        administration_maturity: form.administration_maturity || null,
+        administration_due_day: administrationDueDay,
         property_owner_full_name:
           form.type === "arrendatario" ? String(form.property_owner_full_name || "").trim() || null : null,
         property_owner_document_number:
@@ -287,9 +298,13 @@ function ResidentFormModal({ open, initialValues, loading, onCancel, onSubmit })
             />
             <Field
               label="Vencimiento administracion"
-              name="administration_maturity"
-              type="date"
-              value={form.administration_maturity ?? ""}
+              name="administration_due_day"
+              type="number"
+              min="1"
+              max="31"
+              step="1"
+              placeholder="Día de vencimiento (1-31)"
+              value={form.administration_due_day || ""}
               onChange={handleChange}
             />
           </div>
@@ -456,9 +471,9 @@ function buildInitialForm(initialValues) {
       initialValues.administration_fee !== null && initialValues.administration_fee !== undefined
         ? String(initialValues.administration_fee)
         : "",
-    administration_maturity: initialValues.administration_maturity
-      ? String(initialValues.administration_maturity).slice(0, 10)
-      : "",
+    administration_due_day: normalizeAdministrationDueDay(
+      initialValues.administration_due_day ?? initialValues.administrationDueDay
+    ),
     property_owner_full_name: initialValues.property_owner_full_name ?? "",
     property_owner_document_number: initialValues.property_owner_document_number ?? "",
     property_owner_email: initialValues.property_owner_email ?? "",
@@ -480,6 +495,13 @@ function buildApartmentLabel(apartment) {
 function buildRelatedUnitLabel(unit) {
   const typeName = unit?.unit_type?.name || unit?.unitType?.name || "Unidad";
   return `${typeName}: ${unit?.number || "-"} | Torre: ${unit?.tower || "Sin torre"} | Piso: ${unit?.floor ?? "-"}`;
+}
+
+function normalizeAdministrationDueDay(value) {
+  if (value === null || value === undefined || value === "") return "";
+  const day = parseInt(String(value), 10);
+  if (!Number.isInteger(day)) return "";
+  return String(day);
 }
 
 function normalizeApiError(err, fallbackMessage) {

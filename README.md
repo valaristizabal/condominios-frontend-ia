@@ -43,7 +43,7 @@ En `Settings > Residentes`:
 - las unidades hijas se muestran como relacionadas al inmueble principal
 - el formulario incluye:
   - `administration_fee`
-  - `administration_maturity`
+  - `administration_due_day` (dia del mes entre 1 y 31)
 - si el tipo es `arrendatario`, se habilitan campos del propietario:
   - `property_owner_full_name`
   - `property_owner_document_number`
@@ -52,6 +52,14 @@ En `Settings > Residentes`:
   - `property_owner_birth_date`
 - si el tipo cambia a `propietario`, los datos `property_owner_*` se limpian automaticamente
 - el listado de residentes muestra `administration_fee` y referencia de propietario cuando exista
+
+### Recaudo y cartera
+
+En `Operacion > Recaudo y Cartera`:
+
+- el boton `Generar cartera` ejecuta `POST /api/portfolio/generate-current`
+- el frontend no envia `period`; el mes lo calcula el backend con la fecha del servidor
+- despues de generar, la pantalla refresca resumen, estado de cartera e historial de recaudos
 
 ## Ejemplo de uso
 
