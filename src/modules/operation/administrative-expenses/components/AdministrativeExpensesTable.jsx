@@ -1,4 +1,5 @@
-import { Eye } from "lucide-react";
+import { useState } from "react";
+import { Eye, MessageSquareText, X } from "lucide-react";
 
 const statusStyles = {
   registrado: "border-blue-200 bg-blue-50 text-blue-700",
@@ -7,6 +8,13 @@ const statusStyles = {
 };
 
 function AdministrativeExpensesTable({ rows = [], selectedId = null, onViewSupport }) {
+  const [selectedObservationRow, setSelectedObservationRow] = useState(null);
+
+  const getObservationLabel = (value) => {
+    const normalized = String(value || "").trim();
+    return normalized || "Sin observaciones";
+  };
+
   return (
     <section className="rounded-3xl border border-gray-100 bg-white p-7 shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -69,13 +77,28 @@ function AdministrativeExpensesTable({ rows = [], selectedId = null, onViewSuppo
                           </span>
                         </td>
                         <td className="px-5 py-4">
-                          <div className="flex items-center justify-center">
+                          <div className="flex flex-col items-stretch justify-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setSelectedObservationRow(row)}
+                              disabled={!String(row.observations || "").trim()}
+                              className={[
+                                "inline-flex items-center justify-center gap-2 rounded-xl border px-3 py-2 text-xs font-extrabold transition",
+                                String(row.observations || "").trim()
+                                  ? "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                                  : "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400",
+                              ].join(" ")}
+                            >
+                              <MessageSquareText className="h-3.5 w-3.5" />
+                              Ver observaciones
+                            </button>
+
                             <button
                               type="button"
                               onClick={() => hasSupport && onViewSupport?.(row)}
                               disabled={!hasSupport}
                               className={[
-                                "inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-extrabold transition",
+                                "inline-flex items-center justify-center gap-2 rounded-xl border px-3 py-2 text-xs font-extrabold transition",
                                 hasSupport
                                   ? "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
                                   : "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400",
@@ -143,7 +166,21 @@ function AdministrativeExpensesTable({ rows = [], selectedId = null, onViewSuppo
                       </div>
                     </div>
 
-                    <div className="mt-4">
+                    <div className="mt-4 space-y-2">
+                      <button
+                        type="button"
+                        onClick={() => String(row.observations || "").trim() && setSelectedObservationRow(row)}
+                        disabled={!String(row.observations || "").trim()}
+                        className={[
+                          "w-full rounded-xl border px-3 py-2 text-xs font-extrabold transition",
+                          String(row.observations || "").trim()
+                            ? "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                            : "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400",
+                        ].join(" ")}
+                      >
+                        Ver observaciones
+                      </button>
+
                       <button
                         type="button"
                         onClick={() => hasSupport && onViewSupport?.(row)}
@@ -165,6 +202,41 @@ function AdministrativeExpensesTable({ rows = [], selectedId = null, onViewSuppo
           </>
         )}
       </div>
+
+      {selectedObservationRow ? (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/35 px-4">
+          <div className="w-full max-w-md rounded-3xl border border-gray-100 bg-white p-7 shadow-xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-extrabold uppercase tracking-[0.24em] text-slate-400">
+                  Observaciones
+                </p>
+                <h3 className="mt-2 text-xl font-bold text-gray-800">
+                  {selectedObservationRow.expenseTypeLabel}
+                </h3>
+                <p className="mt-1 text-sm font-semibold text-slate-500">
+                  {selectedObservationRow.registeredBy}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setSelectedObservationRow(null)}
+                className="rounded-2xl border border-slate-200 bg-white p-2 text-slate-500 transition hover:bg-slate-50 hover:text-slate-700"
+                aria-label="Cerrar observaciones"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="mt-6 rounded-2xl bg-slate-50 p-4">
+              <p className="text-sm font-semibold leading-6 text-slate-700">
+                {getObservationLabel(selectedObservationRow.observations)}
+              </p>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }
