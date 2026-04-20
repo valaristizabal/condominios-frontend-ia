@@ -1,3 +1,4 @@
+import ImageViewer from "../../../../components/common/ImageViewer";
 import { useState } from "react";
 
 function VehicleIncidentTable({
@@ -126,7 +127,7 @@ function VehicleIncidentTable({
         {totalPages > 1 ? (
           <div className="mt-4 flex flex-col items-center justify-between gap-3 border-t border-slate-100 pt-4 sm:flex-row">
             <p className="text-xs font-semibold text-slate-500">
-              Página {currentPage} de {totalPages}
+              Pagina {currentPage} de {totalPages}
             </p>
             <div className="flex items-center gap-2">
               <button
@@ -150,49 +151,12 @@ function VehicleIncidentTable({
         ) : null}
       </section>
 
-      {activeEvidence.length ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4">
-          <div className="max-h-[90vh] w-full max-w-5xl overflow-y-auto rounded-2xl bg-white p-4 shadow-2xl">
-            <div className="mb-4 flex items-center justify-between gap-3">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Evidencias</p>
-                <h3 className="text-lg font-bold text-slate-900">
-                  {activeEvidence.length > 1 ? `${activeEvidence.length} imágenes adjuntas` : "1 imagen adjunta"}
-                </h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setActiveEvidence([])}
-                className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-50"
-              >
-                Cerrar
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {activeEvidence.map((evidencePath, index) => {
-                const imageUrl = buildEvidenceUrl(evidencePath);
-
-                return (
-                  <a
-                    key={`${evidencePath}-${index}`}
-                    href={imageUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50"
-                  >
-                    <img src={imageUrl} alt={`Evidencia ${index + 1}`} className="h-64 w-full object-cover" />
-                    <div className="flex items-center justify-between gap-2 border-t border-slate-200 bg-white px-3 py-2">
-                      <span className="text-xs font-semibold text-slate-600">Evidencia {index + 1}</span>
-                      <span className="text-xs font-bold text-blue-700">Abrir</span>
-                    </div>
-                  </a>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      ) : null}
+      <ImageViewer
+        open={activeEvidence.length > 0}
+        imageUrls={activeEvidence.map((evidencePath) => buildEvidenceUrl(evidencePath))}
+        title={activeEvidence.length > 1 ? `${activeEvidence.length} imagenes adjuntas` : "1 imagen adjunta"}
+        onClose={() => setActiveEvidence([])}
+      />
     </>
   );
 }

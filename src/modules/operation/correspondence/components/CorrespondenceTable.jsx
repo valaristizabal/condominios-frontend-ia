@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { Clock } from "lucide-react";
+import ImageViewer from "../../../../components/common/ImageViewer";
 
 const Card = ({ children, className = "" }) => (
   <div
@@ -34,9 +36,25 @@ function EmptyState() {
   );
 }
 
-function Row({ item, onRequestDeliver }) {
+function MediaThumb({ src, alt, label, onOpen }) {
+  if (!src) return null;
+
+  return (
+    <button
+      type="button"
+      onClick={() => onOpen?.(src, label)}
+      className="overflow-hidden rounded-lg border border-slate-200 bg-white"
+    >
+      <img src={src} alt={alt} className="h-10 w-20 object-contain" />
+    </button>
+  );
+}
+
+function Row({ item, onRequestDeliver, onOpenImage }) {
   const isReceived = (item?.status || "") === "RECEIVED_BY_SECURITY";
   const isDelivered = (item?.status || "") === "DELIVERED" || item?.delivered;
+  const hasEvidence = Boolean(item?.evidencePhotoUrl);
+  const hasSignature = Boolean(item?.signatureUrl);
 
   return (
     <div
@@ -57,12 +75,19 @@ function Row({ item, onRequestDeliver }) {
             Documento: {item.receiverDocument}
           </p>
         ) : null}
-        {isDelivered && item?.signatureUrl ? (
-          <div className="mt-2">
-            <img
-              src={item.signatureUrl}
+        {hasEvidence || hasSignature ? (
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <MediaThumb
+              src={item?.evidencePhotoUrl}
+              alt="Foto de correspondencia"
+              label="Foto de correspondencia"
+              onOpen={onOpenImage}
+            />
+            <MediaThumb
+              src={item?.signatureUrl}
               alt="Firma digital"
-              className="h-10 w-28 rounded-lg border border-slate-200 bg-white object-contain"
+              label="Firma digital"
+              onOpen={onOpenImage}
             />
           </div>
         ) : null}
@@ -108,53 +133,68 @@ export default function CorrespondenceTable({
   totalItems = 0,
   onPageChange,
 }) {
+  const [activeImage, setActiveImage] = useState({ imageUrl: "", title: "" });
   const canGoPrev = currentPage > 1;
   const canGoNext = currentPage < totalPages;
 
   return (
-    <Card>
-      <SectionTitle
-        icon={<Clock className="h-5 w-5" />}
-        title="Ultimos registros"
-        desc="Consulta rapida de correspondencias registradas recientemente."
-      />
+    <>
+      <Card>
+        <SectionTitle
+          icon={<Clock className="h-5 w-5" />}
+          title="Ultimos registros"
+          desc="Consulta rapida de correspondencias registradas recientemente."
+        />
 
-      <div className="mt-6 space-y-3">
-        {!recent || recent.length === 0 ? (
-          <EmptyState />
-        ) : (
-          recent.map((r, idx) => (
-            <Row key={r?.id ?? idx} item={r} onRequestDeliver={onRequestDeliver} />
-          ))
-        )}
-      </div>
-
-      {totalPages > 1 ? (
-        <div className="mt-6 flex flex-col items-center justify-between gap-3 border-t border-slate-100 pt-4 sm:flex-row">
-          <p className="text-xs font-semibold text-slate-500">
-            Pagina {currentPage} de {totalPages} ({totalItems} registros)
-          </p>
-
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => canGoPrev && onPageChange?.(currentPage - 1)}
-              disabled={!canGoPrev || loading}
-              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              Anterior
-            </button>
-            <button
-              type="button"
-              onClick={() => canGoNext && onPageChange?.(currentPage + 1)}
-              disabled={!canGoNext || loading}
-              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              Siguiente
-            </button>
-          </div>
+        <div className="mt-6 space-y-3">
+          {!recent || recent.length === 0 ? (
+            <EmptyState />
+          ) : (
+            recent.map((r, idx) => (
+              <Row
+                key={r?.id ?? idx}
+                item={r}
+                onRequestDeliver={onRequestDeliver}
+                onOpenImage={(imageUrl, title) => setActiveImage({ imageUrl, title })}
+              />
+            ))
+          )}
         </div>
-      ) : null}
-    </Card>
+
+        {totalPages > 1 ? (
+          <div className="mt-6 flex flex-col items-center justify-between gap-3 border-t border-slate-100 pt-4 sm:flex-row">
+            <p className="text-xs font-semibold text-slate-500">
+              Pagina {currentPage} de {totalPages} ({totalItems} registros)
+            </p>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => canGoPrev && onPageChange?.(currentPage - 1)}
+                disabled={!canGoPrev || loading}
+                className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Anterior
+              </button>
+              <button
+                type="button"
+                onClick={() => canGoNext && onPageChange?.(currentPage + 1)}
+                disabled={!canGoNext || loading}
+                className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Siguiente
+              </button>
+            </div>
+          </div>
+        ) : null}
+      </Card>
+
+      <ImageViewer
+        open={Boolean(activeImage.imageUrl)}
+        imageUrl={activeImage.imageUrl}
+        title={activeImage.title}
+        onClose={() => setActiveImage({ imageUrl: "", title: "" })}
+      />
+    </>
   );
 }
