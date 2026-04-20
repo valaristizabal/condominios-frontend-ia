@@ -9,6 +9,7 @@ export function useRevenuePortfolio({ period = "current" } = {}) {
   const [portfolioStatus, setPortfolioStatus] = useState([]);
   const [collections, setCollections] = useState([]);
   const [unitOptions, setUnitOptions] = useState([]);
+  const [debtSummary, setDebtSummary] = useState([]);
 
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -34,6 +35,7 @@ export function useRevenuePortfolio({ period = "current" } = {}) {
       setPortfolioStatus([]);
       setCollections([]);
       setUnitOptions([]);
+      setDebtSummary([]);
       return;
     }
 
@@ -41,7 +43,7 @@ export function useRevenuePortfolio({ period = "current" } = {}) {
     setError("");
 
     try {
-      const [statusRes, collectionsRes, unitOptionsRes] = await Promise.all([
+      const [statusRes, collectionsRes, unitOptionsRes, debtSummaryRes] = await Promise.all([
         apiClient.get("/portfolio/portfolio-status", {
           ...(requestConfig || {}),
           params: { period, page: 1, per_page: 10 },
@@ -54,22 +56,26 @@ export function useRevenuePortfolio({ period = "current" } = {}) {
           ...(requestConfig || {}),
           params: { period },
         }),
+        apiClient.get("/residents/debt-summary", requestConfig || {}),
       ]);
 
       const statusPayload = statusRes?.data || {};
       const collectionsPayload = collectionsRes?.data || {};
       const unitsPayload = unitOptionsRes?.data || [];
+      const debtPayload = debtSummaryRes?.data || [];
 
       setSummary(statusPayload?.kpis || null);
       setPortfolioStatus(Array.isArray(statusPayload?.data) ? statusPayload.data : []);
       setCollections(Array.isArray(collectionsPayload?.data) ? collectionsPayload.data : []);
       setUnitOptions(Array.isArray(unitsPayload) ? unitsPayload : []);
+      setDebtSummary(Array.isArray(debtPayload) ? debtPayload : []);
     } catch (err) {
       setError(normalizeApiError(err, "No fue posible cargar recaudo y cartera."));
       setSummary(null);
       setPortfolioStatus([]);
       setCollections([]);
       setUnitOptions([]);
+      setDebtSummary([]);
     } finally {
       setLoading(false);
     }
@@ -169,6 +175,7 @@ export function useRevenuePortfolio({ period = "current" } = {}) {
     portfolioStatus,
     collections,
     unitOptions,
+    debtSummary,
     loading,
     submitting,
     generating,

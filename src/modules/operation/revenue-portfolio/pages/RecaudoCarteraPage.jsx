@@ -31,6 +31,7 @@ function RecaudoCarteraPage() {
     portfolioStatus: portfolioStatusRows,
     collections,
     unitOptions: rawUnitOptions,
+    debtSummary,
     loading,
     submitting,
     generating,
@@ -80,12 +81,27 @@ function RecaudoCarteraPage() {
   }, [records, selectedRecordId]);
 
   const portfolioStatus = useMemo(
-    () =>
-      portfolioStatusRows.map((row) => ({
+    () => {
+      const debtByApartment = (Array.isArray(debtSummary) ? debtSummary : []).reduce((accumulator, item) => {
+        const apartmentKey = normalizeApartmentKey(item?.apartment);
+        if (!apartmentKey) return accumulator;
+
+        const nextDebt = Number(item?.debt ?? 0);
+        accumulator[apartmentKey] = Number.isFinite(nextDebt) ? nextDebt : 0;
+        return accumulator;
+      }, {});
+
+      return portfolioStatusRows.map((row) => {
+        const unit = row?.unit || row?.unidad || "Unidad sin definir";
+        const debtValue = Number(debtByApartment[normalizeApartmentKey(unit)] ?? 0);
+
+        return {
         id: row?.id,
-        unit: row?.unit || row?.unidad || "Unidad sin definir",
+        unit,
         owner: row?.owner || row?.propietario || "-",
         dueDate: row?.due_date || row?.fecha_vencimiento || null,
+        debt: debtValue,
+        debtLabel: formatCurrency(debtValue),
         daysOverdue: Number(row?.days_overdue ?? row?.dias_en_mora ?? 0),
         status: mapBackendStatusToLabel(row?.status || row?.estado),
         dueDateLabel: formatDate(row?.due_date || row?.fecha_vencimiento),
@@ -93,8 +109,10 @@ function RecaudoCarteraPage() {
           Number(row?.days_overdue ?? row?.dias_en_mora ?? 0) > 0
             ? `${Number(row?.days_overdue ?? row?.dias_en_mora ?? 0)} dias`
             : "-",
-      })),
-    [portfolioStatusRows]
+      };
+      });
+    },
+    [debtSummary, portfolioStatusRows]
   );
 
   const summaryCards = useMemo(() => createSummaryCards(summary), [summary]);
@@ -504,6 +522,15 @@ function normalizeApiError(err, fallbackMessage) {
   }
 
   return responseData?.message || err?.message || fallbackMessage;
+}
+
+function normalizeApartmentKey(value) {
+  return String(value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, "")
+    .trim();
 }
 
 export default RecaudoCarteraPage;

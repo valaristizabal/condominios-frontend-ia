@@ -77,6 +77,7 @@ function PortfolioStatusTable({ rows = [], selectedId = null, loading = false })
                 <th className="px-5 py-4">Unidad / Apto</th>
                 <th className="px-5 py-4">Propietario</th>
                 <th className="px-5 py-4">Dia de corte</th>
+                <th className="px-5 py-4">Deuda actual</th>
                 <th className="px-5 py-4">Fecha de vencimiento</th>
                 <th className="px-5 py-4">Dias en mora</th>
                 <th className="px-5 py-4">Estado</th>
@@ -95,6 +96,7 @@ function PortfolioStatusTable({ rows = [], selectedId = null, loading = false })
                     <td className="px-5 py-4 font-bold text-slate-900">{row.unit}</td>
                     <td className="px-5 py-4 text-sm font-semibold text-slate-600">{row.owner}</td>
                     <td className="px-5 py-4 text-sm font-bold text-slate-900">{formatCutoffDay(row?.dueDate)}</td>
+                    <td className="px-5 py-4 text-sm font-bold text-slate-900">{row?.debtLabel || "$0"}</td>
                     <td className="px-5 py-4 text-sm font-semibold text-slate-600">{row.dueDateLabel}</td>
                     <td className="px-5 py-4 text-sm font-bold text-slate-900">{row.daysOverdueLabel}</td>
                     <td className="px-5 py-4">
@@ -148,6 +150,12 @@ function PortfolioStatusTable({ rows = [], selectedId = null, loading = false })
                       Dia de corte
                     </p>
                     <p className="mt-1 text-sm font-bold text-slate-900">{formatCutoffDay(row?.dueDate)}</p>
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-extrabold uppercase tracking-wide text-slate-400">
+                      Deuda actual
+                    </p>
+                    <p className="mt-1 text-sm font-bold text-slate-900">{row?.debtLabel || "$0"}</p>
                   </div>
                   <div>
                     <p className="text-[11px] font-extrabold uppercase tracking-wide text-slate-400">
