@@ -158,6 +158,7 @@ function SearchableSelect({
 
 export default function CorrespondenceFormModal({
   apartments = [],
+  residents = [],
   unitTypes = [],
   couriers = [],
   securityUsers = [],
@@ -177,6 +178,7 @@ export default function CorrespondenceFormModal({
   onPackageTypeChange,
   onReceiverTypeChange,
   onSecurityUserChange,
+  onResidentReceiverChange,
   onSubmit,
   onSignatureChange,
   signatureValue = "",
@@ -437,12 +439,12 @@ export default function CorrespondenceFormModal({
         </div>
 
         <div>
-          <Label>Persona en turno</Label>
+          <Label>Responsable de turno</Label>
           <SearchableSelect
             value={form.securityUserId}
             options={securityUsers}
             placeholder="Seleccione responsable"
-            searchPlaceholder="Buscar vigilante..."
+            searchPlaceholder="Buscar personal de seguridad..."
             onChange={onSecurityUserChange}
           />
           <FieldError message={fieldErrors.received_by_id} />
@@ -518,14 +520,15 @@ export default function CorrespondenceFormModal({
           <SectionTitle icon={<Pencil className="h-5 w-5" />} title="Datos de entrega" />
           <div className="mt-4">
             <Label>Nombre del destinatario</Label>
-            <input
-              name="receiverName"
+            <SearchableSelect
               value={form.receiverName}
-              onChange={onChange}
-              placeholder="Nombre completo"
-              className={inputBase}
+              options={residents}
+              placeholder="Seleccione residente"
+              searchPlaceholder="Buscar residente..."
+              disabled={form.receiverType !== "dueno"}
+              onChange={onResidentReceiverChange}
             />
-            <FieldError message={fieldErrors.receiverName} />
+            <FieldError message={fieldErrors.receiverName || fieldErrors.resident_receiver_id} />
           </div>
 
           {form.receiverType === "dueno" ? (

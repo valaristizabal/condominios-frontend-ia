@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useActiveCondominium } from "../../../../context/useActiveCondominium";
 import apiClient from "../../../../services/apiClient";
 import BackButton from "../../../../components/common/BackButton";
+import ImageViewer from "../../../../components/common/ImageViewer";
 import ImageUploadPrompt from "../../../../components/common/ImageUploadPrompt";
 import PropertyLogo from "../../../../components/common/PropertyLogo";
 import { normalizeRoleName } from "../../../../utils/roles";
@@ -195,6 +196,7 @@ function VehiclesPage() {
   const [activeEntriesPage, setActiveEntriesPage] = useState(1);
   const [historyEntriesPage, setHistoryEntriesPage] = useState(1);
   const [activeTab, setActiveTab] = useState("actuales");
+  const [activeVehicleImage, setActiveVehicleImage] = useState({ imageUrl: "", title: "" });
   const requestConfig = useMemo(
     () =>
       activeCondominiumId
@@ -885,13 +887,29 @@ function VehiclesPage() {
                       className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-4"
                     >
                       <div className="flex items-center gap-3 min-w-0">
-                        <PropertyLogo
-                          src={vehicleImage}
-                          alt={`Veh?culo ${plate}`}
-                          size={44}
-                          variant="squircle"
-                          className="shrink-0"
-                        />
+                        {vehicleImage ? (
+                          <button
+                            type="button"
+                            onClick={() => setActiveVehicleImage({ imageUrl: vehicleImage, title: `Vehiculo ${plate}` })}
+                            className="shrink-0"
+                          >
+                            <PropertyLogo
+                              src={vehicleImage}
+                              alt={`Vehiculo ${plate}`}
+                              size={44}
+                              variant="squircle"
+                              className="shrink-0"
+                            />
+                          </button>
+                        ) : (
+                          <PropertyLogo
+                            src={vehicleImage}
+                            alt={`Vehiculo ${plate}`}
+                            size={44}
+                            variant="squircle"
+                            className="shrink-0"
+                          />
+                        )}
 
                         <div className="min-w-0">
                           <p className="truncate text-sm font-extrabold text-slate-900">{plate}</p>
@@ -975,6 +993,13 @@ function VehiclesPage() {
           </Card>
         </div>
       </div>
+
+      <ImageViewer
+        open={Boolean(activeVehicleImage.imageUrl)}
+        imageUrl={activeVehicleImage.imageUrl}
+        title={activeVehicleImage.title}
+        onClose={() => setActiveVehicleImage({ imageUrl: "", title: "" })}
+      />
     </div>
   );
 }

@@ -1,3 +1,6 @@
+import { useState } from "react";
+import ImageViewer from "../../../../components/common/ImageViewer";
+
 const Card = ({ children, className = "" }) => (
   <div className={`rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5 ${className}`}>
     {children}
@@ -16,10 +19,11 @@ function EmptyState({
   );
 }
 
-function Row({ visit, onCheckout, loading = false }) {
+function Row({ visit, onCheckout, onOpenPhoto, loading = false }) {
   const name = visit?.full_name || "Visitante";
   const doc = visit?.document_number || "";
   const aptObject = visit?.apartment;
+  const photoUrl = visit?.photo ? resolvePhotoUrl(visit.photo) : "";
 
   const apt =
     visit?.apartment_name ||
@@ -39,8 +43,10 @@ function Row({ visit, onCheckout, loading = false }) {
     <div className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white px-4 py-4 transition hover:shadow-sm sm:flex-row sm:items-center sm:justify-between sm:px-5">
       <div className="min-w-0 flex items-center gap-3 sm:gap-4">
         <div className="h-14 w-14 flex-shrink-0 overflow-hidden rounded-2xl border border-slate-200 bg-slate-100">
-          {visit.photo ? (
-            <img src={resolvePhotoUrl(visit.photo)} alt="Foto visitante" className="h-full w-full object-cover" />
+          {photoUrl ? (
+            <button type="button" onClick={() => onOpenPhoto?.(photoUrl, name)} className="block h-full w-full">
+              <img src={photoUrl} alt="Foto visitante" className="h-full w-full object-cover" />
+            </button>
           ) : (
             <div className="h-full w-full bg-slate-200" />
           )}
@@ -135,67 +141,78 @@ export default function VisitTable({
   emptyTitle = "Sin visitantes activos",
   emptyDescription = "Cuando registres ingresos, aparecerán aquí para controlar la salida.",
 }) {
+  const [activePhoto, setActivePhoto] = useState({ imageUrl: "", title: "" });
   const canGoPrev = currentPage > 1;
   const canGoNext = currentPage < totalPages;
 
   return (
-    <Card>
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            {subtitle}
-          </p>
-          <h2 className="mt-1 text-lg font-bold text-slate-900">
-            {title} ({totalItems || 0})
-          </h2>
-          <p className="mt-1 text-sm text-slate-500">
-            {description}
-          </p>
-        </div>
-      </div>
-
-      <div className="mt-6 space-y-3">
-        {!visits || visits.length === 0 ? (
-          <EmptyState title={emptyTitle} description={emptyDescription} />
-        ) : (
-          visits.map((visit) => (
-            <Row
-              key={visit.id || `${visit.document_number}-${visit.created_at}`}
-              visit={visit}
-              onCheckout={onCheckout}
-              loading={loading}
-            />
-          ))
-        )}
-      </div>
-
-      {totalPages > 1 ? (
-        <div className="mt-6 flex flex-col items-center justify-between gap-3 border-t border-slate-100 pt-4 sm:flex-row">
-          <p className="text-xs font-semibold text-slate-500">
-            Página {currentPage} de {totalPages}
-          </p>
-
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => canGoPrev && onPageChange?.(currentPage - 1)}
-              disabled={!canGoPrev || loading}
-              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              Anterior
-            </button>
-            <button
-              type="button"
-              onClick={() => canGoNext && onPageChange?.(currentPage + 1)}
-              disabled={!canGoNext || loading}
-              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              Siguiente
-            </button>
+    <>
+      <Card>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              {subtitle}
+            </p>
+            <h2 className="mt-1 text-lg font-bold text-slate-900">
+              {title} ({totalItems || 0})
+            </h2>
+            <p className="mt-1 text-sm text-slate-500">
+              {description}
+            </p>
           </div>
         </div>
-      ) : null}
-    </Card>
+
+        <div className="mt-6 space-y-3">
+          {!visits || visits.length === 0 ? (
+            <EmptyState title={emptyTitle} description={emptyDescription} />
+          ) : (
+            visits.map((visit) => (
+              <Row
+                key={visit.id || `${visit.document_number}-${visit.created_at}`}
+                visit={visit}
+                onCheckout={onCheckout}
+                onOpenPhoto={(imageUrl, titleValue) => setActivePhoto({ imageUrl, title: titleValue || "Foto visitante" })}
+                loading={loading}
+              />
+            ))
+          )}
+        </div>
+
+        {totalPages > 1 ? (
+          <div className="mt-6 flex flex-col items-center justify-between gap-3 border-t border-slate-100 pt-4 sm:flex-row">
+            <p className="text-xs font-semibold text-slate-500">
+              Página {currentPage} de {totalPages}
+            </p>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => canGoPrev && onPageChange?.(currentPage - 1)}
+                disabled={!canGoPrev || loading}
+                className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Anterior
+              </button>
+              <button
+                type="button"
+                onClick={() => canGoNext && onPageChange?.(currentPage + 1)}
+                disabled={!canGoNext || loading}
+                className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Siguiente
+              </button>
+            </div>
+          </div>
+        ) : null}
+      </Card>
+
+      <ImageViewer
+        open={Boolean(activePhoto.imageUrl)}
+        imageUrl={activePhoto.imageUrl}
+        title={activePhoto.title}
+        onClose={() => setActivePhoto({ imageUrl: "", title: "" })}
+      />
+    </>
   );
 }
 

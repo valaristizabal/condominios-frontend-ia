@@ -98,6 +98,23 @@ export default function CorrespondencePage() {
       .map((item) => ({ value: String(item.id), label: item.label }));
   }, [apartmentsOptions, form.unitTypeId]);
 
+  const filteredResidentOptions = useMemo(() => {
+    const selectedApartmentId = String(form.unitId || "");
+
+    const options = residents
+      .filter((resident) => !selectedApartmentId || String(resident?.apartment_id || "") === selectedApartmentId)
+      .map((resident) => ({
+        value: String(resident.id),
+        label:
+          resident?.user?.full_name ||
+          resident?.user?.name ||
+          resident?.full_name ||
+          `Residente ${resident.id}`,
+      }));
+
+    return options.sort((a, b) => String(a.label || "").localeCompare(String(b.label || ""), "es"));
+  }, [form.unitId, residents]);
+
   const recent = useMemo(
     () =>
       correspondences.map((item) => ({
@@ -117,6 +134,7 @@ export default function CorrespondencePage() {
         delivered: (item.status || "") === "DELIVERED" || Boolean(item.delivered),
         date: formatDate(item.created_at),
         deliveredAt: item.delivered_at ? formatTime(item.delivered_at) : "",
+        evidencePhotoUrl: item.evidence_photo_url || null,
         signatureUrl: item.signature_url || null,
         raw: item,
       })),
@@ -235,6 +253,7 @@ export default function CorrespondencePage() {
         apartment_id: Number(form.unitId),
         received_by_id: Number(form.securityUserId),
         evidence_photo: photoFile,
+        resident_receiver_id: form.receiverType === "dueno" ? Number(form.receiverName) : null,
         digital_signature: form.receiverType === "dueno" ? signatureDataUrl || null : null,
         deliver_immediately: form.receiverType === "dueno",
       });
@@ -329,14 +348,16 @@ export default function CorrespondencePage() {
                 ...prev,
                 unitTypeId: String(value),
                 unitId: "",
+                receiverName: "",
               }));
               clearFieldError("apartment_id");
             }}
             onUnitChange={(value) => {
-              setForm((prev) => ({ ...prev, unitId: String(value) }));
+              setForm((prev) => ({ ...prev, unitId: String(value), receiverName: "" }));
               clearFieldError("apartment_id");
             }}
             apartments={filteredApartmentOptions}
+            residents={filteredResidentOptions}
             onPickPhotoClick={() => fileRef.current?.click()}
             onPickPhoto={onPickPhoto}
             onClearPhoto={clearPhoto}
@@ -345,7 +366,11 @@ export default function CorrespondencePage() {
               clearFieldError("package_type");
             }}
             onReceiverTypeChange={(receiverType) => {
-              setForm((prev) => ({ ...prev, receiverType }));
+              setForm((prev) => ({
+                ...prev,
+                receiverType,
+                receiverName: receiverType === "dueno" ? prev.receiverName : "",
+              }));
               setLocalErrors((prev) => ({ ...prev, receiverType: "", signature: "" }));
               if (receiverType === "seguridad") {
                 setSignatureDataUrl("");
@@ -355,6 +380,11 @@ export default function CorrespondencePage() {
             onSecurityUserChange={(value) => {
               setForm((prev) => ({ ...prev, securityUserId: String(value) }));
               clearFieldError("received_by_id");
+            }}
+            onResidentReceiverChange={(value) => {
+              setForm((prev) => ({ ...prev, receiverName: String(value) }));
+              setLocalErrors((prev) => ({ ...prev, receiverName: "" }));
+              clearFieldError("resident_receiver_id");
             }}
             onSubmit={handleSubmit}
             onSignatureChange={(nextValue) => {
