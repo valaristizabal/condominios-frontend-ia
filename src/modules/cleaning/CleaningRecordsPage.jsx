@@ -1,6 +1,8 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import BackButton from "../../components/common/BackButton";
+import ImageUploadPrompt from "../../components/common/ImageUploadPrompt";
+import ImageViewer from "../../components/common/ImageViewer";
 import SearchableSelect from "../../components/common/SearchableSelect";
 import { useNotification } from "../../hooks/useNotification";
 import { useCleaningRecords } from "./useCleaningRecords";
@@ -30,6 +32,8 @@ function CleaningRecordsPage() {
   const [selectedAreaId, setSelectedAreaId] = useState("");
   const [selectedOperativeId, setSelectedOperativeId] = useState("");
   const [observationText, setObservationText] = useState("");
+  const [evidenceItems, setEvidenceItems] = useState([]);
+  const [activeEvidenceImage, setActiveEvidenceImage] = useState({ imageUrl: "", title: "" });
   const [error, setError] = useState("");
 
   const initialDataQuery = useQuery({
@@ -83,6 +87,7 @@ function CleaningRecordsPage() {
   useEffect(() => {
     if (!selectedRecord) {
       setObservationText("");
+      clearEvidenceItems(setEvidenceItems);
       return;
     }
 
@@ -105,6 +110,7 @@ function CleaningRecordsPage() {
       setSelectedAreaId("");
       setSelectedOperativeId("");
       setObservationText("");
+      clearEvidenceItems(setEvidenceItems);
       setError("");
       success("Limpieza creada correctamente.");
     },
@@ -131,13 +137,15 @@ function CleaningRecordsPage() {
   });
 
   const completeRecordMutation = useMutation({
-    mutationFn: ({ recordId, observations }) => completeCleaningRecord(recordId, { observations }),
+    mutationFn: ({ recordId, observations, evidences }) =>
+      completeCleaningRecord(recordId, { observations, evidences }),
     onSuccess: async (updated) => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["cleaning", "initial", tenantCacheKey] }),
         queryClient.invalidateQueries({ queryKey: ["cleaning", "checklist", tenantCacheKey, selectedRecordId] }),
       ]);
       if (updated?.id) setSelectedRecordId(updated.id);
+      clearEvidenceItems(setEvidenceItems);
       setError("");
       success("Limpieza finalizada correctamente.");
     },
@@ -151,7 +159,7 @@ function CleaningRecordsPage() {
   useEffect(() => {
     const queryError = initialDataQuery.error || checklistQuery.error;
     if (!queryError) return;
-    setError(normalizeApiError(queryError, "No fue posible cargar el mÃ³dulo de aseo."));
+    setError(normalizeApiError(queryError, "No fue posible cargar el módulo de aseo."));
   }, [initialDataQuery.error, checklistQuery.error]);
 
   const createRecord = async () => {
@@ -179,9 +187,39 @@ function CleaningRecordsPage() {
   const handleFinish = async () => {
     if (!selectedRecordId) return;
 
+    if (!evidenceItems.length) {
+      warning("Debes adjuntar al menos una evidencia para finalizar la limpieza.");
+      return;
+    }
+
     await completeRecordMutation.mutateAsync({
       recordId: selectedRecordId,
       observations: String(observationText || "").trim(),
+      evidences: evidenceItems.map((item) => item.file).filter(Boolean),
+    });
+  };
+
+  const onEvidenceChange = (event) => {
+    const files = Array.from(event.target.files || []).filter((file) => file?.type?.startsWith("image/"));
+    if (!files.length) return;
+
+    setEvidenceItems((prev) => [
+      ...prev,
+      ...files.map((file) => ({
+        id: `${file.name}-${file.size}-${file.lastModified}-${Math.random().toString(36).slice(2, 8)}`,
+        file,
+        previewUrl: URL.createObjectURL(file),
+      })),
+    ]);
+
+    event.target.value = "";
+  };
+
+  const removeEvidenceItem = (targetId) => {
+    setEvidenceItems((prev) => {
+      const target = prev.find((item) => item.id === targetId);
+      if (target?.previewUrl) URL.revokeObjectURL(target.previewUrl);
+      return prev.filter((item) => item.id !== targetId);
     });
   };
 
@@ -360,8 +398,31 @@ function CleaningRecordsPage() {
               <div className="mt-6">
                 <h3 className="text-sm font-semibold text-slate-600">Observación final</h3>
                 <div className="mt-2 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-slate-700">
-                  {selectedRecord.observations || "Sin observaciÃ³n."}
+                  {selectedRecord.observations || "Sin observación."}
                 </div>
+
+                {Array.isArray(selectedRecord.evidence_urls) && selectedRecord.evidence_urls.length ? (
+                  <div className="mt-4">
+                    <h3 className="text-sm font-semibold text-slate-600">Evidencias</h3>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setActiveEvidenceImage({
+                          imageUrls: selectedRecord.evidence_urls,
+                          title:
+                            selectedRecord.evidence_urls.length > 1
+                              ? `${selectedRecord.evidence_urls.length} evidencias adjuntas`
+                              : "1 evidencia adjunta",
+                        })
+                      }
+                      className="mt-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-50"
+                    >
+                      {selectedRecord.evidence_urls.length > 1
+                        ? `Ver evidencias (${selectedRecord.evidence_urls.length})`
+                        : "Ver evidencia"}
+                    </button>
+                  </div>
+                ) : null}
               </div>
             ) : (
               <div className="mt-6">
@@ -374,13 +435,76 @@ function CleaningRecordsPage() {
                   disabled={saving}
                 />
 
+                <div className="mt-4">
+                  <h3 className="text-sm font-semibold text-slate-600">Evidencias</h3>
+                  <div className="mt-2 rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 p-4">
+                    <input
+                      id="cleaning-evidences-input"
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      className="hidden"
+                      onChange={onEvidenceChange}
+                    />
+
+                    {!evidenceItems.length ? (
+                      <button
+                        type="button"
+                        onClick={() => document.getElementById("cleaning-evidences-input")?.click()}
+                        className="w-full rounded-2xl px-4 py-8 text-center transition hover:bg-slate-100"
+                      >
+                        <ImageUploadPrompt
+                          title="Adjuntar evidencias"
+                          description="Puedes cargar varias imagenes antes de finalizar la limpieza"
+                        />
+                      </button>
+                    ) : (
+                      <>
+                        <div className="mt-3 flex flex-wrap items-center gap-3">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setActiveEvidenceImage({
+                                imageUrls: evidenceItems.map((item) => item.previewUrl).filter(Boolean),
+                                title:
+                                  evidenceItems.length > 1
+                                    ? `${evidenceItems.length} evidencias adjuntas`
+                                    : "1 evidencia adjunta",
+                              })
+                            }
+                            className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-50"
+                          >
+                            {evidenceItems.length > 1 ? `Ver evidencias (${evidenceItems.length})` : "Ver evidencia"}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => document.getElementById("cleaning-evidences-input")?.click()}
+                            className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-xs font-extrabold text-slate-800 hover:bg-slate-50"
+                          >
+                            Agregar más evidencias
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => clearEvidenceItems(setEvidenceItems)}
+                            className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-extrabold text-rose-700 hover:bg-rose-100"
+                          >
+                            Quitar todas
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+
                 <button
                   type="button"
                   onClick={handleFinish}
-                  disabled={percent !== 100 || !String(observationText || "").trim() || saving}
+                  disabled={percent !== 100 || !String(observationText || "").trim() || !evidenceItems.length || saving}
                   className={[
                     "mt-4 w-full rounded-2xl py-3 text-sm font-extrabold transition sm:mx-auto sm:block sm:w-auto sm:px-6",
-                    percent === 100 && String(observationText || "").trim() && !saving
+                    percent === 100 && String(observationText || "").trim() && evidenceItems.length && !saving
                       ? "bg-emerald-600 text-white hover:bg-emerald-700"
                       : "cursor-not-allowed bg-slate-200 text-slate-500",
                   ].join(" ")}
@@ -397,6 +521,14 @@ function CleaningRecordsPage() {
             </div>
           </Card>
         ) : null}
+
+        <ImageViewer
+          open={Boolean(activeEvidenceImage.imageUrl) || (Array.isArray(activeEvidenceImage.imageUrls) && activeEvidenceImage.imageUrls.length > 0)}
+          imageUrl={activeEvidenceImage.imageUrl}
+          imageUrls={activeEvidenceImage.imageUrls}
+          title={activeEvidenceImage.title}
+          onClose={() => setActiveEvidenceImage({ imageUrl: "", imageUrls: [], title: "" })}
+        />
       </div>
     </div>
   );
@@ -420,7 +552,6 @@ function normalizeApiError(err, fallbackMessage) {
 
 export default CleaningRecordsPage;
 
-
 function resolveCleaningAreaName(record, areaNameById) {
   const relationName = String(record?.cleaningArea?.name || "").trim();
   if (relationName) return relationName;
@@ -440,17 +571,11 @@ function isTodayCleaningRecord(record) {
   return cleaningDate === localToday;
 }
 
-
-
-
-function formatCleaningTime(value) {
-  if (!value) return "Pendiente";
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Pendiente";
-
-  return date.toLocaleTimeString("es-CO", {
-    hour: "2-digit",
-    minute: "2-digit",
+function clearEvidenceItems(setter) {
+  setter((prev) => {
+    prev.forEach((item) => {
+      if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
+    });
+    return [];
   });
 }

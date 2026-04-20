@@ -82,6 +82,28 @@ export function useCleaningRecords() {
 
   const completeCleaningRecord = useCallback(
     async (recordId, payload) => {
+      const hasEvidences = Array.isArray(payload?.evidences) && payload.evidences.length > 0;
+
+      if (hasEvidences) {
+        const formData = new FormData();
+        formData.append("_method", "PATCH");
+        formData.append("observations", String(payload?.observations || ""));
+        payload.evidences.forEach((file) => {
+          if (file) {
+            formData.append("evidences[]", file);
+          }
+        });
+
+        const response = await apiClient.post(`/cleaning-records/${recordId}/complete`, formData, {
+          ...requestConfig,
+          headers: {
+            ...(requestConfig?.headers || {}),
+            "Content-Type": "multipart/form-data",
+          },
+        });
+        return response.data;
+      }
+
       const response = await apiClient.patch(`/cleaning-records/${recordId}/complete`, payload, requestConfig);
       return response.data;
     },
