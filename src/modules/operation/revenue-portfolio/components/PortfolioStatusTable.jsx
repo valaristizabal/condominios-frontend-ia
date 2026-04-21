@@ -13,9 +13,13 @@ const FILTER_OPTIONS = [
   { value: "mora", label: "En mora" },
 ];
 
-function PortfolioStatusTable({ rows = [], selectedId = null, loading = false }) {
-  const [statusFilter, setStatusFilter] = useState("todos");
-
+function PortfolioStatusTable({
+  rows = [],
+  selectedId = null,
+  loading = false,
+  statusFilter = "todos",
+  onStatusFilterChange,
+}) {
   const filteredRows = useMemo(() => {
     const normalizedRows = rows.map((row) => ({
       ...row,
@@ -45,7 +49,7 @@ function PortfolioStatusTable({ rows = [], selectedId = null, loading = false })
         <div className="flex w-full flex-col gap-3 sm:w-[280px] sm:items-end">
           <StatusFilterSelect
             value={statusFilter}
-            onChange={(value) => setStatusFilter(String(value))}
+            onChange={(value) => onStatusFilterChange?.(String(value))}
             options={FILTER_OPTIONS}
             placeholder="Filtrar estado..."
           />

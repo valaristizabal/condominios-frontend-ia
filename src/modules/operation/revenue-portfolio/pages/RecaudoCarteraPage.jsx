@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Plus } from "lucide-react";
+import { Download } from "lucide-react";
 import BackButton from "../../../../components/common/BackButton";
 import { useNotification } from "../../../../hooks/useNotification";
 import CollectionFormCard from "../components/CollectionFormCard";
@@ -7,6 +7,7 @@ import CollectionsTable from "../components/CollectionsTable";
 import PortfolioStatusTable from "../components/PortfolioStatusTable";
 import SummaryCards from "../components/SummaryCards";
 import { useRevenuePortfolio } from "../hooks/useRevenuePortfolio";
+import { exportRevenuePortfolioWorkbook } from "./revenuePortfolioExcel";
 
 function createInitialFormState() {
   return {
@@ -50,9 +51,10 @@ function RecaudoCarteraPage() {
   const [selectedRecordId, setSelectedRecordId] = useState(null);
   const [detailMode, setDetailMode] = useState("view");
   const [activeTab, setActiveTab] = useState("estado");
+  const [statusFilter, setStatusFilter] = useState("todos");
+  const [exporting, setExporting] = useState(false);
 
   const fileInputRef = useRef(null);
-  const formRef = useRef(null);
 
   const records = useMemo(
     () =>
@@ -261,11 +263,6 @@ function RecaudoCarteraPage() {
     }
   };
 
-  const scrollToForm = () => {
-    setDetailMode("view");
-    formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
-
   const handleGeneratePortfolio = async () => {
     try {
       const response = await generateCurrentPortfolio();
@@ -287,6 +284,23 @@ function RecaudoCarteraPage() {
       notifyError(
         normalizeApiError(requestError, "No fue posible generar la cartera mensual.")
       );
+    }
+  };
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      await exportRevenuePortfolioWorkbook({
+        portfolioRows: portfolioStatus,
+        collectionRows: records,
+        period: selectedPeriod,
+        fileName: "gestion_cartera.xlsx",
+      });
+      notifySuccess("Archivo descargado correctamente.");
+    } catch (exportError) {
+      notifyError(normalizeApiError(exportError, "No fue posible descargar el archivo."));
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -338,7 +352,7 @@ function RecaudoCarteraPage() {
       </div>
 
       <div className="mt-8 space-y-8">
-        <div ref={formRef}>
+        <div>
           <CollectionFormCard
             form={form}
             unitOptions={unitOptions}
@@ -359,32 +373,50 @@ function RecaudoCarteraPage() {
         </div>
 
         <section className="rounded-3xl border border-gray-100 bg-white p-3 shadow-sm">
-          <div className="grid grid-cols-2 gap-2 rounded-2xl bg-slate-100 p-2 text-xs font-semibold sm:text-sm">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="grid flex-1 grid-cols-2 gap-2 rounded-2xl bg-slate-100 p-2 text-xs font-semibold sm:text-sm">
+              <button
+                type="button"
+                onClick={() => setActiveTab("estado")}
+                className={[
+                  "rounded-xl px-4 py-3 transition",
+                  activeTab === "estado" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:bg-white/60",
+                ].join(" ")}
+              >
+                Estado de cartera
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("historial")}
+                className={[
+                  "rounded-xl px-4 py-3 transition",
+                  activeTab === "historial" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:bg-white/60",
+                ].join(" ")}
+              >
+                Historial de recaudos
+              </button>
+            </div>
+
             <button
               type="button"
-              onClick={() => setActiveTab("estado")}
-              className={[
-                "rounded-xl px-4 py-3 transition",
-                activeTab === "estado" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:bg-white/60",
-              ].join(" ")}
+              onClick={handleExport}
+              disabled={loading || exporting}
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-bold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
             >
-              Estado de cartera
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab("historial")}
-              className={[
-                "rounded-xl px-4 py-3 transition",
-                activeTab === "historial" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:bg-white/60",
-              ].join(" ")}
-            >
-              Historial de recaudos
+              <Download className="h-4 w-4" />
+              {exporting ? "Descargando..." : "Descargar cartera"}
             </button>
           </div>
         </section>
 
         {activeTab === "estado" ? (
-          <PortfolioStatusTable rows={portfolioStatus} selectedId={selectedRecordId} loading={loading} />
+          <PortfolioStatusTable
+            rows={portfolioStatus}
+            selectedId={selectedRecordId}
+            loading={loading}
+            statusFilter={statusFilter}
+            onStatusFilterChange={setStatusFilter}
+          />
         ) : (
           <CollectionsTable
             records={records}
@@ -396,14 +428,6 @@ function RecaudoCarteraPage() {
         )}
       </div>
 
-      <button
-        type="button"
-        onClick={scrollToForm}
-        className="fixed bottom-6 right-6 z-30 inline-flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition hover:bg-blue-700 active:scale-[0.98]"
-        aria-label="Registrar recaudo"
-      >
-        <Plus className="h-6 w-6" />
-      </button>
     </div>
   );
 }
