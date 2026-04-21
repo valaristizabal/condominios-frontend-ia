@@ -62,6 +62,10 @@ En `Operacion > Recaudo y Cartera`:
 - despues de generar, la pantalla refresca resumen, estado de cartera e historial de recaudos
 - el historial usa `evidence_url` para abrir comprobantes con `window.open(...)`
 - si `evidence_url` es nulo, la UI muestra aviso y no intenta abrir ruta interna
+- la tabla `Estado de cartera` muestra:
+  - `Dia de corte`
+  - `Deuda actual` (al lado de dia de corte)
+- `Deuda actual` se obtiene desde `GET /api/residents/debt-summary` y se cruza por unidad/apartamento
 
 ## Ejemplo de uso
 
