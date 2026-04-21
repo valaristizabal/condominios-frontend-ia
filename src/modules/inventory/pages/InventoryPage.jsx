@@ -4,6 +4,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useActiveCondominium } from "../../../context/useActiveCondominium";
 import { useAuthContext } from "../../../context/useAuthContext";
+import BackButton from "../../../components/common/BackButton";
 import InventoryStats from "../components/InventoryStats";
 import ProductTable from "../components/ProductTable";
 import QuickMovementForm from "../components/QuickMovementForm";
@@ -617,10 +618,14 @@ function InventoryPage({ allowProductManagement = false, showOperationTools = tr
 
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 lg:px-8">
-      <header className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-extrabold text-gray-900">Inventario</h1>
+      <header>
+        <div className="mb-3">
+          <BackButton variant="dashboard" />
         </div>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="min-w-0">
+            <h1 className="text-2xl font-extrabold text-slate-900">Inventario</h1>
+          </div>
         {canManageProducts ? (
           <div className="flex flex-wrap items-center gap-2">
             <input
@@ -649,6 +654,7 @@ function InventoryPage({ allowProductManagement = false, showOperationTools = tr
             </button>
           </div>
         ) : null}
+        </div>
       </header>
 
       <section className="mt-6 rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">

@@ -247,13 +247,10 @@ function AdministrativeExpensesPage() {
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8 xl:px-10">
-      <header className="flex flex-wrap items-start justify-between gap-6">
-        <BackButton variant="dashboard" className="mt-1 shrink-0" />
-
-        <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 sm:text-[2rem]">
-            Gastos Administrativos
-          </h1>
+      <header>
+        <div className="flex items-center gap-3">
+          <BackButton variant="dashboard" />
+          <h1 className="text-2xl font-extrabold text-slate-900">Gastos Administrativos</h1>
         </div>
       </header>
 
