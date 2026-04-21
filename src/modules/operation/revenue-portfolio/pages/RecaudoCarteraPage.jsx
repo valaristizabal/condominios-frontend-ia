@@ -147,8 +147,8 @@ function RecaudoCarteraPage() {
   const unitOptions = useMemo(
     () =>
       rawUnitOptions.map((option) => ({
-        value: option.value,
-        label: option.label,
+        value: String(option.apartment_id),
+        label: option.unit_label || option.label || "Unidad sin definir",
       })),
     [rawUnitOptions]
   );
@@ -156,7 +156,7 @@ function RecaudoCarteraPage() {
   const unitById = useMemo(
     () =>
       rawUnitOptions.reduce((accumulator, option) => {
-        accumulator[String(option.value)] = option;
+        accumulator[String(option.apartment_id ?? option.value)] = option;
         return accumulator;
       }, {}),
     [rawUnitOptions]
@@ -606,7 +606,15 @@ function buildSubmittedHistoryRecord({
   return {
     id: generatedId,
     backendCollectionIds: createdCollections.map((record) => record.id).filter(Boolean),
-    unit: unitInfo?.unit || unitInfo?.unidad || firstCreated?.unit || firstCreated?.unidad || "Unidad sin definir",
+    unit:
+      unitInfo?.unit_label ||
+      unitInfo?.label ||
+      unitInfo?.unit ||
+      unitInfo?.unidad ||
+      firstCreated?.unit ||
+      firstCreated?.unidad ||
+      resolveApartmentLabelFromObject(firstCreated?.apartment) ||
+      "Unidad sin definir",
     owner: resolveSubmittedHistoryOwner({
       unitInfo,
       firstCreated,
@@ -634,6 +642,7 @@ function normalizeCollectionRecord(record, portfolioOwnersByApartment) {
     unit:
       record?.unit ||
       record?.unidad ||
+      resolveApartmentLabelFromObject(record?.apartment) ||
       record?.apartment?.label ||
       record?.apartment?.name ||
       "Unidad sin definir",
@@ -657,6 +666,17 @@ function resolveCollectionDate(record) {
     record?.created_at;
 
   return value ? String(value).slice(0, 10) : null;
+}
+
+function resolveApartmentLabelFromObject(apartment) {
+  if (!apartment || typeof apartment !== "object") return "";
+
+  const tower = String(apartment?.tower || "").trim();
+  const number = String(apartment?.number || "").trim();
+
+  if (tower && number) return `Torre ${tower}-${number}`;
+  if (number) return `Apto ${number}`;
+  return "";
 }
 
 function resolveSubmittedHistoryOwner({
@@ -778,12 +798,30 @@ function calculateProjectedPaymentState({ totalBackendPending, availableCredit, 
 
 function buildPaymentAllocations(rows, amount) {
   let remaining = normalizeMoney(amount);
-  const charges = (Array.isArray(rows) ? rows : [])
+  const sourceRows = Array.isArray(rows) ? rows : [];
+  const charges = sourceRows
     .map(normalizeCharge)
     .filter((charge) => charge.chargeId && normalizeMoney(charge.balance) > 0)
     .sort(compareChargesByAge);
 
   const allocations = [];
+
+  if (charges.length === 0) {
+    const firstChargeId = sourceRows
+      .map((row) => normalizeCharge(row))
+      .find((charge) => charge.chargeId)?.chargeId;
+
+    if (firstChargeId && remaining > 0) {
+      return [
+        {
+          chargeId: firstChargeId,
+          amount: roundMoney(remaining),
+        },
+      ];
+    }
+
+    return allocations;
+  }
 
   for (const charge of charges) {
     if (remaining <= 0) break;

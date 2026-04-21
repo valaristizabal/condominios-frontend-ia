@@ -49,7 +49,7 @@ export function useRevenuePortfolio({ period = "current" } = {}) {
     setError("");
 
     try {
-      const [statusRes, collectionsRes, unitOptionsRes, chargesRows, debtSummaryRes, residentsRows] = await Promise.all([
+      const [statusRes, collectionsRes, unitOptionsRes] = await Promise.all([
         apiClient.get("/portfolio/portfolio-status", {
           ...(requestConfig || {}),
           params: { period, page: 1, per_page: MAX_REVENUE_PORTFOLIO_PER_PAGE },
@@ -66,23 +66,21 @@ export function useRevenuePortfolio({ period = "current" } = {}) {
           ...(requestConfig || {}),
           params: { period },
         }),
-        loadAllRows("/portfolio/charges", requestConfig, { period: "all" }),
-        apiClient.get("/residents/debt-summary", requestConfig || {}),
-        loadAllRows("/residents", requestConfig),
       ]);
 
       const statusPayload = statusRes?.data || {};
       const collectionsPayload = collectionsRes?.data || {};
       const unitsPayload = unitOptionsRes?.data || [];
-      const debtPayload = debtSummaryRes?.data || [];
+      const statusRows = Array.isArray(statusPayload?.data) ? statusPayload.data : [];
+      const safeUnitOptions = Array.isArray(unitsPayload) ? unitsPayload : [];
 
       setSummary(statusPayload?.kpis || null);
-      setPortfolioStatus(Array.isArray(statusPayload?.data) ? statusPayload.data : []);
+      setPortfolioStatus(statusRows);
       setCollections(Array.isArray(collectionsPayload?.data) ? collectionsPayload.data : []);
-      setUnitOptions(Array.isArray(unitsPayload) ? unitsPayload : []);
-      setPortfolioCharges(Array.isArray(chargesRows) ? chargesRows : []);
-      setDebtSummary(Array.isArray(debtPayload) ? debtPayload : []);
-      setPortfolioOwnersByApartment(buildPortfolioOwnersByApartment(residentsRows));
+      setUnitOptions(safeUnitOptions);
+      setPortfolioCharges(statusRows);
+      setDebtSummary([]);
+      setPortfolioOwnersByApartment(buildOwnersByApartmentFromUnitOptions(safeUnitOptions));
     } catch (err) {
       setError(normalizeApiError(err, "No fue posible cargar recaudo y cartera."));
       setSummary(null);
@@ -215,34 +213,6 @@ export function useRevenuePortfolio({ period = "current" } = {}) {
   };
 }
 
-async function loadAllRows(endpoint, requestConfig, params = {}) {
-  const rows = [];
-  let page = 1;
-  let lastPage = 1;
-  const perPage = Math.min(MAX_REVENUE_PORTFOLIO_PER_PAGE, 10);
-
-  do {
-    const response = await apiClient.get(endpoint, {
-      ...(requestConfig || {}),
-      params: {
-        ...params,
-        page,
-        per_page: perPage,
-      },
-    });
-
-    const payload = response?.data || {};
-    const pageRows = Array.isArray(payload?.data) ? payload.data : [];
-    rows.push(...pageRows);
-
-    const reportedLastPage = Number(payload?.last_page || 1);
-    lastPage = reportedLastPage > 0 ? reportedLastPage : 1;
-    page += 1;
-  } while (page <= lastPage);
-
-  return rows;
-}
-
 function buildCollectionsQueryParams(period) {
   const normalizedPeriod = String(period || "").trim();
 
@@ -307,32 +277,18 @@ function mergeCollectionRecords(currentRecords, incomingRecords) {
   return merged;
 }
 
-function buildPortfolioOwnersByApartment(rows) {
-  return (Array.isArray(rows) ? rows : []).reduce((accumulator, resident) => {
-    const apartmentId = resident?.apartment_id ?? resident?.apartment?.id;
+function buildOwnersByApartmentFromUnitOptions(rows) {
+  return (Array.isArray(rows) ? rows : []).reduce((accumulator, option) => {
+    const apartmentId = option?.apartment_id ?? option?.value;
     if (apartmentId === null || apartmentId === undefined) {
       return accumulator;
     }
 
     const apartmentKey = String(apartmentId);
-    const residentName = String(resident?.user?.full_name || resident?.full_name || "").trim();
-    const ownerReferenceName = String(
-      resident?.property_owner_full_name || resident?.property_owner_name || ""
-    ).trim();
-    const residentType = String(resident?.type || "").trim().toLowerCase();
-
-    const current = accumulator[apartmentKey] || { priority: 0, name: "" };
-    let next = current;
-
-    if (residentType === "propietario" && residentName) {
-      next = { priority: 3, name: residentName };
-    } else if (ownerReferenceName && current.priority < 2) {
-      next = { priority: 2, name: ownerReferenceName };
-    } else if (residentName && current.priority < 1) {
-      next = { priority: 1, name: residentName };
+    const ownerName = String(option?.owner_name || option?.owner || "").trim();
+    if (ownerName) {
+      accumulator[apartmentKey] = { priority: 1, name: ownerName };
     }
-
-    accumulator[apartmentKey] = next;
     return accumulator;
   }, {});
 }
