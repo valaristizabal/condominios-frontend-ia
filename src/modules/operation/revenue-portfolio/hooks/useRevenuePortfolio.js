@@ -50,19 +50,12 @@ export function useRevenuePortfolio({ period = "current" } = {}) {
     setError("");
 
     try {
-      const [statusRes, collectionsRes, unitOptionsRes, chargesRows, debtSummaryRes, residentsRows] = await Promise.all([
+      const [statusRes, collectionsRows, unitOptionsRes, chargesRows, debtSummaryRes, residentsRows] = await Promise.all([
         apiClient.get("/portfolio/portfolio-status", {
           ...(requestConfig || {}),
           params: { period, page: 1, per_page: MAX_REVENUE_PORTFOLIO_PER_PAGE },
         }),
-        apiClient.get("/portfolio/collections", {
-          ...(requestConfig || {}),
-          params: {
-            ...buildCollectionsQueryParams(period),
-            page: 1,
-            per_page: MAX_REVENUE_PORTFOLIO_PER_PAGE,
-          },
-        }),
+        loadAllRows("/portfolio/collections", requestConfig, buildCollectionsQueryParams(period)),
         apiClient.get("/portfolio/unit-options", {
           ...(requestConfig || {}),
           params: { period },
@@ -73,13 +66,12 @@ export function useRevenuePortfolio({ period = "current" } = {}) {
       ]);
 
       const statusPayload = statusRes?.data || {};
-      const collectionsPayload = collectionsRes?.data || {};
       const unitsPayload = unitOptionsRes?.data || [];
       const debtPayload = debtSummaryRes?.data || [];
 
       setSummary(statusPayload?.kpis || null);
       setPortfolioStatus(Array.isArray(statusPayload?.data) ? statusPayload.data : []);
-      setCollections(Array.isArray(collectionsPayload?.data) ? collectionsPayload.data : []);
+      setCollections(Array.isArray(collectionsRows) ? collectionsRows : []);
       setUnitOptions(Array.isArray(unitsPayload) ? unitsPayload : []);
       setPortfolioCharges(Array.isArray(chargesRows) ? chargesRows : []);
       setDebtSummary(Array.isArray(debtPayload) ? debtPayload : []);

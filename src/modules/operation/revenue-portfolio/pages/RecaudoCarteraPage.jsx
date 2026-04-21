@@ -71,15 +71,21 @@ function RecaudoCarteraPage() {
   );
 
   const records = useMemo(() => {
-    const hiddenBackendIds = new Set(
-      localHistoryRecords.flatMap((record) => record.backendCollectionIds || []).map((id) => String(id))
+    const periodBackendRecords = backendRecords.filter((record) =>
+      isDateInSelectedPeriod(record.collectedAt, selectedPeriod)
     );
-    const visibleBackendRecords = backendRecords.filter(
+    const periodLocalRecords = localHistoryRecords.filter((record) =>
+      isDateInSelectedPeriod(record.collectedAt, selectedPeriod)
+    );
+    const hiddenBackendIds = new Set(
+      periodLocalRecords.flatMap((record) => record.backendCollectionIds || []).map((id) => String(id))
+    );
+    const visibleBackendRecords = periodBackendRecords.filter(
       (record) => !hiddenBackendIds.has(String(record.backendId))
     );
 
-    return [...localHistoryRecords, ...visibleBackendRecords].sort(compareCollectionRecords);
-  }, [backendRecords, localHistoryRecords]);
+    return [...periodLocalRecords, ...visibleBackendRecords].sort(compareCollectionRecords);
+  }, [backendRecords, localHistoryRecords, selectedPeriod]);
 
   const chargesByApartment = useMemo(
     () => groupChargesByApartment(portfolioCharges),
@@ -148,7 +154,7 @@ function RecaudoCarteraPage() {
   const unitOptions = useMemo(
     () =>
       rawUnitOptions.map((option) => ({
-        value: String(option.apartment_id),
+        value: String(option.apartment_id ?? option.value),
         label: option.unit_label || option.label || "Unidad sin definir",
       })),
     [rawUnitOptions]
@@ -617,7 +623,6 @@ function buildSubmittedHistoryRecord({
     owner: resolveSubmittedHistoryOwner({
       unitInfo,
       firstCreated,
-      typedOwner: owner,
       portfolioOwnersByApartment,
     }),
     amount: normalizeMoney(amount),
