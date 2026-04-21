@@ -2,14 +2,16 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 const statusStyles = {
   "Al dia": "border-emerald-200 bg-emerald-50 text-emerald-700",
-  "Proximo a vencer": "border-amber-200 bg-amber-50 text-amber-700",
+  "Saldo pendiente": "border-amber-200 bg-amber-50 text-amber-700",
+  "Saldo a favor": "border-sky-200 bg-sky-50 text-sky-700",
   "En mora": "border-rose-200 bg-rose-50 text-rose-700",
 };
 
 const FILTER_OPTIONS = [
   { value: "todos", label: "Todos" },
-  { value: "al-dia", label: "Al día" },
-  { value: "proximo", label: "Próximo a vencer" },
+  { value: "al-dia", label: "Al dia" },
+  { value: "pendiente", label: "Saldo pendiente" },
+  { value: "favor", label: "Saldo a favor" },
   { value: "mora", label: "En mora" },
 ];
 
@@ -21,16 +23,12 @@ function PortfolioStatusTable({
   onStatusFilterChange,
 }) {
   const filteredRows = useMemo(() => {
-    const normalizedRows = rows.map((row) => ({
-      ...row,
-      status: normalizePortfolioStatus(row),
-    }));
-
-    if (statusFilter === "todos") return normalizedRows;
-    if (statusFilter === "al-dia") return normalizedRows.filter((row) => row.status === "Al dia");
-    if (statusFilter === "proximo") return normalizedRows.filter((row) => row.status === "Proximo a vencer");
-    if (statusFilter === "mora") return normalizedRows.filter((row) => row.status === "En mora");
-    return normalizedRows;
+    if (statusFilter === "todos") return rows;
+    if (statusFilter === "al-dia") return rows.filter((row) => row.status === "Al dia");
+    if (statusFilter === "pendiente") return rows.filter((row) => row.status === "Saldo pendiente");
+    if (statusFilter === "favor") return rows.filter((row) => row.status === "Saldo a favor");
+    if (statusFilter === "mora") return rows.filter((row) => row.status === "En mora");
+    return rows;
   }, [rows, statusFilter]);
 
   return (
@@ -74,112 +72,98 @@ function PortfolioStatusTable({
 
         {!loading && filteredRows.length > 0 ? (
           <>
-        <div className="hidden overflow-x-auto lg:block">
-          <table className="min-w-full text-sm">
-            <thead className="bg-gray-50">
-              <tr className="text-left text-xs uppercase tracking-wide text-gray-500">
-                <th className="px-5 py-4">Unidad / Apto</th>
-                <th className="px-5 py-4">Propietario</th>
-                <th className="px-5 py-4">Dia de corte</th>
-                <th className="px-5 py-4">Deuda actual</th>
-                <th className="px-5 py-4">Fecha de vencimiento</th>
-                <th className="px-5 py-4">Dias en mora</th>
-                <th className="px-5 py-4">Estado</th>
-              </tr>
-            </thead>
+            <div className="hidden overflow-x-auto xl:block">
+              <table className="min-w-full text-sm">
+                <thead className="bg-gray-50">
+                  <tr className="text-left text-xs uppercase tracking-wide text-gray-500">
+                    <th className="px-5 py-4">Unidad / Apto</th>
+                    <th className="px-5 py-4">Propietario</th>
+                    <th className="px-5 py-4">Dia de corte</th>
+                    <th className="px-5 py-4">Valor corte</th>
+                    <th className="px-5 py-4">Saldo pendiente</th>
+                    <th className="px-5 py-4">Saldo a favor</th>
+                    <th className="px-5 py-4">Fecha de vencimiento</th>
+                    <th className="px-5 py-4">Dias en mora</th>
+                    <th className="px-5 py-4">Estado</th>
+                  </tr>
+                </thead>
 
-            <tbody>
+                <tbody>
+                  {filteredRows.map((row) => {
+                    const isSelected = row.id === selectedId;
+
+                    return (
+                      <tr
+                        key={row.id}
+                        className={["border-t border-gray-100", isSelected ? "bg-slate-50/80" : ""].join(" ")}
+                      >
+                        <td className="px-5 py-4 font-bold text-slate-900">{row.unit}</td>
+                        <td className="px-5 py-4 text-sm font-semibold text-slate-600">{row.owner}</td>
+                        <td className="px-5 py-4 text-sm font-bold text-slate-900">{formatCutoffDay(row?.dueDate)}</td>
+                        <td className="px-5 py-4 text-sm font-bold text-slate-900">{row?.cutoffValueLabel || "$0"}</td>
+                        <td className="px-5 py-4 text-sm font-bold text-slate-900">{row?.pendingBalanceLabel || "$0"}</td>
+                        <td className="px-5 py-4 text-sm font-bold text-emerald-700">{row?.creditBalanceLabel || "$0"}</td>
+                        <td className="px-5 py-4 text-sm font-semibold text-slate-600">{row.dueDateLabel}</td>
+                        <td className="px-5 py-4 text-sm font-bold text-slate-900">{row.daysOverdueLabel}</td>
+                        <td className="px-5 py-4 text-center align-middle">
+                          <div className="flex w-full items-center justify-center">
+                            <span
+                              className={[
+                                "inline-flex items-center justify-center rounded-full border px-3 py-1 text-center text-xs font-extrabold",
+                                statusStyles[row.status] || statusStyles["Al dia"],
+                              ].join(" ")}
+                            >
+                              {row.status}
+                            </span>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="space-y-3 p-3 xl:hidden">
               {filteredRows.map((row) => {
                 const isSelected = row.id === selectedId;
 
                 return (
-                  <tr
+                  <article
                     key={row.id}
-                    className={["border-t border-gray-100", isSelected ? "bg-slate-50/80" : ""].join(" ")}
-                  >
-                    <td className="px-5 py-4 font-bold text-slate-900">{row.unit}</td>
-                    <td className="px-5 py-4 text-sm font-semibold text-slate-600">{row.owner}</td>
-                    <td className="px-5 py-4 text-sm font-bold text-slate-900">{formatCutoffDay(row?.dueDate)}</td>
-                    <td className="px-5 py-4 text-sm font-bold text-slate-900">{row?.debtLabel || "$0"}</td>
-                    <td className="px-5 py-4 text-sm font-semibold text-slate-600">{row.dueDateLabel}</td>
-                    <td className="px-5 py-4 text-sm font-bold text-slate-900">{row.daysOverdueLabel}</td>
-                    <td className="px-5 py-4 text-center align-middle">
-                      <div className="flex w-full items-center justify-center">
-                        <span
-                          className={[
-                            "inline-flex items-center justify-center rounded-full border px-3 py-1 text-center text-xs font-extrabold",
-                            statusStyles[row.status] || statusStyles["Al dia"],
-                          ].join(" ")}
-                        >
-                          {row.status}
-                        </span>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-
-        <div className="space-y-3 p-3 lg:hidden">
-          {filteredRows.map((row) => {
-            const isSelected = row.id === selectedId;
-
-            return (
-              <article
-                key={row.id}
-                className={[
-                  "rounded-2xl border border-slate-200 bg-white p-5 shadow-sm",
-                  isSelected ? "ring-2 ring-blue-100" : "",
-                ].join(" ")}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-extrabold text-slate-900">{row.unit}</p>
-                    <p className="mt-1 text-xs font-semibold text-slate-500">{row.owner}</p>
-                  </div>
-
-                  <span
                     className={[
-                      "inline-flex rounded-full border px-3 py-1 text-[11px] font-extrabold",
-                      statusStyles[row.status] || statusStyles["Al dia"],
+                      "rounded-2xl border border-slate-200 bg-white p-5 shadow-sm",
+                      isSelected ? "ring-2 ring-blue-100" : "",
                     ].join(" ")}
                   >
-                    {row.status}
-                  </span>
-                </div>
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-extrabold text-slate-900">{row.unit}</p>
+                        <p className="mt-1 text-xs font-semibold text-slate-500">{row.owner}</p>
+                      </div>
 
-                <div className="mt-4 grid grid-cols-2 gap-3 rounded-2xl bg-slate-50 p-3">
-                  <div>
-                    <p className="text-[11px] font-extrabold uppercase tracking-wide text-slate-400">
-                      Dia de corte
-                    </p>
-                    <p className="mt-1 text-sm font-bold text-slate-900">{formatCutoffDay(row?.dueDate)}</p>
-                  </div>
-                  <div>
-                    <p className="text-[11px] font-extrabold uppercase tracking-wide text-slate-400">
-                      Deuda actual
-                    </p>
-                    <p className="mt-1 text-sm font-bold text-slate-900">{row?.debtLabel || "$0"}</p>
-                  </div>
-                  <div>
-                    <p className="text-[11px] font-extrabold uppercase tracking-wide text-slate-400">
-                      Vencimiento
-                    </p>
-                    <p className="mt-1 text-sm font-bold text-slate-900">{row.dueDateLabel}</p>
-                  </div>
-                  <div>
-                    <p className="text-[11px] font-extrabold uppercase tracking-wide text-slate-400">
-                      Dias en mora
-                    </p>
-                    <p className="mt-1 text-sm font-bold text-slate-900">{row.daysOverdueLabel}</p>
-                  </div>
-                </div>
-              </article>
-            );
-          })}
-        </div>
+                      <span
+                        className={[
+                          "inline-flex rounded-full border px-3 py-1 text-[11px] font-extrabold",
+                          statusStyles[row.status] || statusStyles["Al dia"],
+                        ].join(" ")}
+                      >
+                        {row.status}
+                      </span>
+                    </div>
+
+                    <div className="mt-4 grid grid-cols-2 gap-3 rounded-2xl bg-slate-50 p-3">
+                      <StatusMetric label="Dia de corte" value={formatCutoffDay(row?.dueDate)} />
+                      <StatusMetric label="Valor corte" value={row?.cutoffValueLabel || "$0"} />
+                      <StatusMetric label="Saldo pendiente" value={row?.pendingBalanceLabel || "$0"} />
+                      <StatusMetric label="Saldo a favor" value={row?.creditBalanceLabel || "$0"} tone="emerald" />
+                      <StatusMetric label="Vencimiento" value={row.dueDateLabel} />
+                      <StatusMetric label="Dias en mora" value={row.daysOverdueLabel} />
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
           </>
         ) : null}
       </div>
@@ -221,7 +205,7 @@ function StatusFilterSelect({ value, onChange, options = [], placeholder = "Sele
         <span className={selectedOption ? "text-slate-900" : "text-slate-500"}>
           {selectedOption?.label || placeholder}
         </span>
-        <span className="text-slate-400">{open ? "▲" : "▼"}</span>
+        <span className="text-slate-400">{open ? "^" : "v"}</span>
       </button>
 
       {open ? (
@@ -253,27 +237,17 @@ function StatusFilterSelect({ value, onChange, options = [], placeholder = "Sele
   );
 }
 
-function normalizePortfolioStatus(row) {
-  const explicitStatus = String(row?.status || "").toLowerCase();
-  if (explicitStatus === "en_mora" || explicitStatus === "en mora") return "En mora";
-  if (explicitStatus === "proximo_a_vencer" || explicitStatus === "proximo a vencer") return "Proximo a vencer";
-  if (explicitStatus === "pagado" || explicitStatus === "pagada") return "Al dia";
-  if (explicitStatus === "al_dia" || explicitStatus === "al dia") return "Al dia";
-
-  const dueDate = new Date(`${row?.dueDate || ""}T00:00:00`);
-  if (Number.isNaN(dueDate.getTime())) {
-    if (row?.status === "En mora") return "En mora";
-    if (row?.status === "Proximo a vencer") return "Proximo a vencer";
-    return "Al dia";
-  }
-
-  const today = new Date();
-  const currentDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  const daysUntilDue = Math.ceil((dueDate.getTime() - currentDate.getTime()) / (1000 * 60 * 60 * 24));
-
-  if (daysUntilDue < 0) return "En mora";
-  if (daysUntilDue <= 7) return "Proximo a vencer";
-  return "Al dia";
+function StatusMetric({ label, value, tone = "slate" }) {
+  return (
+    <div>
+      <p className="text-[11px] font-extrabold uppercase tracking-wide text-slate-400">
+        {label}
+      </p>
+      <p className={["mt-1 text-sm font-bold", tone === "emerald" ? "text-emerald-700" : "text-slate-900"].join(" ")}>
+        {value}
+      </p>
+    </div>
+  );
 }
 
 function formatCutoffDay(value) {

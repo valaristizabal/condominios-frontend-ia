@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Eye, MessageSquareText, X } from "lucide-react";
+import { Download, Eye, MessageSquareText, X } from "lucide-react";
 
 const statusStyles = {
   registrado: "border-blue-200 bg-blue-50 text-blue-700",
@@ -7,7 +7,13 @@ const statusStyles = {
   "pendiente-soporte": "border-amber-200 bg-amber-50 text-amber-700",
 };
 
-function AdministrativeExpensesTable({ rows = [], selectedId = null, onViewSupport }) {
+function AdministrativeExpensesTable({
+  rows = [],
+  selectedId = null,
+  onViewSupport,
+  onDownload,
+  downloading = false,
+}) {
   const [selectedObservationRow, setSelectedObservationRow] = useState(null);
 
   const getObservationLabel = (value) => {
@@ -25,9 +31,21 @@ function AdministrativeExpensesTable({ rows = [], selectedId = null, onViewSuppo
           <h2 className="mt-2 text-xl font-bold text-gray-800">Historial de gastos</h2>
         </div>
 
-        <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
-          {rows.length} registros
-        </span>
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
+            {rows.length} registros
+          </span>
+
+          <button
+            type="button"
+            onClick={onDownload}
+            disabled={downloading}
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-bold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            <Download className="h-4 w-4" />
+            {downloading ? "Descargando..." : "Descargar gastos"}
+          </button>
+        </div>
       </div>
 
       <div className="mt-6 overflow-hidden rounded-2xl border border-gray-100">

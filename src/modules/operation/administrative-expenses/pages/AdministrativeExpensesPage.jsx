@@ -6,6 +6,7 @@ import ExpenseSummaryCards from "../components/ExpenseSummaryCards";
 import AdministrativeExpensesTable from "../components/AdministrativeExpensesTable";
 import { useActiveCondominium } from "../../../../context/useActiveCondominium";
 import { createExpense, getExpenses } from "../services/expensesService";
+import { exportAdministrativeExpensesWorkbook } from "./administrativeExpensesExcel";
 import {
   expenseStatusOptions,
   expenseTypeOptions,
@@ -39,6 +40,7 @@ function AdministrativeExpensesPage() {
   const [supportFile, setSupportFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [error, setError] = useState("");
 
   const fileInputRef = useRef(null);
@@ -245,6 +247,22 @@ function AdministrativeExpensesPage() {
     }
   };
 
+  const handleExportExpenses = async () => {
+    setExporting(true);
+    setError("");
+
+    try {
+      await exportAdministrativeExpensesWorkbook({
+        rows: filteredExpenses,
+        fileName: "gastos_administrativos.xlsx",
+      });
+    } catch (exportError) {
+      setError(normalizeApiError(exportError, "No fue posible descargar los gastos administrativos."));
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8 xl:px-10">
       <header>
@@ -301,6 +319,8 @@ function AdministrativeExpensesPage() {
           rows={filteredExpenses}
           selectedId={selectedExpenseId}
           onViewSupport={handleViewSupport}
+          onDownload={handleExportExpenses}
+          downloading={exporting}
         />
       </div>
     </div>

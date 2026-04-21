@@ -11,6 +11,7 @@ export function useRevenuePortfolio({ period = "current" } = {}) {
   const [portfolioStatus, setPortfolioStatus] = useState([]);
   const [collections, setCollections] = useState([]);
   const [unitOptions, setUnitOptions] = useState([]);
+  const [portfolioCharges, setPortfolioCharges] = useState([]);
   const [debtSummary, setDebtSummary] = useState([]);
   const [portfolioOwnersByApartment, setPortfolioOwnersByApartment] = useState({});
 
@@ -38,6 +39,7 @@ export function useRevenuePortfolio({ period = "current" } = {}) {
       setPortfolioStatus([]);
       setCollections([]);
       setUnitOptions([]);
+      setPortfolioCharges([]);
       setDebtSummary([]);
       setPortfolioOwnersByApartment({});
       return;
@@ -47,19 +49,24 @@ export function useRevenuePortfolio({ period = "current" } = {}) {
     setError("");
 
     try {
-      const [statusRes, collectionsRes, unitOptionsRes, debtSummaryRes, residentsRows] = await Promise.all([
+      const [statusRes, collectionsRes, unitOptionsRes, chargesRows, debtSummaryRes, residentsRows] = await Promise.all([
         apiClient.get("/portfolio/portfolio-status", {
           ...(requestConfig || {}),
           params: { period, page: 1, per_page: MAX_REVENUE_PORTFOLIO_PER_PAGE },
         }),
         apiClient.get("/portfolio/collections", {
           ...(requestConfig || {}),
-          params: { period, page: 1, per_page: MAX_REVENUE_PORTFOLIO_PER_PAGE },
+          params: {
+            ...buildCollectionsQueryParams(period),
+            page: 1,
+            per_page: MAX_REVENUE_PORTFOLIO_PER_PAGE,
+          },
         }),
         apiClient.get("/portfolio/unit-options", {
           ...(requestConfig || {}),
           params: { period },
         }),
+        loadAllRows("/portfolio/charges", requestConfig, { period: "all" }),
         apiClient.get("/residents/debt-summary", requestConfig || {}),
         loadAllRows("/residents", requestConfig),
       ]);
@@ -73,6 +80,7 @@ export function useRevenuePortfolio({ period = "current" } = {}) {
       setPortfolioStatus(Array.isArray(statusPayload?.data) ? statusPayload.data : []);
       setCollections(Array.isArray(collectionsPayload?.data) ? collectionsPayload.data : []);
       setUnitOptions(Array.isArray(unitsPayload) ? unitsPayload : []);
+      setPortfolioCharges(Array.isArray(chargesRows) ? chargesRows : []);
       setDebtSummary(Array.isArray(debtPayload) ? debtPayload : []);
       setPortfolioOwnersByApartment(buildPortfolioOwnersByApartment(residentsRows));
     } catch (err) {
@@ -81,6 +89,7 @@ export function useRevenuePortfolio({ period = "current" } = {}) {
       setPortfolioStatus([]);
       setCollections([]);
       setUnitOptions([]);
+      setPortfolioCharges([]);
       setDebtSummary([]);
       setPortfolioOwnersByApartment({});
     } finally {
@@ -89,7 +98,7 @@ export function useRevenuePortfolio({ period = "current" } = {}) {
   }, [activeCondominiumId, period, requestConfig]);
 
   const createCollection = useCallback(
-    async ({ chargeId, amount, paymentDate, evidence, notes }) => {
+    async ({ chargeId, amount, paymentDate, evidence, notes, refresh = true }) => {
       if (!activeCondominiumId) {
         throw new Error("No hay condominio activo.");
       }
@@ -120,8 +129,15 @@ export function useRevenuePortfolio({ period = "current" } = {}) {
           },
         });
 
-        await loadData();
-        return response?.data;
+        const createdCollection = response?.data;
+        setCollections((prev) => mergeCollectionRecords(prev, [createdCollection]));
+
+        if (refresh) {
+          await loadData();
+          setCollections((prev) => mergeCollectionRecords(prev, [createdCollection]));
+        }
+
+        return createdCollection;
       } catch (err) {
         const nextFieldErrors = extractFieldErrors(err);
         if (Object.keys(nextFieldErrors).length > 0) {
@@ -182,6 +198,7 @@ export function useRevenuePortfolio({ period = "current" } = {}) {
     portfolioStatus,
     collections,
     unitOptions,
+    portfolioCharges,
     debtSummary,
     portfolioOwnersByApartment,
     loading,
@@ -189,6 +206,7 @@ export function useRevenuePortfolio({ period = "current" } = {}) {
     generating,
     error,
     fieldErrors,
+    activeCondominiumId,
     hasTenantContext: Boolean(activeCondominiumId),
     loadData,
     createCollection,
@@ -197,7 +215,7 @@ export function useRevenuePortfolio({ period = "current" } = {}) {
   };
 }
 
-async function loadAllRows(endpoint, requestConfig) {
+async function loadAllRows(endpoint, requestConfig, params = {}) {
   const rows = [];
   let page = 1;
   let lastPage = 1;
@@ -207,6 +225,7 @@ async function loadAllRows(endpoint, requestConfig) {
     const response = await apiClient.get(endpoint, {
       ...(requestConfig || {}),
       params: {
+        ...params,
         page,
         per_page: perPage,
       },
@@ -222,6 +241,70 @@ async function loadAllRows(endpoint, requestConfig) {
   } while (page <= lastPage);
 
   return rows;
+}
+
+function buildCollectionsQueryParams(period) {
+  const normalizedPeriod = String(period || "").trim();
+
+  if (["all", "historico", "historial"].includes(normalizedPeriod.toLowerCase())) {
+    return { period: "all" };
+  }
+
+  const range = resolveMonthDateRange(normalizedPeriod);
+  if (!range) {
+    return { period: normalizedPeriod || "current" };
+  }
+
+  return {
+    period: "all",
+    date_from: range.dateFrom,
+    date_to: range.dateTo,
+  };
+}
+
+function resolveMonthDateRange(period) {
+  if (!period || period === "current") {
+    const today = new Date();
+    return buildMonthDateRange(today.getFullYear(), today.getMonth() + 1);
+  }
+
+  const monthMatch = String(period).match(/^(\d{4})-(\d{2})(?:-\d{2})?$/);
+  if (!monthMatch) return null;
+
+  const year = Number(monthMatch[1]);
+  const month = Number(monthMatch[2]);
+  if (!Number.isInteger(year) || !Number.isInteger(month) || month < 1 || month > 12) {
+    return null;
+  }
+
+  return buildMonthDateRange(year, month);
+}
+
+function buildMonthDateRange(year, month) {
+  const lastDay = new Date(year, month, 0).getDate();
+  const monthLabel = String(month).padStart(2, "0");
+
+  return {
+    dateFrom: `${year}-${monthLabel}-01`,
+    dateTo: `${year}-${monthLabel}-${String(lastDay).padStart(2, "0")}`,
+  };
+}
+
+function mergeCollectionRecords(currentRecords, incomingRecords) {
+  const merged = [];
+  const seen = new Set();
+
+  [...(Array.isArray(incomingRecords) ? incomingRecords : []), ...(Array.isArray(currentRecords) ? currentRecords : [])]
+    .filter(Boolean)
+    .forEach((record) => {
+      const key = record?.id !== null && record?.id !== undefined ? String(record.id) : "";
+      if (!key || seen.has(key)) return;
+
+      seen.add(key);
+      merged.push(record);
+    });
+
+  return merged;
 }
 
 function buildPortfolioOwnersByApartment(rows) {

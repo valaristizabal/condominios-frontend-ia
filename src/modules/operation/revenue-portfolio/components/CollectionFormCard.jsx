@@ -22,8 +22,9 @@ function CollectionFormCard({
   errors,
   fileName,
   fileError,
-  selectedRecord,
   detailMode,
+  financialInfo,
+  paymentPreview,
   fileInputRef,
   onChange,
   onUnitChange,
@@ -62,6 +63,17 @@ function CollectionFormCard({
           />
         </Field>
 
+        {financialInfo ? (
+          <div className="rounded-2xl border border-blue-100 bg-blue-50/70 p-4">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <FinancialItem label="Periodo actual" value={financialInfo.period || "-"} />
+              <FinancialItem label="Valor del corte" value={financialInfo.cutoffValueLabel} />
+              <FinancialItem label="Saldo pendiente actual" value={financialInfo.pendingBalanceLabel} tone="rose" />
+              <FinancialItem label="Saldo a favor actual" value={financialInfo.creditBalanceLabel} tone="emerald" />
+            </div>
+          </div>
+        ) : null}
+
         <Field label="Nombre propietario" error={errors.owner}>
           <input
             name="owner"
@@ -84,6 +96,19 @@ function CollectionFormCard({
             className={inputClassName}
           />
         </Field>
+
+        {paymentPreview ? (
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <p className="text-xs font-extrabold uppercase tracking-wide text-slate-400">
+              Resultado esperado
+            </p>
+            <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <FinancialItem label="Nuevo saldo pendiente" value={paymentPreview.pendingBalanceLabel} tone="rose" />
+              <FinancialItem label="Nuevo saldo a favor" value={paymentPreview.creditBalanceLabel} tone="emerald" />
+              <FinancialItem label="Estado resultante" value={paymentPreview.status} />
+            </div>
+          </div>
+        ) : null}
 
         <Field label="Fecha recaudo" error={errors.collectedAt}>
           <input
@@ -145,3 +170,19 @@ function CollectionFormCard({
 }
 
 export default CollectionFormCard;
+
+function FinancialItem({ label, value, tone = "slate" }) {
+  const valueClassName =
+    tone === "rose"
+      ? "text-rose-700"
+      : tone === "emerald"
+        ? "text-emerald-700"
+        : "text-slate-900";
+
+  return (
+    <div>
+      <p className="text-[11px] font-extrabold uppercase tracking-wide text-slate-400">{label}</p>
+      <p className={["mt-1 text-sm font-bold", valueClassName].join(" ")}>{value || "-"}</p>
+    </div>
+  );
+}

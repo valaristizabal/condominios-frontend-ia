@@ -24,20 +24,24 @@ function buildPortfolioSheet(workbook, rows, period) {
     { header: "Unidad / Apto", key: "unit", width: 18 },
     { header: "Propietario", key: "owner", width: 30 },
     { header: "Dia de corte", key: "cutoffDay", width: 14 },
-    { header: "Deuda actual", key: "debt", width: 18 },
+    { header: "Valor corte", key: "cutoffValue", width: 18 },
+    { header: "Saldo pendiente", key: "pendingBalance", width: 18 },
+    { header: "Saldo a favor", key: "creditBalance", width: 18 },
     { header: "Fecha de vencimiento", key: "dueDate", width: 22 },
     { header: "Dias en mora", key: "daysOverdue", width: 16 },
     { header: "Estado", key: "status", width: 18 },
   ];
 
-  decorateSheetHeader(sheet, `Estado de cartera - ${period || "-"}`, 7);
+  decorateSheetHeader(sheet, `Estado de cartera - ${period || "-"}`, 9);
 
   if (!rows.length) {
     const emptyRow = sheet.addRow({
       unit: "Sin datos disponibles",
       owner: "-",
       cutoffDay: "-",
-      debt: "-",
+      cutoffValue: "-",
+      pendingBalance: "-",
+      creditBalance: "-",
       dueDate: "-",
       daysOverdue: "-",
       status: "-",
@@ -50,7 +54,9 @@ function buildPortfolioSheet(workbook, rows, period) {
       unit: row?.unit || "-",
       owner: row?.owner || "-",
       cutoffDay: formatCutoffDay(row?.dueDate),
-      debt: row?.debtLabel || "$0",
+      cutoffValue: row?.cutoffValueLabel || "$0",
+      pendingBalance: row?.pendingBalanceLabel || row?.debtLabel || "$0",
+      creditBalance: row?.creditBalanceLabel || "$0",
       dueDate: row?.dueDateLabel || "-",
       daysOverdue: row?.daysOverdueLabel || "-",
       status: row?.status || "-",
@@ -59,7 +65,7 @@ function buildPortfolioSheet(workbook, rows, period) {
   });
 
   sheet.views = [{ state: "frozen", ySplit: 3 }];
-  sheet.autoFilter = "A3:G3";
+  sheet.autoFilter = "A3:I3";
 }
 
 function buildCollectionsSheet(workbook, rows, period) {
