@@ -145,13 +145,41 @@ export function useResidents(filters = {}) {
     }
   }, [currentPage, loadResidents, requestConfig]);
 
-  const importResidentsCsv = useCallback(async (file) => {
+  const previewResidentsCsv = useCallback(async (file, { autoCreateUnits = false } = {}) => {
     setSaving(true);
     setError("");
 
     try {
       const formData = new FormData();
       formData.append("file", file);
+      formData.append("auto_create_units", autoCreateUnits ? "1" : "0");
+
+      const response = await apiClient.post("/residents/import/preview", formData, {
+        ...(requestConfig || {}),
+        headers: {
+          ...(requestConfig?.headers || {}),
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      return response.data;
+    } catch (err) {
+      const message = normalizeApiError(err, "No fue posible validar el archivo CSV.");
+      setError(message);
+      throw err;
+    } finally {
+      setSaving(false);
+    }
+  }, [requestConfig]);
+
+  const importResidentsCsv = useCallback(async (file, { autoCreateUnits = false } = {}) => {
+    setSaving(true);
+    setError("");
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("auto_create_units", autoCreateUnits ? "1" : "0");
 
       const response = await apiClient.post("/residents/import", formData, {
         ...(requestConfig || {}),
@@ -211,6 +239,7 @@ export function useResidents(filters = {}) {
     loadResidents,
     createResident,
     updateResident,
+    previewResidentsCsv,
     importResidentsCsv,
     changeUserPassword,
   };

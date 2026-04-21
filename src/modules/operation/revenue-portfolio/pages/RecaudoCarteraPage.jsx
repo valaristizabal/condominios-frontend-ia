@@ -10,6 +10,7 @@ import { useRevenuePortfolio } from "../hooks/useRevenuePortfolio";
 import { exportRevenuePortfolioWorkbook } from "./revenuePortfolioExcel";
 
 const CREDIT_STORAGE_KEY = "genaccess.revenuePortfolio.creditBalances.v2";
+const OWNER_FALLBACK_LABEL = "Sin propietario parametrizado";
 
 function createInitialFormState() {
   return {
@@ -343,7 +344,6 @@ function RecaudoCarteraPage() {
 
       const submittedRecord = buildSubmittedHistoryRecord({
         unitInfo,
-        owner: form.owner,
         amount: paymentAmount,
         collectedAt: form.collectedAt,
         createdCollections,
@@ -593,7 +593,6 @@ function createSummaryCards(summary) {
 
 function buildSubmittedHistoryRecord({
   unitInfo,
-  owner,
   amount,
   collectedAt,
   createdCollections = [],
@@ -662,21 +661,15 @@ function resolveCollectionDate(record) {
 function resolveSubmittedHistoryOwner({
   unitInfo,
   firstCreated,
-  typedOwner,
   portfolioOwnersByApartment,
 }) {
   const candidates = [
     resolveMappedPortfolioOwner(firstCreated, portfolioOwnersByApartment),
     resolveMappedPortfolioOwner(unitInfo, portfolioOwnersByApartment),
-    firstCreated?.owner,
-    firstCreated?.propietario,
-    unitInfo?.owner,
-    unitInfo?.propietario,
-    typedOwner,
   ];
 
   const resolved = candidates.find((value) => String(value || "").trim() && String(value).trim() !== "-");
-  return resolved ? String(resolved).trim() : "-";
+  return resolved ? String(resolved).trim() : OWNER_FALLBACK_LABEL;
 }
 
 function compareCollectionRecords(left, right) {
@@ -1011,7 +1004,13 @@ function resolvePortfolioOwner(row, ownersByApartment) {
   const mappedOwner = resolveMappedPortfolioOwner(row, ownersByApartment);
   if (mappedOwner) return mappedOwner;
 
-  return row?.owner || row?.propietario || "-";
+  const apartmentId = row?.apartment_id ?? row?.apartment?.id ?? row?.value;
+  if (apartmentId !== null && apartmentId !== undefined) {
+    return OWNER_FALLBACK_LABEL;
+  }
+
+  const fallbackOwner = String(row?.owner || row?.propietario || "").trim();
+  return fallbackOwner && fallbackOwner !== "-" ? fallbackOwner : OWNER_FALLBACK_LABEL;
 }
 
 function resolveMappedPortfolioOwner(row, ownersByApartment) {

@@ -3,6 +3,7 @@ import apiClient from "../../../../services/apiClient";
 import { useActiveCondominium } from "../../../../context/useActiveCondominium";
 
 const MAX_REVENUE_PORTFOLIO_PER_PAGE = 10;
+const OWNER_FALLBACK_LABEL = "Sin propietario parametrizado";
 
 export function useRevenuePortfolio({ period = "current" } = {}) {
   const { activeCondominiumId } = useActiveCondominium();
@@ -316,20 +317,14 @@ function buildPortfolioOwnersByApartment(rows) {
 
     const apartmentKey = String(apartmentId);
     const residentName = String(resident?.user?.full_name || resident?.full_name || "").trim();
-    const ownerReferenceName = String(
-      resident?.property_owner_full_name || resident?.property_owner_name || ""
-    ).trim();
     const residentType = String(resident?.type || "").trim().toLowerCase();
+    const isActive = resident?.is_active ?? resident?.isActive ?? true;
 
-    const current = accumulator[apartmentKey] || { priority: 0, name: "" };
+    const current = accumulator[apartmentKey] || { priority: 0, name: OWNER_FALLBACK_LABEL };
     let next = current;
 
-    if (residentType === "propietario" && residentName) {
+    if (residentType === "propietario" && residentName && isActive !== false) {
       next = { priority: 3, name: residentName };
-    } else if (ownerReferenceName && current.priority < 2) {
-      next = { priority: 2, name: ownerReferenceName };
-    } else if (residentName && current.priority < 1) {
-      next = { priority: 1, name: residentName };
     }
 
     accumulator[apartmentKey] = next;

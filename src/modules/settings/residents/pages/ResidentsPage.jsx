@@ -31,11 +31,15 @@ function ResidentsPage() {
     hasTenantContext,
     createResident,
     updateResident,
+    previewResidentsCsv,
     importResidentsCsv,
     changeUserPassword,
   } = useResidents(filters);
   const [success, setSuccess] = useState("");
   const [importResult, setImportResult] = useState(null);
+  const [importFile, setImportFile] = useState(null);
+  const [importPreview, setImportPreview] = useState(null);
+  const [autoCreateUnits, setAutoCreateUnits] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [passwordModalTarget, setPasswordModalTarget] = useState(null);
@@ -58,6 +62,8 @@ function ResidentsPage() {
   const clearFilters = () => {
     setSuccess("");
     setImportResult(null);
+    setImportPreview(null);
+    setImportFile(null);
     setQuery("");
     setStatus("all");
     setResidentType("all");
@@ -67,6 +73,7 @@ function ResidentsPage() {
   const openCreate = () => {
     setSuccess("");
     setImportResult(null);
+    setImportPreview(null);
     setEditing(null);
     setModalOpen(true);
   };
@@ -74,6 +81,7 @@ function ResidentsPage() {
   const openEdit = (item) => {
     setSuccess("");
     setImportResult(null);
+    setImportPreview(null);
     setEditing(item);
     setModalOpen(true);
   };
@@ -82,6 +90,7 @@ function ResidentsPage() {
     if (!canChangePassword) return;
     setSuccess("");
     setImportResult(null);
+    setImportPreview(null);
     setPasswordModalTarget(item);
   };
 
@@ -96,12 +105,55 @@ function ResidentsPage() {
 
     if (!file) return;
 
+    setImportFile(file);
+    setAutoCreateUnits(false);
+    setImportResult(null);
+    setSuccess("");
+
     try {
-      const result = await importResidentsCsv(file);
+      const preview = await previewResidentsCsv(file, { autoCreateUnits: false });
+      setImportPreview(preview);
+    } catch {
+      setImportFile(null);
+      setImportPreview(null);
+      setImportResult(null);
+    }
+  };
+
+  const handleAutoCreateUnitsChange = async (event) => {
+    const checked = event.target.checked;
+    setAutoCreateUnits(checked);
+    setImportResult(null);
+
+    if (!importFile) return;
+
+    try {
+      const preview = await previewResidentsCsv(importFile, { autoCreateUnits: checked });
+      setImportPreview(preview);
+    } catch {
+      setImportPreview(null);
+    }
+  };
+
+  const cancelImportPreview = () => {
+    if (saving) return;
+    setImportFile(null);
+    setImportPreview(null);
+    setAutoCreateUnits(false);
+  };
+
+  const confirmImport = async () => {
+    if (!importFile || saving || !importPreview?.can_import) return;
+
+    try {
+      const result = await importResidentsCsv(importFile, { autoCreateUnits });
       setImportResult(result);
       setSuccess(
-        `Importacion finalizada. Creados: ${Number(result?.created || 0)}. Actualizados: ${Number(result?.updated || 0)}. Fallidos: ${Number(result?.failed || 0)}.`
+        `Importacion finalizada. Creados: ${Number(result?.created || 0)}. Actualizados: ${Number(result?.updated || 0)}. Fallidos: ${Number(result?.failed || 0)}. Unidades creadas: ${Number(result?.created_units || 0)}.`
       );
+      setImportFile(null);
+      setImportPreview(null);
+      setAutoCreateUnits(false);
     } catch {
       setImportResult(null);
     }
@@ -206,7 +258,16 @@ function ResidentsPage() {
             Actualizados: <span className="text-indigo-700">{Number(importResult.updated || 0)}</span>
             {" | "}
             Fallidos: <span className="text-rose-700">{Number(importResult.failed || 0)}</span>
+            {" | "}
+            Unidades creadas: <span className="text-emerald-700">{Number(importResult.created_units || 0)}</span>
           </p>
+          {Array.isArray(importResult.warnings) && importResult.warnings.length > 0 ? (
+            <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-amber-700">
+              {importResult.warnings.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          ) : null}
           {Array.isArray(importResult.errors) && importResult.errors.length > 0 ? (
             <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-rose-700">
               {importResult.errors.map((item) => (
@@ -216,6 +277,83 @@ function ResidentsPage() {
           ) : (
             <p className="mt-2 text-sm text-slate-600">No se encontraron errores en la importacion.</p>
           )}
+        </section>
+      ) : null}
+
+      {importPreview ? (
+        <section className="mb-4 rounded-xl border border-slate-200 bg-white p-4">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-sm font-bold text-slate-900">Validacion previa CSV</p>
+              <p className="mt-1 text-xs font-semibold text-slate-500">{importFile?.name || "Archivo CSV"}</p>
+            </div>
+            <label className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-700">
+              <input
+                type="checkbox"
+                checked={autoCreateUnits}
+                onChange={handleAutoCreateUnitsChange}
+                disabled={saving}
+              />
+              Crear unidades faltantes automáticamente
+            </label>
+          </div>
+
+          <div className="mt-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-3 lg:grid-cols-6">
+            <PreviewMetric label="Filas" value={importPreview?.summary?.total_rows} />
+            <PreviewMetric label="Validas" value={importPreview?.summary?.valid_rows} tone="emerald" />
+            <PreviewMetric label="Con error" value={importPreview?.summary?.error_rows} tone="rose" />
+            <PreviewMetric label="Unidades nuevas" value={importPreview?.summary?.new_units} tone="amber" />
+            <PreviewMetric label="Crear residentes" value={importPreview?.summary?.residents_to_create} />
+            <PreviewMetric label="Actualizar" value={importPreview?.summary?.residents_to_update} />
+          </div>
+
+          {Array.isArray(importPreview.units_to_create) && importPreview.units_to_create.length > 0 ? (
+            <div className="mt-4 rounded-lg bg-slate-50 p-3">
+              <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Unidades nuevas detectadas</p>
+              <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-700">
+                {importPreview.units_to_create.map((unit) => (
+                  <li key={`${unit.tower}-${unit.number}-${unit.unit_type}`}>
+                    Torre {unit.tower} - {unit.number} ({unit.unit_type})
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+
+          {Array.isArray(importPreview.warnings) && importPreview.warnings.length > 0 ? (
+            <ul className="mt-4 list-disc space-y-1 pl-5 text-sm text-amber-700">
+              {importPreview.warnings.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          ) : null}
+
+          {Array.isArray(importPreview.errors) && importPreview.errors.length > 0 ? (
+            <ul className="mt-4 list-disc space-y-1 pl-5 text-sm text-rose-700">
+              {importPreview.errors.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          ) : null}
+
+          <div className="mt-4 flex flex-wrap justify-end gap-2">
+            <button
+              type="button"
+              onClick={cancelImportPreview}
+              disabled={saving}
+              className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-70"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={confirmImport}
+              disabled={saving || !importPreview?.can_import}
+              className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-indigo-700 disabled:opacity-70"
+            >
+              {saving ? "Importando..." : "Importar residentes"}
+            </button>
+          </div>
         </section>
       ) : null}
 
@@ -348,6 +486,24 @@ function Select({ label, value, onChange, options }) {
         ))}
       </select>
     </label>
+  );
+}
+
+function PreviewMetric({ label, value, tone = "slate" }) {
+  const valueClass =
+    tone === "emerald"
+      ? "text-emerald-700"
+      : tone === "rose"
+        ? "text-rose-700"
+        : tone === "amber"
+          ? "text-amber-700"
+          : "text-slate-900";
+
+  return (
+    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+      <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">{label}</p>
+      <p className={["mt-1 text-lg font-extrabold", valueClass].join(" ")}>{Number(value || 0)}</p>
+    </div>
   );
 }
 
